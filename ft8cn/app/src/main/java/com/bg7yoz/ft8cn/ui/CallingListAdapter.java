@@ -303,8 +303,11 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
      */
     private void applyRowStyle(@NonNull CallingListItemHolder holder) {
         //내가 보낸 메시지(송신 목록의 행이거나, 내 신호가 되돌아 들린 행)
-        boolean isMyOwnMessage = GeneralVariables.checkIsMyCallsign(holder.ft8Message.getCallsignFrom())
-                && !GeneralVariables.checkIsMyCallsign(holder.ft8Message.getCallsignTo());
+        String callsignFrom = holder.ft8Message.getCallsignFrom();
+        String callsignTo = holder.ft8Message.getCallsignTo();
+        boolean isMyOwnMessage = callsignFrom != null && callsignTo != null
+                && GeneralVariables.checkIsMyCallsign(callsignFrom)
+                && !GeneralVariables.checkIsMyCallsign(callsignTo);
         boolean isTx = holder.ft8Message.freq_hz <= 0.01f || isMyOwnMessage;//내가 보낸 메시지
         boolean isMine = !isTx && holder.ft8Message.inMyCall();//나를 부른 수신(RX)
         boolean isCq = !isTx && !isMine && holder.ft8Message.checkIsCQ();
