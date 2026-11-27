@@ -7,11 +7,13 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.CookieManager;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -31,6 +33,9 @@ import com.bg7yoz.ft8cn.R;
 import com.bg7yoz.ft8cn.databinding.FragmentGridPskBinding;
 import com.bg7yoz.ft8cn.grid_tracker.GridTrackerMainActivity;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Locale;
 
 /**
@@ -50,10 +55,16 @@ import java.util.Locale;
 public class GridPskFragment extends Fragment {
     private static final String TAG = "GridPskFragment";
 
-    //한국어판(0.93-kr9): PSK Reporter 실시간 지도 주소(내 콜사인으로 내 신호를 받은 곳을 본다)
+    //한국어판(0.93-kr10): PSK Reporter 실시간 지도 주소(내 콜사인으로 내 신호를 받은 곳을 본다)
     private static final String PSK_REPORTER_MAP_URL
             = "https://pskreporter.info/pskmap.html?preset&callsign=%1$s&txrx=tx&timerange=86400";
     private static final String FRAGMENT_TAG_GRID_LOG = "gridPskLog";
+
+    //한국어판(0.93-kr10): 사이트가 '웹뷰'를 알아보고 자료를 막는 일이 없게, 흔한 크롬 UA로 바꿔 연다
+    private static final String PSK_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            + " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    //한국어판(0.93-kr10): 지도를 화면에 꽉 채우고 영어 라벨을 한국어로 바꾸는 스크립트(assets)
+    private static final String PSK_KR_SCRIPT_ASSET = "psk_map_kr.js";
 
     private FragmentGridPskBinding binding;
     private MainViewModel mainViewModel;
@@ -63,6 +74,8 @@ public class GridPskFragment extends Fragment {
     private boolean openLogOnStart = false;
     private boolean mapRequested = false;
     private String lastLoadedUrl = "";
+    //한국어판(0.93-kr10): assets 의 스크립트를 한 번만 읽어 둔다
+    private String pskKrScript = null;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -113,6 +126,17 @@ public class GridPskFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 showLogPanel(!logShown);
+            }
+        });
+
+        //한국어판(0.93-kr10): [새로고침]은 지도를 처음부터 다시 읽는다
+        binding.refreshMapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (logShown) {
+                    showLogPanel(false);
+                }
+                loadPskMap(true);
             }
         });
 
@@ -256,8 +280,7 @@ public class GridPskFragment extends Fragment {
         } else {
             gridText = String.format(Locale.US, "%s (%s)", grid6, grid4);
         }
-        binding.myGridText.setText(String.format(getStringFromRes(R.string.grid_psk_grid_value)
-                , gridText));
+        binding.myGridText.setText(String.format(Locale.US, "· %s", gridText));
 
         updateBandText();
     }
@@ -288,7 +311,10 @@ public class GridPskFragment extends Fragment {
     // PSK Reporter 지도(WebView)
 
     /**
-     * 한국어판(0.93-kr9): PSK Reporter 지도를 앱 안에서 열 수 있게 WebView 를 준비한다.
+     * 한국어판(0.93-kr10): PSK Reporter 지도를 앱 안에서 '지도만 크게' 볼 수 있게 WebView 를 준비한다.
+     * 사이트가 웹뷰를 알아보고 자료를 막는 일이 없게 흔한 크롬 UA·쿠키·저장소를 갖추고,
+     * 다 읽은 뒤에는 assets/psk_map_kr.js 를 넣어 위쪽 군더더기를 접고 지도를 꽉 채우며
+     * 영어 라벨을 한국어로 바꾼다.
      */
     @SuppressLint("SetJavaScriptEnabled")
     private void initWebView() {
@@ -296,13 +322,30 @@ public class GridPskFragment extends Fragment {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        settings.setSupportZoom(true);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setJavaScriptCanOpenWindowsAutomatically(false);
+        //한국어판(0.93-kr10): 지도 타일·스크립트가 섞인 출처라도 막히지 않게 한다
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        settings.setUserAgentString(PSK_USER_AGENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
+        }
 
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                //읽어 오는 중에 미리 접어 두면 화면이 덜 깜박인다
+                applyPskKrScript(view);
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 if (binding == null) {
@@ -310,6 +353,8 @@ public class GridPskFragment extends Fragment {
                 }
                 //지도가 떴으면 안내 문구는 감춘다
                 binding.pskOfflineLayout.setVisibility(View.GONE);
+                //지도가 다 그려진 뒤 화면을 접고 한국어로 바꾼다
+                applyPskKrScript(view);
             }
 
             @Override
@@ -329,6 +374,50 @@ public class GridPskFragment extends Fragment {
                 showOfflineMessage();
             }
         });
+    }
+
+    /**
+     * 한국어판(0.93-kr10): assets/psk_map_kr.js 를 지도 화면에 넣는다(한 번 실패해도 몇 번 더 시도).
+     *
+     * @param view 지도 WebView
+     */
+    private void applyPskKrScript(@Nullable WebView view) {
+        if (view == null) {
+            return;
+        }
+        String script = readPskKrScript();
+        if (script.isEmpty()) {
+            return;
+        }
+        try {
+            view.evaluateJavascript(script, null);
+        } catch (Exception e) {
+            Log.e(TAG, "applyPskKrScript: 스크립트를 넣지 못했습니다. " + e.getMessage());
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr10): assets/psk_map_kr.js 를 읽어 둔다(두 번째부터는 기억해 둔 것을 쓴다).
+     *
+     * @return 스크립트(없으면 빈 문자열)
+     */
+    private String readPskKrScript() {
+        if (pskKrScript != null) {
+            return pskKrScript;
+        }
+        StringBuilder builder = new StringBuilder();
+        try (InputStream input = requireContext().getAssets().open(PSK_KR_SCRIPT_ASSET);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append('\n');
+            }
+            pskKrScript = builder.toString();
+        } catch (Exception e) {
+            Log.e(TAG, "readPskKrScript: 스크립트를 읽지 못했습니다. " + e.getMessage());
+            pskKrScript = "";
+        }
+        return pskKrScript;
     }
 
     /**

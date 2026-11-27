@@ -24,6 +24,41 @@ Credits
 
 Korean edition changes
 
+  0.93-kr10
+   1. The [Grid / PSK] screen is now 'map first'.
+      - The multi-line card and the big button row at the top are folded into a single
+        40dp toolbar: my call sign, grid and band on the left; [My map] [Stats] [ADIF]
+        [Refresh] [Browser] [QSO log] chips on the right. The map now takes more than
+        90% of the screen height.
+      - Inside the PSK Reporter map the site header (OVERVIEW, MAP, DEVELOPER, STATS,
+        FAQ, ABOUT US, CONTACT), the search form, the statistics lines and the footer
+        note are folded away, so the map fills almost the whole screen.
+      - [Settings] at the top right of the map opens the search form over the map;
+        [Close] folds it again.
+   2. The English labels of the PSK Reporter map are now Korean.
+      - Search form: band / show / sent-rcvd / callsign / mode / last / Go, the values
+        (all bands, signals, countries, grid), the time ranges, [Display options],
+        [Permalink] and [Legend].
+      - Display options dialog: hide statistics, show grid, show snr, hide connecting
+        lines, map type and the rest.
+      - The window that opens when a map marker is tapped: received, sent from, location,
+        frequency, distance, rig, antenna and radio.
+      - The 'Could not fetch current data (Website problem?)' note is also Korean and
+        shown as one line under the map.
+   3. The (0 null) error that left the map blank is much less likely.
+      - The app now uses a common Chrome user agent and allows cookies (third-party
+        included), storage and mixed content.
+   4. The decode and calling lists show which country the other station is in, as a
+      Korean badge next to the call sign.
+      - e.g. CQ HL5NTR PM46 [Japan], DS2YTO JA1ABC -10 [Japan]
+      - Country names come from CTY.DAT and are shown as short Korean names (Korea,
+        United States, Japan, China, Russia, Germany, Australia and many more).
+      - Lines I sent show the receiving station's country; when the country is unknown
+        no badge is added.
+      - The strike-through for a station already worked now covers only the message so
+        that it does not cross out the country badge.
+   5. A [Refresh] chip was added to the [Grid / PSK] toolbar.
+
   0.93-kr9
    1. The spectrum three-pane view on a tablet in landscape is back to three panes:
       spectrum | decode / call (TX). In 0.93-kr8 the bottom-right pane carried [Call] and

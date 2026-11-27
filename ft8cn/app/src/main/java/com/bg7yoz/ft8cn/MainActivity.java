@@ -217,6 +217,10 @@ public class MainActivity extends AppCompatActivity {
         GeneralVariables.isChina = (getResources().getConfiguration().locale
                 .getLanguage().toUpperCase().startsWith("ZH"));
 
+        //한국어판(0.93-kr10): 한국어 화면이면 나라 이름도 한국어 짧은 이름으로 보여 준다
+        GeneralVariables.isKorean = "KO".equalsIgnoreCase(
+                getResources().getConfiguration().locale.getLanguage());
+
         mainViewModel = MainViewModel.getInstance(this);
         binding = MainActivityBinding.inflate(getLayoutInflater());
         binding.initDataLayout.setVisibility(View.VISIBLE);//显示LOG页面

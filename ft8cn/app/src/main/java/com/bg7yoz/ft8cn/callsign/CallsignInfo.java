@@ -34,6 +34,9 @@ public class CallsignInfo {
         String country;
         if (GeneralVariables.isChina) {
             country=CountryNameCN;
+        } else if (GeneralVariables.isKorean) {
+            //한국어판(0.93-kr10): 나라 이름을 한국어 짧은 이름으로
+            country=CountryNameKo.toKorean(CountryNameEn);
         }else {
             country=CountryNameEn;
         }

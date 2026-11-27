@@ -59,6 +59,8 @@ public class GeneralVariables {
 
     public static boolean isChina = true;//语言是不是中国
     public static boolean isTraditionalChinese = true;//语言是不是繁体中文
+    //한국어판(0.93-kr10): 화면 언어가 한국어인지(호출부호 옆 나라 이름을 한국어 짧은 이름으로 보여 준다)
+    public static boolean isKorean = false;
     //public static double maxDist = 0;//最远距离
 
     //各已经通联的分区列表

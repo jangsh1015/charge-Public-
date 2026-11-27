@@ -10,6 +10,11 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Paint;
 import android.opengl.Visibility;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StrikethroughSpan;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -224,7 +229,8 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         }
 
 
-        holder.callListMessageTextView.setText(holder.ft8Message.getMessageText(true));
+        //한국어판(0.93-kr10): 이 줄이 보이기 직전에 나라 배지까지 붙여 쓴다
+        applyMessageText(holder);
 
         //载波频率
         holder.bandItemTextView.setText(BaseRigOperation.getFrequencyStr(holder.ft8Message.band));
@@ -365,6 +371,61 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         holder.callListMessageTextView.setBackgroundResource(R.color.textview_none_color);
     }
 
+    /**
+     * 한국어판(0.93-kr10): 메시지 끝에 어느 나라인지 짧은 배지를 붙여 쓴다.
+     * 예) {@code CQ HL5NTR PM46 [일본]}. 배지는 작고 행 색에 맞춘 밝은 글씨로, 줄바꿈을 만들지 않는다.
+     * 통신한 적 있는 국(줄그음)일 때는 메시지 부분만 줄을 긋는다.
+     *
+     * @param holder 목록 행
+     */
+    private void applyMessageText(@NonNull CallingListItemHolder holder) {
+        String message = holder.ft8Message.getMessageText(true);
+        if (message == null) {
+            message = "";
+        }
+        String country = countryBadgeText(holder.ft8Message);
+        SpannableString text;
+        if (country.isEmpty()) {
+            text = new SpannableString(message);
+        } else {
+            String badge = " [" + country + "]";
+            text = new SpannableString(message + badge);
+            int start = message.length();
+            int end = text.length();
+            text.setSpan(new RelativeSizeSpan(0.8f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            text.setSpan(new ForegroundColorSpan(holder.rowAccentColor), start, end
+                    , Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        if (holder.strikeMessage && message.length() > 0) {
+            text.setSpan(new StrikethroughSpan(), 0, message.length()
+                    , Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        holder.callListMessageTextView.setText(text);
+    }
+
+    /**
+     * 한국어판(0.93-kr10): 콜사인이 어느 나라인지 돌려준다. 내가 보낸 줄이면 받는 쪽 나라를 쓴다.
+     *
+     * @param message 메시지
+     * @return 나라 이름(모르면 빈 문자열)
+     */
+    private String countryBadgeText(Ft8Message message) {
+        if (message == null) {
+            return "";
+        }
+        String callsignFrom = message.getCallsignFrom();
+        boolean myMessage = callsignFrom != null
+                && GeneralVariables.checkIsMyCallsign(callsignFrom);
+        String where = myMessage ? message.toWhere : message.fromWhere;
+        if (where == null || where.trim().isEmpty()) {
+            where = myMessage ? message.fromWhere : message.toWhere;
+        }
+        if (where == null) {
+            return "";
+        }
+        return where.trim();
+    }
+
     private void setFromDxcc(@NonNull CallingListItemHolder holder) {
 
         if (holder.ft8Message.fromDxcc && holder.ft8Message.freq_hz > 0.01f) {
@@ -409,13 +470,10 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
     //检查是不是通联过的呼号
     private void setQueryHolderQSL_Callsign(@NonNull CallingListItemHolder holder) {
         //查是不是在本波段内通联成功过的呼号
-        if (GeneralVariables.checkQSLCallsign(holder.ft8Message.getCallsignFrom())) {//如果在数据库中，划线
-            holder.callListMessageTextView.setPaintFlags(
-                    holder.callListMessageTextView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-        } else {//如果不在数据库中，去掉划线
-            holder.callListMessageTextView.setPaintFlags(
-                    holder.callListMessageTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-        }
+        //한국어판(0.93-kr10): 줄그음은 메시지 칸 전체가 아니라 메시지 글자에만 넣는다(나라 배지는 살린다)
+        holder.strikeMessage = GeneralVariables.checkQSLCallsign(holder.ft8Message.getCallsignFrom());
+        holder.callListMessageTextView.setPaintFlags(
+                holder.callListMessageTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
         holder.otherBandIsQso = GeneralVariables.checkQSLCallsign_OtherBand(holder.ft8Message.getCallsignFrom());
     }
 
@@ -453,6 +511,8 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         ShowMode showMode;
         boolean isSyncFreq;
         boolean otherBandIsQso = false;
+        //한국어판(0.93-kr10): 이 국과 이미 교신한 적이 있어 메시지에 줄을 그을지
+        boolean strikeMessage = false;
         //한국어판(0.93-kr5): 행 색에 맞춘 글씨 색
         int rowPrimaryColor = 0;
         int rowSecondaryColor = 0;

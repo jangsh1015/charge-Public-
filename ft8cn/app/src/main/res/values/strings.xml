@@ -582,11 +582,16 @@
     <string name="grid_psk_grid_value">My grid %1$s</string>
     <string name="grid_psk_open_settings">Open settings</string>
     <string name="grid_psk_show_log">QSO log</string>
-    <string name="grid_psk_show_map">Grid · PSK</string>
+    <string name="grid_psk_show_map">Map</string>
     <string name="grid_psk_open_browser">Open in browser</string>
     <string name="grid_psk_stats">QSO stats</string>
     <string name="grid_psk_adif">Share ADIF</string>
     <string name="grid_psk_map_offline">Could not load the PSK Reporter map.\nIf the tablet is connected to the IC-705 Wi-Fi (which has no internet), switch to mobile data or turn Wi-Fi off, then press Retry.\nYou can also open the map in your browser.</string>
     <string name="grid_psk_retry">Retry</string>
+    <string name="grid_psk_mine_short">My map</string>
+    <string name="grid_psk_stats_short">Stats</string>
+    <string name="grid_psk_adif_short">ADIF</string>
+    <string name="grid_psk_refresh">Refresh</string>
+    <string name="grid_psk_browser_short">Browser</string>
 
 </resources>

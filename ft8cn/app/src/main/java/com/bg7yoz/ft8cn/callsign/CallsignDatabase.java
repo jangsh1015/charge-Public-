@@ -124,6 +124,9 @@ public class CallsignDatabase extends SQLiteOpenHelper {
                     msg.fromCq = !GeneralVariables.getCqZoneById(fromCallsignInfo.CQZone);
                     if (GeneralVariables.isChina) {
                         msg.fromWhere = fromCallsignInfo.CountryNameCN;
+                    } else if (GeneralVariables.isKorean) {
+                        //한국어판(0.93-kr10): 호출부호 옆에 한국어 짧은 나라 이름을 보여 준다
+                        msg.fromWhere = CountryNameKo.toKorean(fromCallsignInfo.CountryNameEn);
                     } else {
                         msg.fromWhere = fromCallsignInfo.CountryNameEn;
                     }
@@ -143,6 +146,8 @@ public class CallsignDatabase extends SQLiteOpenHelper {
 
                 if (GeneralVariables.isChina) {
                     msg.toWhere = toCallsignInfo.CountryNameCN;
+                } else if (GeneralVariables.isKorean) {
+                    msg.toWhere = CountryNameKo.toKorean(toCallsignInfo.CountryNameEn);
                 } else {
                     msg.toWhere = toCallsignInfo.CountryNameEn;
                 }
