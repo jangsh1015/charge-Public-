@@ -11,7 +11,7 @@
     <string name="nav_menu_title_call_list">수신 목록</string>
     <string name="nav_menu_title_decode_list">디코드</string>
     <string name="nav_menu_title_my_calling">호출</string>
-    <string name="nav_menu_title_history">QSO 로그</string>
+    <string name="nav_menu_title_history">그리드·PSK</string>
     <string name="nav_menu_title_config">설정</string>
 
     <string name="run_decode">디코드 시작</string>
@@ -570,7 +570,7 @@
     <string name="interval_cq_watchdog_warning">송신 감시(%1$d분)가 간헐 CQ 주기보다 짧아 곧 자동 송신이 멈춥니다. 설정에서 송신 감시를 늘리거나 (무시)로 바꾸세요.</string>
 
     <!-- ============================================================
-         PSK Reporter · 그리드 로케이터 (0.93-kr8) · 스펙트럼 3분할 로그 탭
+         PSK Reporter · 그리드 로케이터 (0.93-kr8) · 그리드·PSK 탭 (0.93-kr9)
          ============================================================ -->
     <string name="psk_button_label" translatable="false">PSK</string>
     <string name="psk_grid_title">PSK · 그리드 로케이터</string>
@@ -580,6 +580,15 @@
     <string name="psk_reporter_open">PSK Reporter 열기</string>
     <string name="psk_grid_qso_map">내 교신 지도</string>
     <string name="psk_grid_open_failed">브라우저를 열지 못했습니다. 잠시 뒤 다시 시도해 주세요.</string>
-    <string name="split_tab_calling">📡 호출·송신</string>
-    <string name="split_tab_qso_log">📋 QSO 로그</string>
+    <string name="grid_psk_no_callsign_short">콜사인 없음</string>
+    <string name="grid_psk_grid_value">내 그리드 %1$s</string>
+    <string name="grid_psk_open_settings">설정 열기</string>
+    <string name="grid_psk_show_log">QSO 로그</string>
+    <string name="grid_psk_show_map">그리드·PSK</string>
+    <string name="grid_psk_open_browser">브라우저로 열기</string>
+    <string name="grid_psk_stats">교신 통계</string>
+    <string name="grid_psk_adif">ADIF 공유</string>
+    <string name="grid_psk_map_offline">PSK Reporter 지도를 열지 못했습니다.\nIC-705 와이파이에 연결되어 있으면 인터넷이 없어 지도가 열리지 않습니다. 휴대전화 데이터로 바꾸거나 와이파이를 끄고 [다시 시도]를 눌러 주세요.\n[브라우저로 열기]로도 볼 수 있습니다.</string>
+    <string name="grid_psk_retry">다시 시도</string>
+
 </resources>

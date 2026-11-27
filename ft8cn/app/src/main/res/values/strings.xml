@@ -3,7 +3,7 @@
     <string name="nav_menu_title_call_list">Content</string>
     <string name="nav_menu_title_decode_list">Decode</string>
     <string name="nav_menu_title_my_calling">Calling</string>
-    <string name="nav_menu_title_history">QSO Logs</string>
+    <string name="nav_menu_title_history">Grid · PSK</string>
     <string name="nav_menu_title_config">Settings</string>
     <string name="map_name" translatable="false">nightUSGS4Layer.sqlite</string>
 
@@ -569,7 +569,7 @@
     <string name="interval_cq_status_wait">Every %1$d min %2$s</string>
     <string name="interval_cq_watchdog_warning">TX watchdog (%1$d min) is shorter than the interval CQ period, so automatic TX will stop soon. Raise the TX watchdog or set it to (Ignore).</string>
 
-    <!--  PSK Reporter / grid button (QSO log screen) and split calling-log tab  -->
+    <!--  PSK Reporter / grid locator (PSK button, Grid / PSK tab)  -->
     <string name="psk_button_label" translatable="false">PSK</string>
     <string name="psk_grid_title">PSK / Grid locator</string>
     <string name="psk_grid_info">My call: %1$s\nMy grid: %2$s\n\nThe PSK Reporter map shows the stations that reported receiving my signal in the last 24 hours.</string>
@@ -578,7 +578,15 @@
     <string name="psk_reporter_open">Open PSK Reporter</string>
     <string name="psk_grid_qso_map">My QSO map</string>
     <string name="psk_grid_open_failed">Could not open the browser. Please try again in a moment.</string>
-    <string name="split_tab_calling">Call</string>
-    <string name="split_tab_qso_log">QSO log</string>
+    <string name="grid_psk_no_callsign_short">No callsign</string>
+    <string name="grid_psk_grid_value">My grid %1$s</string>
+    <string name="grid_psk_open_settings">Open settings</string>
+    <string name="grid_psk_show_log">QSO log</string>
+    <string name="grid_psk_show_map">Grid · PSK</string>
+    <string name="grid_psk_open_browser">Open in browser</string>
+    <string name="grid_psk_stats">QSO stats</string>
+    <string name="grid_psk_adif">Share ADIF</string>
+    <string name="grid_psk_map_offline">Could not load the PSK Reporter map.\nIf the tablet is connected to the IC-705 Wi-Fi (which has no internet), switch to mobile data or turn Wi-Fi off, then press Retry.\nYou can also open the map in your browser.</string>
+    <string name="grid_psk_retry">Retry</string>
 
 </resources>

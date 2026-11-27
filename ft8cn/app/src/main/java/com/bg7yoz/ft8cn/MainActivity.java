@@ -58,6 +58,7 @@ import androidx.navigation.ui.NavigationUI;
 import com.bg7yoz.ft8cn.bluetooth.BluetoothStateBroadcastReceive;
 import com.bg7yoz.ft8cn.callsign.CallsignDatabase;
 import com.bg7yoz.ft8cn.connector.CableSerialPort;
+import com.bg7yoz.ft8cn.connector.ConnectMode;
 import com.bg7yoz.ft8cn.database.DatabaseOpr;
 import com.bg7yoz.ft8cn.database.OnAfterQueryConfig;
 import com.bg7yoz.ft8cn.database.OperationBand;
@@ -128,16 +129,22 @@ public class MainActivity extends AppCompatActivity {
     private static final String MODE_SPECTRUM_SPLIT = "spectrumSplit";
     private static final String MODE_SPECTRUM_ONLY = "spectrumOnly";
 
-    //한국어판(0.93-kr8): 스펙트럼 3분할의 오른쪽 아래 칸을 [호출·송신] ↔ [QSO 로그]로 바꾸는 탭
-    private static final String KEY_SPLIT_CALL_TAB = "splitCallTab";
-    private static final String FRAGMENT_TAG_SPLIT_CALLING_LOG = "splitCallingLog";
+    //한국어판(0.93-kr9): 3분할 오른쪽 아래 칸에 겹쳐 두었던 [QSO 로그] 탭을 걷어 냈다.
+    //  QSO 로그는 하단 '그리드·PSK' 탭이 맡으므로, 3분할은 스펙트럼 | 디코드 / 호출(송신)만 보여 준다.
 
     //한국어판(0.93-kr4): IC-705 기준 초기 설정
     private static final String PREF_IC705_PRESET = "ic705Preset";
     private static final String KEY_IC705_PRESET_VERSION = "version";
-    private static final int IC705_PRESET_VERSION = 4;
+    private static final int IC705_PRESET_VERSION = 5;
     private static final int DEFAULT_IC705_MODEL_INDEX = 2;
     private static final int DEFAULT_NO_REPLY_LIMIT = 3;
+    //한국어판(0.93-kr9): 처음 설치 때 한 번만 넣는 내 정보·ICOM 네트워크 접속 값
+    //  (설정에 이미 값이 있으면 손대지 않는다. 비밀번호는 공개 저장소이므로 넣지 않는다)
+    private static final String DEFAULT_MY_CALLSIGN = "DS2YTO";
+    private static final String DEFAULT_MY_GRID = "PM37uu";
+    private static final String DEFAULT_ICOM_IP = "192.168.59.1";
+    private static final String DEFAULT_ICOM_USER = "DS2YTO";
+    private static final int DEFAULT_CONNECT_MODE = ConnectMode.NETWORK;
 
     private LinearLayout splitLayout;
     private LinearLayout splitRightColumn;
@@ -152,13 +159,6 @@ public class MainActivity extends AppCompatActivity {
     private View splitCallingOnlyContainer;
     private View splitLogContainer;
     private View splitCallLogHandle;
-    //한국어판(0.93-kr8): 3분할 오른쪽 아래 칸의 [호출·송신] ↔ [QSO 로그] 전환
-    private View splitCallingToggleBar;
-    private View splitCallingBody;
-    private View splitCallingLogContainer;
-    private TextView splitCallingTabCall;
-    private TextView splitCallingTabLog;
-    private boolean splitCallingLogShown = false;
     private float splitWidthRatio = DEFAULT_SPLIT_WIDTH_RATIO;
     private float splitHeightRatio = DEFAULT_SPLIT_HEIGHT_RATIO;
     private float callLogRatio = DEFAULT_CALL_LOG_RATIO;
@@ -578,7 +578,6 @@ public class MainActivity extends AppCompatActivity {
                 || FRAGMENT_TAG_SPLIT_CALLING.equals(fragmentTag)
                 || FRAGMENT_TAG_SPLIT_SPECTRUM.equals(fragmentTag)
                 || FRAGMENT_TAG_SPLIT_CALL_ONLY.equals(fragmentTag)
-                || FRAGMENT_TAG_SPLIT_CALLING_LOG.equals(fragmentTag)
                 || FRAGMENT_TAG_SPLIT_LOG.equals(fragmentTag);
     }
 
@@ -675,125 +674,8 @@ public class MainActivity extends AppCompatActivity {
         splitLayout.setVisibility(View.GONE);
         //한국어판(0.93-kr6): 호출 탭 2분할(호출 창 | QSO 로그) 패널도 함께 준비한다.
         initTabletCallLogLayout();
-        //한국어판(0.93-kr8): 3분할 오른쪽 아래 칸의 [호출·송신] ↔ [QSO 로그] 전환 탭도 준비한다.
-        initSplitCallingLogLayout();
     }
 
-    /**
-     * 한국어판(0.93-kr8): 태블릿 가로 3분할의 오른쪽 아래 칸을 [호출·송신] ↔ [QSO 로그]로 바꾼다.
-     * 두 프래그먼트(MyCallingFragment·LogFragment)를 같은 칸에 겹쳐 두고 보이는 하나만 켜므로,
-     * QSO 로그를 보는 동안에도 송신 상태와 호출 대상이 끊기지 않는다.
-     */
-    private void initSplitCallingLogLayout() {
-        splitCallingToggleBar = findViewById(R.id.splitCallingToggleBar);
-        splitCallingBody = findViewById(R.id.splitCallingBody);
-        splitCallingLogContainer = findViewById(R.id.splitCallingLogContainer);
-        splitCallingTabCall = findViewById(R.id.splitCallingTabCall);
-        splitCallingTabLog = findViewById(R.id.splitCallingTabLog);
-        if (splitCallingContainer == null || splitCallingBody == null
-                || splitCallingLogContainer == null
-                || splitCallingTabCall == null || splitCallingTabLog == null) {
-            //전환 탭이 없는 레이아웃에서는 예전처럼 호출 창만 쓴다
-            splitCallingBody = null;
-            splitCallingLogContainer = null;
-            return;
-        }
-
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment logFragment = fragmentManager.findFragmentById(R.id.splitCallingLogContainer);
-        if (logFragment == null) {
-            try {
-                fragmentManager.beginTransaction()
-                        .add(R.id.splitCallingLogContainer, new LogFragment()
-                                , FRAGMENT_TAG_SPLIT_CALLING_LOG)
-                        .commitNowAllowingStateLoss();
-            } catch (Exception e) {
-                //로그 패널을 붙이지 못하면 전환 탭 없이 호출 창만 쓴다
-                Log.e(TAG, "initSplitCallingLogLayout: QSO 로그 패널을 붙이지 못했습니다. " + e.getMessage());
-                splitCallingBody = null;
-                splitCallingLogContainer = null;
-                return;
-            }
-        }
-
-        splitCallingLogShown = getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE)
-                .getBoolean(KEY_SPLIT_CALL_TAB, false);
-        splitCallingTabCall.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showSplitCallingTab(false);
-            }
-        });
-        splitCallingTabLog.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showSplitCallingTab(true);
-            }
-        });
-        applySplitCallingTab();
-    }
-
-    /**
-     * 한국어판(0.93-kr8): 3분할 오른쪽 아래 칸에 QSO 로그를 보여 줄지(아니면 호출 창) 고른다.
-     *
-     * @param showLog QSO 로그를 보여 주려면 true
-     */
-    private void showSplitCallingTab(boolean showLog) {
-        if (splitCallingContainer == null || splitCallingLogContainer == null) {
-            return;
-        }
-        splitCallingLogShown = showLog;
-        applySplitCallingTab();
-        getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE).edit()
-                .putBoolean(KEY_SPLIT_CALL_TAB, showLog)
-                .apply();
-        if (showLog) {
-            //새 교신이 저장되는 대로 목록을 다시 읽으므로, 열자마자 지금 기록을 한 번 맞춘다
-            refreshSplitCallingLogPanel();
-        }
-    }
-
-    /**
-     * 한국어판(0.93-kr8): 기억해 둔 전환 상태를 화면에 반영하고, 고른 탭을 밝게 표시한다.
-     */
-    private void applySplitCallingTab() {
-        if (splitCallingContainer == null || splitCallingLogContainer == null) {
-            return;
-        }
-        boolean showLog = splitCallingLogShown;
-        splitCallingContainer.setVisibility(showLog ? View.GONE : View.VISIBLE);
-        splitCallingLogContainer.setVisibility(showLog ? View.VISIBLE : View.GONE);
-        styleSplitCallingTab(splitCallingTabCall, !showLog);
-        styleSplitCallingTab(splitCallingTabLog, showLog);
-    }
-
-    /**
-     * 한국어판(0.93-kr8): 전환 탭 하나의 모양(배경·글자색)을 고른 상태에 맞춘다.
-     *
-     * @param tab      탭(TextView)
-     * @param selected 지금 고른 탭이면 true
-     */
-    private void styleSplitCallingTab(TextView tab, boolean selected) {
-        if (tab == null) {
-            return;
-        }
-        tab.setBackgroundResource(selected
-                ? R.drawable.split_tab_selected : R.drawable.split_tab_normal);
-        tab.setTextColor(ContextCompat.getColor(this, selected
-                ? R.color.split_tab_text_selected : R.color.split_tab_text_normal));
-    }
-
-    /**
-     * 한국어판(0.93-kr8): 3분할의 QSO 로그 칸을 지금 검색 조건으로 다시 읽는다.
-     * 패널 프래그먼트가 아직 없거나 다른 종류면 아무것도 하지 않는다.
-     */
-    private void refreshSplitCallingLogPanel() {
-        Fragment fragment = getSupportFragmentManager()
-                .findFragmentByTag(FRAGMENT_TAG_SPLIT_CALLING_LOG);
-        if (fragment instanceof LogFragment) {
-            ((LogFragment) fragment).refreshLogPanel();
-        }
-    }
 
     /**
      * 한국어판(0.93-kr6): 태블릿 가로 호출 탭 2분할 패널을 준비한다.
@@ -859,8 +741,7 @@ public class MainActivity extends AppCompatActivity {
     private void removeSplitFragments() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         String[] tags = {FRAGMENT_TAG_SPLIT_SPECTRUM, FRAGMENT_TAG_SPLIT_DECODE
-                , FRAGMENT_TAG_SPLIT_CALLING, FRAGMENT_TAG_SPLIT_CALLING_LOG
-                , FRAGMENT_TAG_SPLIT_CALL_ONLY, FRAGMENT_TAG_SPLIT_LOG};
+                , FRAGMENT_TAG_SPLIT_CALLING, FRAGMENT_TAG_SPLIT_CALL_ONLY, FRAGMENT_TAG_SPLIT_LOG};
         FragmentTransaction transaction = null;
         for (String tag : tags) {
             Fragment fragment = fragmentManager.findFragmentByTag(tag);
@@ -890,6 +771,8 @@ public class MainActivity extends AppCompatActivity {
         if (splitLayout == null && splitCallLogLayout == null) {
             splitPanelVisible = false;
             splitCallLogVisible = false;
+            //스마트폰처럼 분할 패널이 없는 화면에서도 도구 버튼은 스펙트럼 화면에서만 보인다
+            updateFloatViewVisibility(destinationId);
             return;
         }
         if (destinationId != R.id.menu_nav_spectrum) {
@@ -914,9 +797,10 @@ public class MainActivity extends AppCompatActivity {
         }
         splitPanelVisible = showSplit;
         splitCallLogVisible = showCallLog;
-        //한국어판(0.93-kr8): 3분할에서 QSO 로그 칸을 보고 있으면, 다시 보일 때 목록을 맞춘다
-        if (showSplit && splitCallingLogShown) {
-            refreshSplitCallingLogPanel();
+        //한국어판(0.93-kr9): 3분할을 열 때마다 오른쪽 위 '디코드' 칸과 아래 '호출(송신)' 칸을
+        //  다시 한 번 보이게 하고 비율도 새로 맞춘다. (0.93-kr8 에서 디코드 칸이 접혀 사라졌다)
+        if (showSplit) {
+            showSplitDecodeAndCalling();
         }
         if (navHostContainer != null) {
             //3분할·2분할 패널을 볼 때는 뒤의 전체 화면은 보이지 않게만 둔다(프래그먼트 생명주기는 그대로)
@@ -927,8 +811,89 @@ public class MainActivity extends AppCompatActivity {
         if (isSplitPanelTab(destinationId)) {
             saveLastMode(destinationId, showSplit || showCallLog);
         }
+        //한국어판(0.93-kr9): 도구 버튼(전체화면·주파수·볼륨·지구본)은 스펙트럼 화면에서만 보인다
+        updateFloatViewVisibility(destinationId);
         //한국어판(0.93-kr5): 3분할일 때만 도구 버튼을 왼쪽 워터폴 쪽으로 옮긴다
         updateFloatViewPlacement();
+    }
+
+    /**
+     * 한국어판(0.93-kr9): 3분할의 오른쪽 위 '디코드' 칸과 오른쪽 아래 '호출(송신)' 칸을 되살린다.
+     * 0.93-kr8 에서는 오른쪽 아래에 [호출·송신] ↔ [QSO 로그] 전환 탭을 겹쳐 두었는데,
+     * 그 탭이 자리를 차지하면서 위의 디코드 칸이 0 높이로 접혔다.
+     * 그래서 3분할을 열 때마다 두 칸을 보이게 하고, 높이 비율(디코드 : 호출)을 다시 맡긴 뒤
+     * 실제로 디코드 칸이 자리를 받았는지 한 번 확인한다.
+     */
+    private void showSplitDecodeAndCalling() {
+        if (splitDecodeContainer == null || splitCallingContainer == null) {
+            return;
+        }
+        splitDecodeContainer.setVisibility(View.VISIBLE);
+        splitCallingContainer.setVisibility(View.VISIBLE);
+        applySplitRatio();
+        ensureSplitDecodeHeight();
+    }
+
+    /**
+     * 한국어판(0.93-kr9): 3분할의 디코드 칸이 화면에서 거의 사라질 만큼 접히지 않았는지 확인한다.
+     * 접혀 있으면 높이 비율을 기본값(반반)으로 되돌리고 다시 배치한다.
+     * 경계선을 끌어 바꿀 수 있는 최소 비율(20%)보다 훨씬 낮은 기준(12%)을 쓰므로, 직접 맞춘 비율은 건드리지 않는다.
+     */
+    private void ensureSplitDecodeHeight() {
+        if (splitDecodeContainer == null || splitRightColumn == null) {
+            return;
+        }
+        splitRightColumn.post(new Runnable() {
+            @Override
+            public void run() {
+                if (splitLayout == null || splitLayout.getVisibility() != View.VISIBLE
+                        || splitDecodeContainer == null || splitRightColumn == null) {
+                    return;
+                }
+                int columnHeight = splitRightColumn.getHeight();
+                if (columnHeight <= 0) {
+                    return;//아직 화면 크기가 정해지지 않았으면 다음에 열 때 다시 본다
+                }
+                //경계선으로 고를 수 있는 최소 비율(20%)보다 낮은 기준을 쓴다(직접 맞춘 비율은 건드리지 않게)
+                int minHeight = Math.max(dpToPx(24), (int) (columnHeight * 0.12f));
+                if (splitDecodeContainer.getHeight() >= minHeight) {
+                    return;
+                }
+                Log.e(TAG, String.format("ensureSplitDecodeHeight: 디코드 칸이 접혀 있어 다시 배치합니다"
+                        + " (칸 %dpx / 오른쪽 열 %dpx)"
+                        , splitDecodeContainer.getHeight(), columnHeight));
+                splitHeightRatio = DEFAULT_SPLIT_HEIGHT_RATIO;
+                applySplitRatio();
+                splitRightColumn.requestLayout();
+            }
+        });
+    }
+
+    /**
+     * 한국어판(0.93-kr9): 오른쪽에 떠 있는 도구 버튼(전체화면·주파수·볼륨·지구본)은
+     * 스펙트럼 화면(3분할·스펙트럼 단독)에서만 보여 준다.
+     * 호출·그리드·PSK·설정 화면 위로 버튼이 따라다니며 목록을 가리지 않게 하기 위해서다.
+     *
+     * @param destinationId 지금 목적지
+     */
+    private void updateFloatViewVisibility(int destinationId) {
+        if (floatView == null) {
+            return;
+        }
+        //스펙트럼 탭(3분할·단독)에서만 스펙트럼이 화면에 있다
+        boolean spectrumOnScreen = destinationId == R.id.menu_nav_spectrum;
+        floatView.setVisibility(spectrumOnScreen ? View.VISIBLE : View.GONE);
+        if (spectrumOnScreen) {
+            return;
+        }
+        //전체화면(하단 탭을 감춘 상태)으로 다른 탭에 오면 하단 탭을 되살린다(돌아갈 길을 잃지 않게)
+        if (binding != null && binding.navView.getVisibility() != View.VISIBLE) {
+            binding.navView.setVisibility(View.VISIBLE);
+            FloatViewButton button = floatView.getButtonByName("float_nav");
+            if (button != null) {
+                button.setImageResource(R.drawable.ic_baseline_fullscreen_24);
+            }
+        }
     }
 
     /**
@@ -1015,27 +980,49 @@ public class MainActivity extends AppCompatActivity {
      */
     private void applySplitRatio() {
         if (splitLayout != null) {
-            setSplitWeight(splitSpectrumContainer, splitWidthRatio);
-            setSplitWeight(splitRightColumn, 1f - splitWidthRatio);
-            setSplitWeight(splitDecodeContainer, splitHeightRatio);
-            //한국어판(0.93-kr8): 오른쪽 아래 칸은 전환 탭을 포함한 묶음(splitCallingBody)의 높이 비율이다
-            setSplitWeight(splitCallingBody != null ? splitCallingBody : splitCallingContainer
-                    , 1f - splitHeightRatio);
+            setSplitWeight(splitSpectrumContainer, splitWidthRatio, true);
+            setSplitWeight(splitRightColumn, 1f - splitWidthRatio, true);
+            setSplitWeight(splitDecodeContainer, splitHeightRatio, false);
+            setSplitWeight(splitCallingContainer, 1f - splitHeightRatio, false);
         }
         //한국어판(0.93-kr6): 호출+로그 2분할의 좌우 비율
         if (splitCallLogLayout != null) {
-            setSplitWeight(splitCallingOnlyContainer, callLogRatio);
-            setSplitWeight(splitLogContainer, 1f - callLogRatio);
+            setSplitWeight(splitCallingOnlyContainer, callLogRatio, true);
+            setSplitWeight(splitLogContainer, 1f - callLogRatio, true);
         }
     }
 
-    private void setSplitWeight(View view, float weight) {
+    /**
+     * 칸의 가중치를 맞춘다.
+     * 한국어판(0.93-kr9): 가중치를 받는 칸은 길이도 0dp 로 맞춰 둔다.
+     * 길이가 0 이 아니면 가중치가 있어도 남는 자리를 제대로 나눠 갖지 못해 칸이 접힐 수 있다.
+     *
+     * @param view       칸
+     * @param weight     가중치
+     * @param horizontal 가로로 나누는 칸이면 true(너비 0), 세로로 나누는 칸이면 false(높이 0)
+     */
+    private void setSplitWeight(View view, float weight, boolean horizontal) {
         if (view == null || !(view.getLayoutParams() instanceof LinearLayout.LayoutParams)) {
             return;
         }
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) view.getLayoutParams();
+        boolean changed = false;
         if (params.weight != weight) {
             params.weight = weight;
+            changed = true;
+        }
+        if (horizontal) {
+            if (params.width != 0) {
+                params.width = 0;
+                changed = true;
+            }
+        } else {
+            if (params.height != 0) {
+                params.height = 0;
+                changed = true;
+            }
+        }
+        if (changed) {
             view.setLayoutParams(params);
         }
     }
@@ -1045,15 +1032,6 @@ public class MainActivity extends AppCompatActivity {
             return min;
         }
         return Math.max(min, Math.min(max, ratio));
-    }
-
-    /**
-     * 한국어판(0.93-kr8): 3분할 오른쪽 아래 칸의 전환 탭 높이(px). 탭이 없으면 0.
-     *
-     * @return 전환 탭 높이
-     */
-    private int splitCallingToggleBarHeight() {
-        return splitCallingToggleBar == null ? 0 : splitCallingToggleBar.getHeight();
     }
 
     /**
@@ -1090,9 +1068,7 @@ public class MainActivity extends AppCompatActivity {
                         startSizePx = splitSpectrumContainer.getWidth();
                         startTouchPx = event.getRawX();
                     } else {
-                        //한국어판(0.93-kr8): 오른쪽 아래 칸의 전환 탭 높이는 비율 계산에서 뺀다
-                        availablePx = splitRightColumn.getHeight() - splitHorizontalHandle.getHeight()
-                                - splitCallingToggleBarHeight();
+                        availablePx = splitRightColumn.getHeight() - splitHorizontalHandle.getHeight();
                         startSizePx = splitDecodeContainer.getHeight();
                         startTouchPx = event.getRawY();
                     }
@@ -1195,10 +1171,64 @@ public class MainActivity extends AppCompatActivity {
                 {"noReplyLimit", String.valueOf(GeneralVariables.noReplyLimit)}
         });
 
+        //한국어판(0.93-kr9): 내 콜사인·그리드·ICOM 네트워크 접속 정보를 '비어 있을 때만' 한 번 채운다
+        applyMyStationPresetIfNeeded();
+
         presetPreference.edit().putInt(KEY_IC705_PRESET_VERSION, IC705_PRESET_VERSION).apply();
         Log.e(TAG, String.format("applyIc705PresetIfNeeded: IC-705 초기 설정 적용 (model=%d, civ=%s, baud=%d)"
                 , GeneralVariables.modelNo, GeneralVariables.getCivAddressStr()
                 , GeneralVariables.baudRate));
+    }
+
+    /**
+     * 한국어판(0.93-kr9): 내 콜사인·그리드·ICOM 네트워크 접속 정보를 처음 설정에 넣는다.
+     * 이미 값이 있으면(사용자가 설정에서 바꿨거나 이미 채웠으면) 그대로 둔다.
+     * 비밀번호는 공개 저장소에 들어가면 안 되므로 비워 둔다.
+     */
+    private void applyMyStationPresetIfNeeded() {
+        ArrayList<String[]> seedConfigs = new ArrayList<>();
+
+        if (isEmptyValue(GeneralVariables.myCallsign)) {
+            GeneralVariables.myCallsign = DEFAULT_MY_CALLSIGN;
+            seedConfigs.add(new String[]{"callsign", DEFAULT_MY_CALLSIGN});
+        }
+        if (isEmptyValue(GeneralVariables.getMyMaidenheadGrid())) {
+            GeneralVariables.setMyMaidenheadGrid(DEFAULT_MY_GRID);
+            seedConfigs.add(new String[]{"grid", DEFAULT_MY_GRID});
+        }
+        //ICOM 네트워크(RS-BA1) 접속: IP·사용자명. 비밀번호는 넣지 않는다.
+        if (isEmptyValue(GeneralVariables.icomIp)
+                || "255.255.255.255".equals(GeneralVariables.icomIp)) {
+            GeneralVariables.icomIp = DEFAULT_ICOM_IP;
+            seedConfigs.add(new String[]{"icomIp", DEFAULT_ICOM_IP});
+        }
+        if (isEmptyValue(GeneralVariables.icomUserName)
+                || "ic705".equalsIgnoreCase(GeneralVariables.icomUserName)) {
+            GeneralVariables.icomUserName = DEFAULT_ICOM_USER;
+            seedConfigs.add(new String[]{"icomUserName", DEFAULT_ICOM_USER});
+        }
+        //연결 방식: 네트워크
+        GeneralVariables.connectMode = DEFAULT_CONNECT_MODE;
+        seedConfigs.add(new String[]{"connectMode", String.valueOf(DEFAULT_CONNECT_MODE)});
+
+        if (!seedConfigs.isEmpty()) {
+            mainViewModel.databaseOpr.writeConfigs(seedConfigs.toArray(new String[0][]));
+            Log.e(TAG, String.format("applyMyStationPresetIfNeeded: 내 정보 초기값 %d건 적용"
+                            + " (콜사인=%s, 그리드=%s, icomIp=%s, icomUser=%s, connectMode=%d)"
+                    , seedConfigs.size(), GeneralVariables.myCallsign
+                    , GeneralVariables.getMyMaidenheadGrid(), GeneralVariables.icomIp
+                    , GeneralVariables.icomUserName, GeneralVariables.connectMode));
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr9): 값이 비어 있는지 본다.
+     *
+     * @param value 값
+     * @return null 이거나 빈 문자열(공백만 있는 것 포함)이면 true
+     */
+    private boolean isEmptyValue(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     /**
@@ -1282,6 +1312,11 @@ public class MainActivity extends AppCompatActivity {
         floatView.initLocation();
         //한국어판(0.93-kr5): 태블릿 3분할에서는 도구 버튼을 왼쪽 워터폴 쪽으로 옮긴다.
         updateFloatViewPlacement();
+        //한국어판(0.93-kr9): 앱을 켜자마자 스펙트럼 화면이 아니면 도구 버튼을 감춘다.
+        NavDestination startDestination = navController == null ? null : navController.getCurrentDestination();
+        if (startDestination != null) {
+            updateFloatViewVisibility(startDestination.getId());
+        }
     }
 
     /**

@@ -37,8 +37,16 @@
         tools:layout="@layout/fragment_spectrum" />
     <fragment
         android:id="@+id/menu_nav_history"
-        android:name="com.bg7yoz.ft8cn.ui.LogFragment"
-        android:label="@string/nav_menu_title_history" />
+        android:name="com.bg7yoz.ft8cn.ui.GridPskFragment"
+        android:label="@string/nav_menu_title_history"
+        tools:layout="@layout/fragment_grid_psk">
+        <!-- 한국어판(0.93-kr9): 디코드·호출 목록에서 '이 국의 교신 기록 보기'로 들어오면
+             그리드·PSK 화면 대신 그 화면의 QSO 로그 목록을 바로 연다 -->
+        <argument
+            android:name="showLog"
+            android:defaultValue="false"
+            app:argType="boolean" />
+    </fragment>
     <fragment
         android:id="@+id/countFragment"
         android:name="com.bg7yoz.ft8cn.count.CountFragment"

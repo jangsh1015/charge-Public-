@@ -54,7 +54,7 @@
                 android:id="@+id/splitSpectrumContainer"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="55" />
+                android:layout_weight="0.55" />
 
             <View
                 android:id="@+id/splitVerticalHandle"
@@ -68,7 +68,7 @@
                 android:id="@+id/splitRightColumn"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="45"
+                android:layout_weight="0.45"
                 android:baselineAligned="false"
                 android:orientation="vertical">
 
@@ -76,7 +76,7 @@
                     android:id="@+id/splitDecodeContainer"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_weight="50" />
+                    android:layout_weight="0.5" />
 
                 <View
                     android:id="@+id/splitHorizontalHandle"
@@ -86,69 +86,13 @@
                     android:clickable="true"
                     android:focusable="false" />
 
-                <!-- 한국어판(0.93-kr8): 오른쪽 아래 칸을 [호출·송신] ↔ [QSO 로그]로 바꾸는 탭 -->
-                <LinearLayout
-                    android:id="@+id/splitCallingToggleBar"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/list_header_bar_color"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal"
-                    android:paddingStart="4dp"
-                    android:paddingTop="2dp"
-                    android:paddingEnd="4dp"
-                    android:paddingBottom="2dp">
-
-                    <TextView
-                        android:id="@+id/splitCallingTabCall"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/split_tab_selected"
-                        android:gravity="center"
-                        android:minHeight="30dp"
-                        android:paddingTop="4dp"
-                        android:paddingBottom="4dp"
-                        android:text="@string/split_tab_calling"
-                        android:textColor="@color/split_tab_text_selected"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/splitCallingTabLog"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/split_tab_normal"
-                        android:gravity="center"
-                        android:minHeight="30dp"
-                        android:paddingTop="4dp"
-                        android:paddingBottom="4dp"
-                        android:text="@string/split_tab_qso_log"
-                        android:textColor="@color/split_tab_text_normal"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <!-- 한국어판(0.93-kr8): 호출 창과 QSO 로그를 같은 칸에 겹쳐 두고 보이는 하나만 켠다
-                     (두 프래그먼트가 모두 살아 있어 로그를 보는 동안에도 송신이 끊기지 않는다) -->
-                <FrameLayout
-                    android:id="@+id/splitCallingBody"
+                <!-- 한국어판(0.93-kr9): 3분할 오른쪽 아래는 다시 호출(송신) 창 하나만 둔다.
+                     QSO 로그는 아래 '그리드·PSK' 탭이 맡으므로 여기서 탭을 겹치지 않는다. -->
+                <androidx.fragment.app.FragmentContainerView
+                    android:id="@+id/splitCallingContainer"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_weight="50">
-
-                    <androidx.fragment.app.FragmentContainerView
-                        android:id="@+id/splitCallingContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
-
-                    <androidx.fragment.app.FragmentContainerView
-                        android:id="@+id/splitCallingLogContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@color/log_panel_background"
-                        android:visibility="gone" />
-                </FrameLayout>
+                    android:layout_weight="0.5" />
             </LinearLayout>
         </LinearLayout>
 
@@ -170,7 +114,7 @@
                 android:id="@+id/splitCallingOnlyContainer"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="50" />
+                android:layout_weight="0.5" />
 
             <View
                 android:id="@+id/splitCallLogHandle"
@@ -184,7 +128,7 @@
                 android:id="@+id/splitLogContainer"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="50"
+                android:layout_weight="0.5"
                 android:background="@color/log_panel_background" />
         </LinearLayout>
 

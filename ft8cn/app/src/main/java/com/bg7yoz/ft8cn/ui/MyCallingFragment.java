@@ -261,7 +261,11 @@ public class MyCallingFragment extends Fragment {
         mainViewModel.queryKey=callsign;//把呼号作为关键字提交
         NavController navController = Navigation.findNavController(requireActivity()
                 , R.id.fragmentContainerView);
-        navController.navigate(R.id.action_menu_nav_mycalling_to_menu_nav_history);//跳转到日志
+        //한국어판(0.93-kr9): 하단 'QSO 로그' 탭이 '그리드·PSK' 화면으로 바뀌었으므로,
+        //  이 국의 교신 기록을 볼 때는 그 화면의 QSO 로그 목록을 바로 연다
+        Bundle logArgs = new Bundle();
+        logArgs.putBoolean("showLog", true);
+        navController.navigate(R.id.action_menu_nav_mycalling_to_menu_nav_history, logArgs);//跳转到日志
     }
     /**
      * 查询QRZ信息

@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr8` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr9` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -227,6 +227,50 @@
   살아 있습니다. 고른 탭은 `SharedPreferences`(`tabletSplit`/`splitCallTab`)에 기억하고,
   로그 탭을 열 때·3분할이 다시 보일 때(`updateSplitVisibility()`) `LogFragment.refreshLogPanel()` 로
   최신 목록을 읽습니다. 경계선을 끌 때의 높이 비율 계산에서는 탭 높이를 빼고 `splitCallingBody` 에 무게를 줍니다.
+  *(이 전환 탭은 0.93-kr9 에서 걷어 냈습니다 — 아래 (10) 참고. 그 구조에서 디코드 칸이 접혔습니다.)*
+
+### (10) 0.93-kr9에서 더한 것
+- **스펙트럼 3분할 복구(디코드 칸이 접히던 문제)**: 원인은 높이 비율을 넣는 `setSplitWeight()` 가
+  XML 의 `layout_weight`(50·45·55 같은 큰 정수)와 섞여 쓰인 것이었습니다. 코드는 비율을 0.5 같은
+  **소수**로 넣는데, 0.93-kr8 에서 오른쪽 아래 칸을 `splitCallingBody`(FrameLayout, XML 무게 50)로 감싸면서
+  디코드 칸만 0.5 로 바뀌고 아래 칸은 50 으로 남았습니다. LinearLayout 은 무게의 합으로 나누므로
+  디코드 칸은 0.5/50.5 ≈ 1% 로 접혀 사라졌습니다(kr7 까지는 두 칸이 모두 0.5 로 바뀌어 반반이었습니다).
+  그래서 세 가지를 함께 했습니다.
+  1. 0.93-kr8 의 `splitCallingToggleBar`·`splitCallingBody` 를 걷어 내고 오른쪽 열을 다시
+     `splitDecodeContainer` / `splitHorizontalHandle` / `splitCallingContainer` 세 자식으로 되돌렸습니다.
+  2. XML 의 `layout_weight` 를 코드가 쓰는 비율과 같은 소수(0.55/0.45, 0.5/0.5)로 맞춰
+     한쪽만 갱신돼도 단위가 어긋나지 않게 했습니다.
+  3. 3분할을 보여 줄 때마다 `showSplitDecodeAndCalling()` 이 두 칸을 `VISIBLE` 로 되돌리고
+     `applySplitRatio()` 로 **두 칸 모두** 비율을 다시 맡기며, `ensureSplitDecodeHeight()` 가
+     배치 뒤에 디코드 칸 높이를 확인해 (오른쪽 열의 12% 또는 24dp 보다 작으면)
+     비율을 기본값(반반)으로 되돌려 다시 배치합니다. `setSplitWeight(view, weight, horizontal)` 은
+     가중치를 받는 칸의 길이도 0dp 로 맞춰 남는 자리를 정확히 나누게 합니다.
+- **보라색 도구 버튼이 다른 탭을 가리던 문제**: 원인은 `LogFragment` 가 아니라
+  `MainActivity` 가 모든 화면 위에 얹어 둔 `floatView`(전체화면·주파수·볼륨·지구본 4버튼)였습니다.
+  `updateFloatViewVisibility(destinationId)` 를 더해 **스펙트럼 탭일 때만 `VISIBLE`**,
+  나머지 화면에서는 `GONE` 으로 둡니다. 전체화면(하단 탭 감추기) 상태로 다른 탭에 가면
+  하단 탭을 되살려 돌아갈 길을 잃지 않게 했습니다.
+- **하단 QSO 로그 탭 → 그리드·PSK 전용 화면**: `menu_nav_history` 목적지를 `LogFragment` 에서
+  새 `GridPskFragment` 로 바꾸고, 탭 이름을 `nav_menu_title_history` = `그리드·PSK`(영문 `Grid · PSK`)로 바꿨습니다.
+  - 위쪽 카드: `GeneralVariables.myCallsign` · `getMyMaidenheadGrid()`(6자리) · `getMyMaidenhead4Grid()`(4자리) ·
+    `getBandString()`. 콜사인이 없으면 `[설정 열기]`(`menu_nav_config`).
+    `mutableBandChange`·`mutableMyMaidenheadGrid`·`timerSec` 를 지켜보며 바뀔 때만 다시 씁니다.
+  - PSK Reporter 지도: `WebView` 로 `https://pskreporter.info/pskmap.html?preset&callsign=<내콜사인>&txrx=tx&timerange=86400`
+    을 바로 읽습니다(JavaScript·DOM 저장소 켜기). `onReceivedError`(본문/구식 모두)에서
+    안내 문구 + `[다시 시도]` 를 띄우고, `[브라우저로 열기]` 로 `ACTION_VIEW` 도 열어 둡니다.
+    `ConnectivityManager` 로 인터넷을 먼저 확인하며, `onDestroyView()` 에서 `destroy()` 로 정리합니다.
+  - 바로 가기: `[내 교신 지도]`(`GridTrackerMainActivity`) · `[교신 통계]`(`countFragment`) ·
+    `[ADIF 공유]`(`LogFragment.shareAdifFile()` — 기존 `buildShareLogs()` 를 그대로 호출) ·
+    `[QSO 로그]`(같은 화면에서 `LogFragment` 로 바꿔 보기, `getChildFragmentManager()` 로 한 번만 붙여 계속 살려 둠).
+    스마트폰에서도 기존 로그 목록·검색·필터·내보내기를 그대로 쓸 수 있습니다.
+- **인터넷 접근 권한**: `AndroidManifest.xml` 에 `android.permission.INTERNET` 추가(설치 때 묻지 않는 권한).
+  앱 안의 `WebView` 와 웹 UI(`LogHttpServer`)가 함께 씁니다.
+- **처음 한 번 채우는 내 정보 프리셋**: `applyIc705PresetIfNeeded()`(프리셋 판 번호 `IC705_PRESET_VERSION = 5`)가
+  `applyMyStationPresetIfNeeded()` 를 불러, **DB 값이 비어 있을 때만** 다음을 넣습니다.
+  - `callsign` = `DS2YTO`, `grid` = `PM37uu` (설정에서 이미 넣은 값은 덮어쓰지 않음)
+  - `icomIp` = `192.168.59.1`, `icomUserName` = `DS2YTO` (값이 없거나 기본값 `255.255.255.255`·`ic705` 일 때만)
+  - `connectMode` = `2`(네트워크) — 이 값을 DB에 남기도록 `DatabaseOpr` 에 읽기, `ConfigFragment` 에 쓰기를 더했습니다.
+  - `icomPassword` 는 **공개 저장소이므로 넣지 않습니다**(처음 연결할 때 설정에서 직접 입력).
 
 ---
 
@@ -286,12 +330,15 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `tools/check_kr6.py` | (kr6) 호출+로그 2분할 배선·디코드 2열 조건·버전·문서 표기 검사 |
 | `tools/check_kr7.py` | (kr7) 원터치 탭 배선·딥 디코드 즉시 응답·무응답 횟수 준수·버전 표기 검사 |
 | `tools/check_kr8.py` | (kr8) QSO 로그 실시간 갱신 배선(DB 알림→LiveData→observe)·로그 패널 바탕색·[PSK] 버튼·3분할 로그 탭·버전 표기 검사 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/GridPskFragment.java` | (kr9) 그리드·PSK 탭 화면 — 내 콜사인·그리드·밴드 카드, PSK Reporter 지도(WebView), 내 교신 지도·통계·ADIF 공유·QSO 로그 보기 |
+| `ft8cn/app/src/main/res/layout/fragment_grid_psk.xml` | (kr9) 그리드·PSK 화면 레이아웃(위쪽 카드·바로 가기 버튼 줄·지도/로그 패널) |
+| `tools/check_kr9.py` | (kr9) 3분할 복구·도구 버튼 가시성·그리드·PSK 화면 배선·탭 이름·버전 표기 검사 |
 
 고친 파일
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr8`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr9`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |
@@ -304,15 +351,15 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/connector/CableConnector.java` | (kr2) 시리얼 연결 끊김 안내를 리소스 문자열로 변경 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/html/LogHttpServer.java` | (kr2) 웹 UI 업로드 버튼 문구를 리소스 문자열로 변경 |
 | `ft8cn/app/src/main/res/values*/strings.xml` | (kr2) `readme_help`, `rig_address_file`, `html_upload`, `serial_connection_lost` 추가 (zh 계열은 중국어 원문 파일 유지) |
-| `ft8cn/app/src/main/res/layout*/main_activity.xml` | (kr6) `splitCallLogLayout`(호출 창 / QSO 로그 2분할) 추가 — 폰·가로·태블릿 3개 변형 모두 `visibility="gone"`. (kr8) `splitLogContainer` 에 `log_panel_background` 바탕색. (kr8) 3분할 오른쪽 아래 칸에 `splitCallingToggleBar`(호출·송신 / QSO 로그 탭)와 `splitCallingBody` 안의 `splitCallingLogContainer` 추가 |
+| `ft8cn/app/src/main/res/layout*/main_activity.xml` | (kr6) `splitCallLogLayout`(호출 창 / QSO 로그 2분할) 추가 — 폰·가로·태블릿 3개 변형 모두 `visibility="gone"`. (kr8) `splitLogContainer` 에 `log_panel_background` 바탕색. (kr9) 3분할 오른쪽 열을 `splitDecodeContainer` · `splitHorizontalHandle` · `splitCallingContainer` 로 복구(0.93-kr8 의 `splitCallingToggleBar`·`splitCallingBody` 제거) |
 | `ft8cn/app/src/main/res/layout/fragment_log.xml` | (kr6) 제목 막대 색을 `list_header_bar_color`(어두운 인디고)로. (kr8) 목록 바탕을 `log_panel_background` 로. (kr8) 지도(핀) 버튼 → `pskGridButton`(`PSK` 글자) |
-| `ft8cn/app/src/main/res/values*/strings.xml`, `values-ko/strings.xml` | (kr8) `psk_button_label`·`psk_grid_title`·`psk_grid_info`·`psk_grid_no_callsign`·`psk_grid_no_internet`·`psk_reporter_open`·`psk_grid_qso_map`·`psk_grid_open_failed`·`split_tab_calling`·`split_tab_qso_log` |
+| `ft8cn/app/src/main/res/values*/strings.xml`, `values-ko/strings.xml` | (kr8) `psk_button_label`·`psk_grid_title`·`psk_grid_info`·`psk_grid_no_callsign`·`psk_grid_no_internet`·`psk_reporter_open`·`psk_grid_qso_map`·`psk_grid_open_failed`. (kr9) `grid_psk_*` 10개, 하단 탭 이름 `nav_menu_title_history` → `그리드·PSK` |
 | `ft8cn/app/src/main/res/drawable/split_tab_selected.xml`, `split_tab_normal.xml` | (kr8) 3분할 전환 탭 배경 |
 | `ft8cn/app/src/main/res/values*/colors.xml` | (kr8) `split_tab_text_selected`, `split_tab_text_normal` |
-| `ft8cn/app/src/main/AndroidManifest.xml` | (kr8) `ACCESS_NETWORK_STATE` (PSK 버튼의 인터넷 확인용, 허가 창 없음) |
+| `ft8cn/app/src/main/AndroidManifest.xml` | (kr8) `ACCESS_NETWORK_STATE` (PSK 버튼의 인터넷 확인용, 허가 창 없음). (kr9) `INTERNET` (앱 안 PSK Reporter 지도용, 허가 창 없음) |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/database/DatabaseOpr.java` | (kr8) `OnQsoLogChanged` 리스너 — `doInsertQSLData()` 가 QSO 기록을 저장하면 알림 |
-| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/LogFragment.java` | (kr8) `mutableQsoLogUpdated` 관찰로 새 교신 저장 시 목록 자동 갱신, `refreshLogPanel()`·`onResume()` 재읽기. (kr8) [PSK] 버튼 — 내 콜사인·그리드 다이얼로그, PSK Reporter 열기(예외·인터넷 확인), 내 교신 지도 |
-| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/MainActivity.java` | (kr8) 호출 탭 2분할이 보일 때 `refreshLogPanel()` 호출. (kr8) 3분할 [호출·송신]/[QSO 로그] 전환 탭 — 탭 부착·전환·기억·재읽기 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/LogFragment.java` | (kr8) `mutableQsoLogUpdated` 관찰로 새 교신 저장 시 목록 자동 갱신, `refreshLogPanel()`·`onResume()` 재읽기. (kr8) [PSK] 버튼 — 내 콜사인·그리드 다이얼로그, PSK Reporter 열기(예외·인터넷 확인), 내 교신 지도. (kr9) `shareAdifFile()` — 그리드·PSK 탭의 [ADIF 공유] 가 부르는 공개 함수 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/MainActivity.java` | (kr8) 호출 탭 2분할이 보일 때 `refreshLogPanel()` 호출. (kr9) 3분할 디코드 칸 복구(`showSplitDecodeAndCalling()`·`ensureSplitDecodeHeight()`·가중치에 길이 0dp 맞춤), 도구 버튼을 스펙트럼 화면에서만 표시(`updateFloatViewVisibility()`) |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | (kr8) 송신 감시 기본값 `DEFAULT_LAUNCH_SUPERVISION` → `0`(무시), 예전 기본값(10분) 상수 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/ConfigFragment.java` | (kr8) 송신 감시 스피너 — 값이 같으면 DB에 쓰지 않음(설정을 열기만 해도 저장되던 것 방지) |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListFragment.java` | (kr6) 태블릿 가로 단독 화면에서 `GridLayoutManager(2)` 2열 보기 |
@@ -333,6 +380,7 @@ python3 tools/check_kr4.py        # 3분할 패널·데이터바인딩 필드
 python3 tools/check_kr6.py        # 호출+로그 2분할·디코드 2열·버전 표기
 python3 tools/check_kr7.py        # 원터치 호출·딥 디코드 즉시 응답·무응답 횟수·버전 표기
 python3 tools/check_kr8.py        # QSO 로그 실시간 갱신 배선·로그 패널 바탕색·버전 표기
+python3 tools/check_kr9.py        # 3분할 복구·도구 버튼 가시성·그리드·PSK 화면·버전 표기
 ```
 
 검사 항목: 모든 XML well-formed, 모든 Java 파일 문법 파싱, `R.string`/`@string`/`R.id`/`@id`/`R.layout`

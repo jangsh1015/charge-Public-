@@ -240,6 +240,17 @@ public class LogFragment extends Fragment {
 
 
     /**
+     * 한국어판(0.93-kr9): 지금 검색 조건의 교신 기록을 ADIF 파일로 만들어 공유한다.
+     * '그리드·PSK' 탭의 [ADIF 공유] 버튼이 이 화면에 그대로 맡기도록 열어 둔 길이다.
+     */
+    public void shareAdifFile() {
+        if (binding == null || !isAdded()) {
+            return;
+        }
+        buildShareLogs();
+    }
+
+    /**
      * 显示生成log的对话框
      */
     private void showShareDialog() {

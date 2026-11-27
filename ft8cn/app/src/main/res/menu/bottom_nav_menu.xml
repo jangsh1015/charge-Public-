@@ -13,9 +13,10 @@
         android:id="@+id/menu_nav_spectrum"
         android:icon="@drawable/ic_nav_spectrum_24"
         android:title="@string/spectrum" />
+    <!-- 한국어판(0.93-kr9): QSO 로그 탭을 '그리드·PSK' 전용 화면으로 바꿔 지구본 아이콘을 쓴다 -->
     <item
         android:id="@+id/menu_nav_history"
-        android:icon="@drawable/ic_baseline_history_24"
+        android:icon="@drawable/ic_baseline_grid_tracker_24"
         android:title="@string/nav_menu_title_history" />
     <item
         android:id="@+id/menu_nav_config"

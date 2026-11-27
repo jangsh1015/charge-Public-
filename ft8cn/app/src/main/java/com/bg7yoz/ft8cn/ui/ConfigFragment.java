@@ -1363,6 +1363,8 @@ public class ConfigFragment extends Fragment {
                 }else if (buttonId==binding.networkConnectRadioButton.getId()){
                     GeneralVariables.connectMode=ConnectMode.NETWORK;
                 }
+                //한국어판(0.93-kr9): 고른 연결 방식을 DB에 저장해 앱을 다시 켜도 유지한다
+                writeConfig("connectMode", String.valueOf(GeneralVariables.connectMode));
                 //------显示蓝牙列表，并选择，然后建立蓝牙连接
                 if (GeneralVariables.connectMode == ConnectMode.BLUE_TOOTH) {
                     //根据安卓12，要判断一下蓝牙权限：

@@ -24,6 +24,38 @@ Credits
 
 Korean edition changes
 
+  0.93-kr9
+   1. The spectrum three-pane view on a tablet in landscape is back to three panes:
+      spectrum | decode / call (TX). In 0.93-kr8 the bottom-right pane carried [Call] and
+      [QSO log] tabs, the height weights of the panes were mixed up (one pane used a
+      0.5 ratio while the other kept the old 50), so the top-right decode pane collapsed
+      to about 1% height and disappeared. The tabs are gone, and every time the three-pane view
+      opens the app sets the height ratio of the two panes again and checks that the decode
+      pane really got its share, restoring it if it collapsed.
+   2. The round purple tool buttons (full screen, frequency, volume, globe) that used to
+      follow you onto the Call, Grid/PSK and Settings screens now appear only on the
+      spectrum screen, so they no longer cover a list. If you leave full screen (hidden
+      bottom tabs) for another screen, the bottom tabs come back by themselves.
+   3. The bottom [QSO Logs] tab is now the [Grid / PSK] tab, so the bottom tabs no longer
+      overlap: Decode (two columns) / Call (calling + QSO log) / Spectrum (three panes) /
+      Grid / PSK (its own screen) / Settings.
+      - The top shows my call sign, my grid (6 characters, with the 4-character one too)
+        and the band/frequency in large type. If no call sign is set, an [Open settings]
+        button takes you straight to Settings.
+      - The PSK Reporter map (stations that reported receiving my signal in the last
+        24 hours) opens right inside the app. Without internet it shows a note and
+        [Retry], and [Open in browser] opens the map in the phone browser.
+      - [My QSO map], [QSO stats], [Share ADIF] and [QSO log] sit on one row. [QSO log]
+        switches this screen to the existing log list (search, filter, export and sharing
+        as before), so a phone does not lose the log features.
+   4. The app now asks for internet access so it can show the PSK Reporter map inside
+      the app. (It is a permission that is not prompted for at install time.)
+   5. A first-run preset fills in settings only once, and only where they are still empty.
+      - My call sign DS2YTO, my grid PM37uu
+      - ICOM network (RS-BA1): address 192.168.59.1, user name DS2YTO, connection mode Network
+      - No password is included. Enter it in Settings when you first connect.
+      Anything you have already set in Settings is kept and never overwritten.
+
   0.93-kr8
    1. On a tablet in landscape, the QSO log on the right of the Call tab now updates by itself
       each time a contact completes (once 73 has been exchanged). Before, the list was read

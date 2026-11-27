@@ -2176,6 +2176,14 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                 if (name.equalsIgnoreCase("instruction")) {//指令集
                     GeneralVariables.instructionSet = result.equals("") ? 0 : Integer.parseInt(result);
                 }
+                if (name.equalsIgnoreCase("connectMode")) {//한국어판(0.93-kr9): 연결 방식(0 USB·1 블루투스·2 네트워크)
+                    try {
+                        GeneralVariables.connectMode = result.equals("")
+                                ? GeneralVariables.connectMode : Integer.parseInt(result);
+                    } catch (Exception e) {
+                        Log.e("DatabaseOpr", "connectMode: 연결 방식을 읽지 못했습니다. " + e.getMessage());
+                    }
+                }
                 if (name.equalsIgnoreCase("launchSupervision")) {//发射监管
                     //한국어판(0.93-kr8): DB에 값이 없을 때는 '무시'(0, 제한 없음)로 둔다.
                     //  자동 송신을 켜 두면 설정을 건드리지 않아도 끌 때까지 계속 돌아가게 하기 위해서다.

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 한국어판(0.93-kr9): 하단 '그리드·PSK' 탭. 내 콜사인·그리드·밴드를 한눈에 보여 주고,
+     PSK Reporter 전파 지도를 앱 안에서 바로 열며, 내 교신 지도·통계·ADIF 공유·QSO 로그 목록으로 이어진다. -->
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/log_panel_background"
+        android:orientation="vertical">
+
+    <!-- 내 콜사인 · 내 그리드 · 밴드/주파수 -->
+    <LinearLayout
+        android:id="@+id/gridHeaderLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/list_header_bar_color"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="6dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/myCallsignText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                tools:text="DS2YTO" />
+
+            <TextView
+                android:id="@+id/myGridText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="13sp"
+                tools:text="그리드 PM37uu (PM37)" />
+
+            <TextView
+                android:id="@+id/bandFreqText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="13sp"
+                tools:text="7.074MHz (40m)" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/gridSettingsButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:minWidth="0dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="@string/grid_psk_open_settings"
+            android:textSize="12sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+    <!-- 바로 가기 버튼 줄 -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/log_panel_background"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp">
+
+            <Button
+                android:id="@+id/logToggleButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/grid_psk_show_log"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/browserButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/grid_psk_open_browser"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/qsoMapButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/psk_grid_qso_map"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/statsButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/grid_psk_stats"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/adifButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/grid_psk_adif"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- PSK Reporter 전파 지도(인터넷이 잡히면 바로 뜬다) -->
+        <WebView
+            android:id="@+id/pskMapWebView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/log_panel_background" />
+
+        <!-- 인터넷이 없거나 지도를 열지 못했을 때의 안내 -->
+        <LinearLayout
+            android:id="@+id/pskOfflineLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/log_panel_background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/pskOfflineText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:lineSpacingExtra="3dp"
+                android:text="@string/grid_psk_map_offline"
+                android:textColor="@color/text_view_color"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/pskRetryButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="@string/grid_psk_retry"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 전체 QSO 로그 목록(스마트폰에서도 기존 로그 기능을 그대로 쓴다) -->
+        <LinearLayout
+            android:id="@+id/logPanelLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/log_panel_background"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/gridLogContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>
+</layout>

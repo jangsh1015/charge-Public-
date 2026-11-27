@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """0.93-kr8 변경(QSO 로그 실시간 갱신 · 로그 패널 바탕색 · 송신 감시 기본 무시 ·
-[PSK] 버튼 · 스펙트럼 3분할의 [호출·송신]/[QSO 로그] 전환 탭)에 대한 추가 정적 검증.
+[PSK] 버튼)에 대한 추가 정적 검증.
 
 check_source.py · check_kr4.py · check_kr6.py · check_kr7.py 가 보지 않는 것들을 확인한다.
   1) 버전 표기가 0.93-kr8 (versionCode 8)이고 문서·readme 에 내역이 맨 위에 있는지
@@ -11,8 +11,8 @@ check_source.py · check_kr4.py · check_kr6.py · check_kr7.py 가 보지 않�
   4) 송신 감시(Tx watchdog) 기본값 0(무시) — GeneralVariables·DatabaseOpr·ConfigFragment
   5) [PSK] 버튼: fragment_log.xml 의 pskGridButton, LogFragment 의 다이얼로그·PSK Reporter 주소·
      예외 보호·인터넷 확인, 내 콜사인·그리드를 설정값에서 그때그때 읽는지
-  6) 스펙트럼 3분할 [호출·송신]/[QSO 로그] 전환 탭: 레이아웃 세 변형의 탭·겹친 컨테이너,
-     MainActivity 의 전환·기억·재읽기, 프래그먼트를 지우지 않고 보이기만 바꾸는지
+  6) 스펙트럼 3분할 [호출·송신]/[QSO 로그] 전환 탭은 0.93-kr9 에서 걷어 냈으므로,
+     그 흔적(탭·겹친 컨테이너·전환 함수)이 남아 있지 않은지
   7) 피클·AI 언급이 사용자 문서에 들어가지 않았는지
 """
 import io
@@ -44,11 +44,14 @@ def strip_comments(txt):
 
 
 # --- 1) 버전·문서 -----------------------------------------------------------
+# 0.93-kr9부터는 이 검사를 'kr8 이상'으로 본다(과거 버전 검사가 최신 빌드를 막지 않게).
 gradle = read(os.path.join(ROOT, "ft8cn", "app", "build.gradle"))
-if "versionCode 8" not in gradle:
-    err("build.gradle versionCode 가 8 이 아님")
-if "versionName '0.93-kr8'" not in gradle:
-    err("build.gradle versionName 이 0.93-kr8 이 아님")
+m = re.search(r"versionCode\s+(\d+)", gradle)
+if not m or int(m.group(1)) < 8:
+    err("build.gradle versionCode 가 8 이상이 아님 (%s)" % (m.group(1) if m else "없음"))
+m = re.search(r"versionName\s+'(0\.93-kr(\d+))'", gradle)
+if not m or int(m.group(2)) < 8:
+    err("build.gradle versionName 이 0.93-kr8 이상이 아님")
 
 DOCS = [("readme_ko.txt", os.path.join(APP, "assets", "readme_ko.txt")),
         ("readme_en.txt", os.path.join(APP, "assets", "readme_en.txt")),
@@ -62,8 +65,8 @@ for name in ["readme_ko.txt", "readme_en.txt"]:
     versions = re.findall(r"^\s{2}(0\.93-kr(\d))\s*$", txt, flags=re.M)
     if not versions:
         err("%s 에서 버전 목록을 찾지 못함" % name)
-    elif versions[0][0] != "0.93-kr8":
-        err("%s 의 첫 버전이 0.93-kr8 이 아님 (%s)" % (name, versions[0][0]))
+    elif int(versions[0][1]) < 8:
+        err("%s 의 첫 버전이 0.93-kr8 보다 낮음 (%s)" % (name, versions[0][0]))
 
 # --- 2) QSO 로그 실시간 갱신 -------------------------------------------------
 db = strip_comments(read(os.path.join(JAVA, "database", "DatabaseOpr.java")))
@@ -234,13 +237,13 @@ base_strings = read(os.path.join(RES, "values", "strings.xml"))
 ko_strings = read(os.path.join(RES, "values-ko", "strings.xml"))
 for name in ["psk_button_label", "psk_grid_title", "psk_grid_info", "psk_grid_no_callsign",
              "psk_grid_no_internet", "psk_reporter_open", "psk_grid_qso_map",
-             "psk_grid_open_failed", "split_tab_calling", "split_tab_qso_log"]:
+             "psk_grid_open_failed"]:
     if 'name="%s"' % name not in base_strings:
         err("values/strings.xml 에 %s 가 없음" % name)
     if 'name="%s"' % name not in ko_strings:
         err("values-ko/strings.xml 에 %s 가 없음" % name)
 
-# --- 6) 스펙트럼 3분할 [호출·송신] / [QSO 로그] 전환 탭 -----------------------
+# --- 6) 3분할 [호출·송신]/[QSO 로그] 전환 탭은 0.93-kr9 에서 걷어 냄 -------------------
 A = "{http://schemas.android.com/apk/res/android}"
 for variant in ["layout", "layout-land", "layout-sw600dp-land"]:
     p = os.path.join(RES, variant, "main_activity.xml")
@@ -248,10 +251,10 @@ for variant in ["layout", "layout-land", "layout-sw600dp-land"]:
         err("%s/main_activity.xml 없음" % variant)
         continue
     txt = read(p)
-    for need in ["splitCallingToggleBar", "splitCallingBody", "splitCallingTabCall",
+    for gone in ["splitCallingToggleBar", "splitCallingBody", "splitCallingTabCall",
                  "splitCallingTabLog", "splitCallingLogContainer"]:
-        if ("@+id/" + need) not in txt:
-            err("%s/main_activity.xml 에 @+id/%s 없음" % (variant, need))
+        if ("@+id/" + gone) in txt:
+            err("%s/main_activity.xml 에 0.93-kr9 에서 걷어 낸 %s 가 남아 있음" % (variant, gone))
     try:
         root = ET.fromstring(txt)
     except Exception as e:  # noqa: BLE001
@@ -261,60 +264,34 @@ for variant in ["layout", "layout-land", "layout-sw600dp-land"]:
     for el in root.iter():
         elements.setdefault(el.get(A + "id"), el)
     right = elements.get("@+id/splitRightColumn")
-    body = elements.get("@+id/splitCallingBody")
-    toggle = elements.get("@+id/splitCallingToggleBar")
-    if right is None or body is None or toggle is None:
-        err("%s: splitRightColumn/splitCallingBody/splitCallingToggleBar 를 찾지 못함" % variant)
+    if right is None:
+        err("%s: splitRightColumn 을 찾지 못함" % variant)
         continue
     right_kids = [k.get(A + "id") for k in list(right)]
-    for need in ["@+id/splitCallingToggleBar", "@+id/splitCallingBody"]:
+    for need in ["@+id/splitDecodeContainer", "@+id/splitHorizontalHandle",
+                 "@+id/splitCallingContainer"]:
         if need not in right_kids:
             err("%s: 오른쪽 열의 자식에 %s 없음 (실제: %s)" % (variant, need, right_kids))
-    body_kids = [k.get(A + "id") for k in list(body)]
-    for need in ["@+id/splitCallingContainer", "@+id/splitCallingLogContainer"]:
-        if need not in body_kids:
-            err("%s: splitCallingBody 의 자식에 %s 없음 (실제: %s)" % (variant, need, body_kids))
-    log_el = None
-    for k in list(body):
-        if k.get(A + "id") == "@+id/splitCallingLogContainer":
-            log_el = k
-    if log_el is not None and log_el.get(A + "visibility") != "gone":
-        err("%s: splitCallingLogContainer 는 기본 gone 이어야 함" % variant)
-    toggle_kids = [k.get(A + "id") for k in list(toggle)]
-    for need in ["@+id/splitCallingTabCall", "@+id/splitCallingTabLog"]:
-        if need not in toggle_kids:
-            err("%s: splitCallingToggleBar 의 자식에 %s 없음 (실제: %s)"
-                % (variant, need, toggle_kids))
+    decode = elements.get("@+id/splitDecodeContainer")
+    calling = elements.get("@+id/splitCallingContainer")
+    for name, el in [("splitDecodeContainer", decode), ("splitCallingContainer", calling)]:
+        if el is None:
+            continue
+        if el.get(A + "layout_height") != "0dp":
+            err("%s: %s 의 높이는 0dp 여야 함 (%s)" % (variant, name, el.get(A + "layout_height")))
+        if el.get(A + "layout_weight") is None:
+            err("%s: %s 에 layout_weight 가 없음" % (variant, name))
 
-for need, why in [
-    ("private void initSplitCallingLogLayout()", "3분할 로그 칸을 준비하는 함수가 없음"),
-    ("FRAGMENT_TAG_SPLIT_CALLING_LOG", "3분할 로그 칸 프래그먼트 태그가 없음"),
-    ("new LogFragment()", "3분할 로그 칸에 LogFragment 를 붙이지 않음"),
-    ("private void showSplitCallingTab(boolean showLog)", "호출·로그 전환 함수가 없음"),
-    ("private void applySplitCallingTab()", "전환 상태를 화면에 반영하는 함수가 없음"),
-    ("private void refreshSplitCallingLogPanel()", "3분할 로그 칸을 다시 읽는 함수가 없음"),
-    ("KEY_SPLIT_CALL_TAB", "마지막으로 보던 탭을 기억하지 않음"),
+for gone, why in [
+    ("private void initSplitCallingLogLayout()", "3분할 로그 칸 준비 함수가 남아 있음"),
+    ("FRAGMENT_TAG_SPLIT_CALLING_LOG", "3분할 로그 칸 태그가 남아 있음"),
+    ("private void showSplitCallingTab(boolean showLog)", "호출·로그 전환 함수가 남아 있음"),
+    ("private void applySplitCallingTab()", "전환 반영 함수가 남아 있음"),
+    ("private void refreshSplitCallingLogPanel()", "3분할 로그 칸 재읽기 함수가 남아 있음"),
+    ("KEY_SPLIT_CALL_TAB", "마지막으로 보던 탭 기억이 남아 있음"),
 ]:
-    if need not in main_code:
-        err("MainActivity: " + why)
-
-m = re.search(r"private void applySplitCallingTab\(\)\s*\{([\s\S]{0,900}?)\n    \}", main_code)
-if not m:
-    err("MainActivity.applySplitCallingTab 본문을 찾지 못함")
-else:
-    body_code = m.group(1)
-    for need, why in [
-        ("splitCallingContainer.setVisibility", "호출 창을 숨기지/보이지 않음"),
-        ("splitCallingLogContainer.setVisibility", "QSO 로그 칸을 숨기지/보이지 않음"),
-    ]:
-        if need not in body_code:
-            err("MainActivity.applySplitCallingTab: " + why)
-    # 송신이 끊기지 않게 프래그먼트를 지우거나 갈아 끼우지 않는다
-    if ".remove(" in body_code or ".replace(" in body_code:
-        err("MainActivity.applySplitCallingTab: 프래그먼트를 지우거나 갈아 끼움(송신이 끊길 수 있음)")
-
-if "if (showSplit && splitCallingLogShown)" not in main_code:
-    err("MainActivity.updateSplitVisibility: 3분할이 다시 보일 때 로그 칸을 맞추지 않음")
+    if gone in main_code:
+        err("MainActivity: 0.93-kr9 에서 걷어 낸 " + why)
 
 # --- 7) 피클·AI 언급 금지 ----------------------------------------------------
 for path in [os.path.join(APP, "assets", "readme_ko.txt"),
@@ -331,4 +308,4 @@ if errors:
         print("  [오류] " + e)
     sys.exit(1)
 print("0.93-kr8 추가 검증 통과 (QSO 로그 실시간 갱신, 로그 패널 바탕색, 송신 감시 기본 무시, "
-      "[PSK] 버튼, 3분할 [호출·송신]/[QSO 로그] 전환 탭)")
+      "[PSK] 버튼, 3분할 전환 탭 걷어 냄)")
