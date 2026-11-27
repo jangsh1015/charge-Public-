@@ -82,6 +82,8 @@
             <TextView
                 android:id="@+id/unworkedOnlyButton"
                 style="@style/DecodeFilterChip"
+                android:layout_width="wrap_content"
+                android:layout_height="26dp"
                 android:text="@string/unworked_only"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/clearCallingListImageButton"
