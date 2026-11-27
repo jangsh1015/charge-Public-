@@ -29,6 +29,7 @@ import androidx.lifecycle.Observer;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -63,7 +64,7 @@ public class CallingListFragment extends Fragment {
 
         callingListAdapter = new CallingListAdapter(this.getContext(), mainViewModel
                 , mainViewModel.ft8Messages, CallingListAdapter.ShowMode.CALLING_LIST);
-        callListRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        callListRecyclerView.setLayoutManager(createCallingListLayoutManager());
         callListRecyclerView.setAdapter(callingListAdapter);
         callingListAdapter.notifyDataSetChanged();
         callListRecyclerView.scrollToPosition(callingListAdapter.getItemCount() - 1);
@@ -210,6 +211,26 @@ public class CallingListFragment extends Fragment {
         });
 
         return binding.getRoot();
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 태블릿 가로에서 '디코드' 탭을 단독 화면으로 볼 때는 왼쪽·오른쪽 2열로 보여 준다.
+     * 3분할 패널 안의 디코드 목록은 한 칸이 좁으므로 1열 그대로 둔다.
+     */
+    private RecyclerView.LayoutManager createCallingListLayoutManager() {
+        if (isTabletLandscape() && !MainActivity.isSplitPanelFragment(getTag())) {
+            return new GridLayoutManager(requireContext(), 2);
+        }
+        return new LinearLayoutManager(requireContext());
+    }
+
+    /**
+     * 태블릿 가로(작은 화면 폭 600dp 이상) 구성인지 확인한다. res/layout-sw600dp-land 와 같은 기준이다.
+     */
+    private boolean isTabletLandscape() {
+        Configuration configuration = getResources().getConfiguration();
+        return configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                && configuration.smallestScreenWidthDp >= 600;
     }
 
     /**

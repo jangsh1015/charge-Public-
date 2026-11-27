@@ -72,6 +72,7 @@ import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 import com.bg7yoz.ft8cn.ui.CallingListFragment;
 import com.bg7yoz.ft8cn.ui.FreqDialog;
+import com.bg7yoz.ft8cn.ui.LogFragment;
 import com.bg7yoz.ft8cn.ui.MyCallingFragment;
 import com.bg7yoz.ft8cn.ui.SetVolumeDialog;
 import com.bg7yoz.ft8cn.ui.ShareLogsProgressDialog;
@@ -113,6 +114,20 @@ public class MainActivity extends AppCompatActivity {
     private static final float SPLIT_HEIGHT_RATIO_MIN = 0.20f;
     private static final float SPLIT_HEIGHT_RATIO_MAX = 0.80f;
 
+    //한국어판(0.93-kr6): 태블릿 가로 호출 탭 2분할(왼쪽 호출 창 | 오른쪽 QSO 로그)
+    private static final String KEY_CALL_LOG_RATIO = "callLogRatio";
+    //한국어판(0.93-kr6): 마지막으로 보던 화면(디코드 단독 / 호출+로그 / 스펙트럼 3분할·단독)
+    private static final String KEY_LAST_MODE = "lastMode";
+    private static final String FRAGMENT_TAG_SPLIT_CALL_ONLY = "splitCallOnly";
+    private static final String FRAGMENT_TAG_SPLIT_LOG = "splitLog";
+    private static final float DEFAULT_CALL_LOG_RATIO = 0.50f;
+    private static final float CALL_LOG_RATIO_MIN = 0.30f;
+    private static final float CALL_LOG_RATIO_MAX = 0.70f;
+    private static final String MODE_DECODE = "decode";
+    private static final String MODE_MY_CALLING = "myCalling";
+    private static final String MODE_SPECTRUM_SPLIT = "spectrumSplit";
+    private static final String MODE_SPECTRUM_ONLY = "spectrumOnly";
+
     //한국어판(0.93-kr4): IC-705 기준 초기 설정
     private static final String PREF_IC705_PRESET = "ic705Preset";
     private static final String KEY_IC705_PRESET_VERSION = "version";
@@ -128,13 +143,21 @@ public class MainActivity extends AppCompatActivity {
     private View splitVerticalHandle;
     private View splitHorizontalHandle;
     private View navHostContainer;
+    //한국어판(0.93-kr6): 호출 탭 2분할(왼쪽 호출 창 | 오른쪽 QSO 로그)
+    private LinearLayout splitCallLogLayout;
+    private View splitCallingOnlyContainer;
+    private View splitLogContainer;
+    private View splitCallLogHandle;
     private float splitWidthRatio = DEFAULT_SPLIT_WIDTH_RATIO;
     private float splitHeightRatio = DEFAULT_SPLIT_HEIGHT_RATIO;
+    private float callLogRatio = DEFAULT_CALL_LOG_RATIO;
     //한국어판(0.93-kr5): 3분할을 접고 스펙트럼만 전체로 보고 있는지
     private boolean splitSpectrumOnly = false;
     private static boolean tabletSplitActive = false;
     //한국어판(0.93-kr5): 지금 3분할 패널이 화면에 떠 있는지(단독 화면으로 볼 때는 false)
     private static boolean splitPanelVisible = false;
+    //한국어판(0.93-kr6): 지금 호출+로그 2분할이 화면에 떠 있는지
+    private static boolean splitCallLogVisible = false;
 
 
     String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO
@@ -264,8 +287,9 @@ public class MainActivity extends AppCompatActivity {
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 //Log.e(TAG, "onNavigationItemSelected: "+item.toString() );
                 int itemId = item.getItemId();
-                //한국어판(0.93-kr5): 태블릿 가로에서도 디코드·호출 탭은 그 화면만 전체로 연다.
+                //한국어판(0.93-kr5): 태블릿 가로에서도 디코드 탭은 그 화면만 전체로 연다.
                 //  스펙트럼 탭이 3분할을 열고, 3분할 상태에서 스펙트럼 탭을 한 번 더 누르면 접힌다.
+                //한국어판(0.93-kr6): 호출 탭은 왼쪽 호출 창·오른쪽 QSO 로그 2분할로 연다.
                 if (splitLayout != null && isSplitPanelTab(itemId)) {
                     NavDestination currentDestination = navController.getCurrentDestination();
                     if (itemId == R.id.menu_nav_spectrum && currentDestination != null
@@ -290,8 +314,11 @@ public class MainActivity extends AppCompatActivity {
         initTabletSplitLayout();
         //한국어판(0.93-kr5): 지난번에 쓰던 화면(3분할/단독)을 먼저 읽어 둔다.
         //  아래 목적지 리스너가 첫 콜백에서 이 값을 다시 쓰기 때문이다.
+        //한국어판(0.93-kr6): 3분할·디코드 단독에 호출+로그 2분할까지 더해 '마지막 화면'으로 기억한다.
         final boolean splitPreferredOnLaunch = getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE)
                 .getBoolean(KEY_SPLIT_PREFERRED, true);
+        final String lastModeOnLaunch = getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE)
+                .getString(KEY_LAST_MODE, null);
         navController.addOnDestinationChangedListener(new NavController.OnDestinationChangedListener() {
             @Override
             public void onDestinationChanged(@NonNull NavController controller
@@ -300,11 +327,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        //한국어판(0.93-kr5): 지난번에 3분할로 보던 중이었다면, 다음에 켜도 3분할로 시작한다.
-        if (splitLayout != null && savedInstanceState == null && splitPreferredOnLaunch) {
-            splitSpectrumOnly = false;
-            navigateToBottomTab(R.id.menu_nav_spectrum);
-            updateSplitVisibility(R.id.menu_nav_spectrum);
+        //한국어판(0.93-kr5): 지난번에 보던 화면으로 시작한다. (기록이 없으면 3분할)
+        if (savedInstanceState == null && (splitLayout != null || splitCallLogLayout != null)) {
+            String startMode = lastModeOnLaunch;
+            if (startMode == null) {
+                startMode = splitPreferredOnLaunch ? MODE_SPECTRUM_SPLIT : MODE_DECODE;
+            }
+            restoreStartMode(startMode);
         }
 
         //FT8CN Ver %s\nBG7YOZ\n%s
@@ -518,6 +547,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * 한국어판(0.93-kr6): 호출 탭 2분할(왼쪽 호출 창 | 오른쪽 QSO 로그)이 떠 있는지 돌려준다.
+     *
+     * @return 호출+로그 2분할이 보이면 true
+     */
+    public static boolean isCallLogPanelVisible() {
+        return splitCallLogVisible;
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 이 프래그먼트가 분할 패널(3분할·2분할) 안에 붙어 있는지 확인한다.
+     * 패널 안의 목록은 한 칸이 좁으므로 디코드 탭의 2열 보기를 쓰지 않는다.
+     *
+     * @param fragmentTag 프래그먼트 태그
+     * @return 분할 패널 안의 프래그먼트이면 true
+     */
+    public static boolean isSplitPanelFragment(@Nullable String fragmentTag) {
+        return FRAGMENT_TAG_SPLIT_DECODE.equals(fragmentTag)
+                || FRAGMENT_TAG_SPLIT_CALLING.equals(fragmentTag)
+                || FRAGMENT_TAG_SPLIT_SPECTRUM.equals(fragmentTag)
+                || FRAGMENT_TAG_SPLIT_CALL_ONLY.equals(fragmentTag)
+                || FRAGMENT_TAG_SPLIT_LOG.equals(fragmentTag);
+    }
+
+    /**
      * 태블릿 가로 3분할 패널을 준비한다.
      * 3분할을 쓰지 않는 구성(스마트폰 등)에서는 이전 구성에서 넘어온 패널 프래그먼트만 정리한다.
      */
@@ -527,6 +580,8 @@ public class MainActivity extends AppCompatActivity {
         if (!isTabletSplitConfiguration() || !(split instanceof LinearLayout)) {
             tabletSplitActive = false;
             splitPanelVisible = false;
+            splitCallLogVisible = false;
+            splitCallLogLayout = null;
             removeSplitFragments();
             return;
         }
@@ -543,6 +598,7 @@ public class MainActivity extends AppCompatActivity {
             splitLayout = null;
             tabletSplitActive = false;
             splitPanelVisible = false;
+            removeSplitFragments();
             return;
         }
 
@@ -575,6 +631,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "initTabletSplitLayout: 3분할 패널을 붙이지 못했습니다. " + e.getMessage());
                 splitLayout = null;
                 tabletSplitActive = false;
+                splitPanelVisible = false;
+                removeSplitFragments();
                 return;
             }
         }
@@ -603,6 +661,66 @@ public class MainActivity extends AppCompatActivity {
         tabletSplitActive = true;
         //표시 여부는 현재 목적지에 따라 updateSplitVisibility 가 정한다.
         splitLayout.setVisibility(View.GONE);
+        //한국어판(0.93-kr6): 호출 탭 2분할(호출 창 | QSO 로그) 패널도 함께 준비한다.
+        initTabletCallLogLayout();
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 태블릿 가로 호출 탭 2분할 패널을 준비한다.
+     * 왼쪽 splitCallingOnlyContainer 에 MyCallingFragment(호출 창),
+     * 오른쪽 splitLogContainer 에 LogFragment(QSO 로그)를 붙인다.
+     * 두 패널은 계속 살아 있으므로 탭을 오가도 목록과 검색 조건이 유지된다.
+     */
+    private void initTabletCallLogLayout() {
+        View callLog = findViewById(R.id.splitCallLogLayout);
+        if (!(callLog instanceof LinearLayout)) {
+            splitCallLogLayout = null;
+            splitCallLogVisible = false;
+            return;
+        }
+        splitCallLogLayout = (LinearLayout) callLog;
+        splitCallingOnlyContainer = findViewById(R.id.splitCallingOnlyContainer);
+        splitLogContainer = findViewById(R.id.splitLogContainer);
+        splitCallLogHandle = findViewById(R.id.splitCallLogHandle);
+        if (splitCallingOnlyContainer == null || splitLogContainer == null
+                || splitCallLogHandle == null) {
+            splitCallLogLayout = null;
+            splitCallLogVisible = false;
+            return;
+        }
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment callingFragment = fragmentManager.findFragmentById(R.id.splitCallingOnlyContainer);
+        Fragment logFragment = fragmentManager.findFragmentById(R.id.splitLogContainer);
+        if (callingFragment == null || logFragment == null) {
+            //일부만 남아 있는 경우를 대비해 남은 패널은 지우고 두 패널을 새로 붙인다
+            try {
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+                if (callingFragment != null) {
+                    transaction.remove(callingFragment);
+                }
+                if (logFragment != null) {
+                    transaction.remove(logFragment);
+                }
+                transaction.add(R.id.splitCallingOnlyContainer, new MyCallingFragment()
+                        , FRAGMENT_TAG_SPLIT_CALL_ONLY);
+                transaction.add(R.id.splitLogContainer, new LogFragment()
+                        , FRAGMENT_TAG_SPLIT_LOG);
+                transaction.commitNowAllowingStateLoss();
+            } catch (Exception e) {
+                Log.e(TAG, "initTabletCallLogLayout: 호출·로그 패널을 붙이지 못했습니다. " + e.getMessage());
+                splitCallLogLayout = null;
+                splitCallLogVisible = false;
+                return;
+            }
+        }
+
+        callLogRatio = clampRatio(getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE)
+                        .getFloat(KEY_CALL_LOG_RATIO, DEFAULT_CALL_LOG_RATIO)
+                , CALL_LOG_RATIO_MIN, CALL_LOG_RATIO_MAX);
+        applySplitRatio();
+        splitCallLogHandle.setOnTouchListener(new CallLogHandleTouchListener());
+        splitCallLogLayout.setVisibility(View.GONE);
     }
 
     /**
@@ -611,7 +729,7 @@ public class MainActivity extends AppCompatActivity {
     private void removeSplitFragments() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         String[] tags = {FRAGMENT_TAG_SPLIT_SPECTRUM, FRAGMENT_TAG_SPLIT_DECODE
-                , FRAGMENT_TAG_SPLIT_CALLING};
+                , FRAGMENT_TAG_SPLIT_CALLING, FRAGMENT_TAG_SPLIT_CALL_ONLY, FRAGMENT_TAG_SPLIT_LOG};
         FragmentTransaction transaction = null;
         for (String tag : tags) {
             Fragment fragment = fragmentManager.findFragmentByTag(tag);
@@ -632,33 +750,110 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 현재 목적지에 따라 3분할 패널과 전체 화면(NavHost) 중 하나를 보여 준다.
-     * 한국어판(0.93-kr5): 3분할은 스펙트럼 탭에서만 열고,
-     *  디코드·호출 탭은 그 화면만 전체로 연다(스펙트럼 탭을 한 번 더 누르면 스펙트럼 단독으로 접힌다).
+     * 현재 목적지에 따라 3분할 패널·호출+로그 2분할·전체 화면(NavHost) 중 하나를 보여 준다.
+     *  - 스펙트럼 탭 : 3분할(한 번 더 누르면 스펙트럼 단독)
+     *  - 호출 탭 : 왼쪽 호출 창 + 오른쪽 QSO 로그 (한국어판 0.93-kr6)
+     *  - 디코드 탭·그 밖 : 그 화면만 전체로 (디코드 탭은 태블릿 가로에서 2열)
      */
     private void updateSplitVisibility(int destinationId) {
-        if (splitLayout == null) {
+        if (splitLayout == null && splitCallLogLayout == null) {
             splitPanelVisible = false;
+            splitCallLogVisible = false;
             return;
         }
         if (destinationId != R.id.menu_nav_spectrum) {
             splitSpectrumOnly = false;
         }
-        boolean showSplit = (destinationId == R.id.menu_nav_spectrum) && !splitSpectrumOnly;
-        splitPanelVisible = showSplit;
-        splitLayout.setVisibility(showSplit ? View.VISIBLE : View.GONE);
-        if (navHostContainer != null) {
-            //3분할 패널을 볼 때는 뒤의 전체 화면은 보이지 않게만 둔다(프래그먼트 생명주기는 그대로)
-            navHostContainer.setVisibility(showSplit ? View.INVISIBLE : View.VISIBLE);
+        boolean showSplit = splitLayout != null
+                && (destinationId == R.id.menu_nav_spectrum) && !splitSpectrumOnly;
+        //한국어판(0.93-kr6): 호출 탭은 왼쪽 호출 창·오른쪽 QSO 로그 2분할로 연다.
+        //  디코드 목록에서 행을 눌러 호출 화면으로 넘어올 때도 같은 2분할이 열린다.
+        boolean showCallLog = splitCallLogLayout != null
+                && destinationId == R.id.menu_nav_mycalling;
+        if (splitLayout != null) {
+            splitLayout.setVisibility(showSplit ? View.VISIBLE : View.GONE);
         }
-        //다음에 앱을 켰을 때도 같은 화면(3분할/단독)으로 시작한다
+        if (splitCallLogLayout != null) {
+            splitCallLogLayout.setVisibility(showCallLog ? View.VISIBLE : View.GONE);
+            if (showCallLog && !splitCallLogVisible) {
+                //한국어판(0.93-kr6): 다른 화면에서 검색어가 바뀌었으면 오른쪽 로그도 따라 바꾼다
+                refreshCallLogPanel();
+            }
+        }
+        splitPanelVisible = showSplit;
+        splitCallLogVisible = showCallLog;
+        if (navHostContainer != null) {
+            //3분할·2분할 패널을 볼 때는 뒤의 전체 화면은 보이지 않게만 둔다(프래그먼트 생명주기는 그대로)
+            navHostContainer.setVisibility(showSplit || showCallLog ? View.INVISIBLE : View.VISIBLE);
+        }
+        //다음에 앱을 켰을 때도 같은 화면으로 시작한다
         //  (설정·로그처럼 잠깐 들른 화면은 기록하지 않는다)
         if (isSplitPanelTab(destinationId)) {
-            getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE).edit()
-                    .putBoolean(KEY_SPLIT_PREFERRED, showSplit).apply();
+            saveLastMode(destinationId, showSplit || showCallLog);
         }
         //한국어판(0.93-kr5): 3분할일 때만 도구 버튼을 왼쪽 워터폴 쪽으로 옮긴다
         updateFloatViewPlacement();
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 호출 탭 2분할의 오른쪽 QSO 로그 패널을 새로 보일 때 호출한다.
+     * 패널 프래그먼트가 아직 없거나 다른 종류면 아무것도 하지 않는다.
+     */
+    private void refreshCallLogPanel() {
+        Fragment fragment = getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_SPLIT_LOG);
+        if (fragment instanceof LogFragment) {
+            ((LogFragment) fragment).refreshIfQueryChanged();
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 마지막으로 보던 화면을 기억한다.
+     *  디코드 단독 / 호출+로그 2분할 / 스펙트럼 3분할 / 스펙트럼 단독
+     *
+     * @param destinationId 지금 목적지
+     * @param panelShown    분할 패널이 떠 있으면 true
+     */
+    private void saveLastMode(int destinationId, boolean panelShown) {
+        String mode;
+        if (destinationId == R.id.menu_nav_spectrum) {
+            mode = splitSpectrumOnly ? MODE_SPECTRUM_ONLY : MODE_SPECTRUM_SPLIT;
+        } else if (destinationId == R.id.menu_nav_mycalling) {
+            mode = MODE_MY_CALLING;
+        } else {
+            mode = MODE_DECODE;
+        }
+        getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE).edit()
+                .putString(KEY_LAST_MODE, mode)
+                .putBoolean(KEY_SPLIT_PREFERRED, panelShown)
+                .apply();
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 앱을 켰을 때 기억해 둔 화면으로 시작한다.
+     *
+     * @param mode 저장해 둔 화면 모드
+     */
+    private void restoreStartMode(String mode) {
+        splitSpectrumOnly = false;
+        if (MODE_MY_CALLING.equals(mode) && splitCallLogLayout != null) {
+            navigateToBottomTab(R.id.menu_nav_mycalling);
+            updateSplitVisibility(R.id.menu_nav_mycalling);
+            return;
+        }
+        if (MODE_SPECTRUM_SPLIT.equals(mode) && splitLayout != null) {
+            navigateToBottomTab(R.id.menu_nav_spectrum);
+            updateSplitVisibility(R.id.menu_nav_spectrum);
+            return;
+        }
+        if (MODE_SPECTRUM_ONLY.equals(mode) && splitLayout != null) {
+            splitSpectrumOnly = true;
+            navigateToBottomTab(R.id.menu_nav_spectrum);
+            updateSplitVisibility(R.id.menu_nav_spectrum);
+            return;
+        }
+        //디코드 단독(기본)
+        navigateToBottomTab(R.id.menu_nav_calling_list);
+        updateSplitVisibility(R.id.menu_nav_calling_list);
     }
 
     /**
@@ -683,13 +878,17 @@ public class MainActivity extends AppCompatActivity {
      * 저장된 비율을 패널 가중치에 적용한다.
      */
     private void applySplitRatio() {
-        if (splitLayout == null) {
-            return;
+        if (splitLayout != null) {
+            setSplitWeight(splitSpectrumContainer, splitWidthRatio);
+            setSplitWeight(splitRightColumn, 1f - splitWidthRatio);
+            setSplitWeight(splitDecodeContainer, splitHeightRatio);
+            setSplitWeight(splitCallingContainer, 1f - splitHeightRatio);
         }
-        setSplitWeight(splitSpectrumContainer, splitWidthRatio);
-        setSplitWeight(splitRightColumn, 1f - splitWidthRatio);
-        setSplitWeight(splitDecodeContainer, splitHeightRatio);
-        setSplitWeight(splitCallingContainer, 1f - splitHeightRatio);
+        //한국어판(0.93-kr6): 호출+로그 2분할의 좌우 비율
+        if (splitCallLogLayout != null) {
+            setSplitWeight(splitCallingOnlyContainer, callLogRatio);
+            setSplitWeight(splitLogContainer, 1f - callLogRatio);
+        }
     }
 
     private void setSplitWeight(View view, float weight) {
@@ -717,6 +916,7 @@ public class MainActivity extends AppCompatActivity {
         getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE).edit()
                 .putFloat(KEY_SPLIT_WIDTH_RATIO, splitWidthRatio)
                 .putFloat(KEY_SPLIT_HEIGHT_RATIO, splitHeightRatio)
+                .putFloat(KEY_CALL_LOG_RATIO, callLogRatio)
                 .apply();
     }
 
@@ -759,6 +959,47 @@ public class MainActivity extends AppCompatActivity {
                         splitHeightRatio = clampRatio((startSizePx + event.getRawY() - startTouchPx)
                                 / availablePx, SPLIT_HEIGHT_RATIO_MIN, SPLIT_HEIGHT_RATIO_MAX);
                     }
+                    applySplitRatio();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (availablePx > 0) {
+                        saveSplitRatio();
+                    }
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 호출+로그 2분할의 경계선을 끌어 좌우 비율을 바꾸는 처리.
+     */
+    private class CallLogHandleTouchListener implements View.OnTouchListener {
+        private float startTouchPx = 0;
+        private float startSizePx = 0;
+        private float availablePx = 0;
+
+        @SuppressLint("ClickableViewAccessibility")
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (splitCallLogLayout == null || splitCallLogHandle == null
+                            || splitCallingOnlyContainer == null) {
+                        return false;
+                    }
+                    availablePx = splitCallLogLayout.getWidth() - splitCallLogHandle.getWidth();
+                    startSizePx = splitCallingOnlyContainer.getWidth();
+                    startTouchPx = event.getRawX();
+                    return availablePx > 0;
+                case MotionEvent.ACTION_MOVE:
+                    if (availablePx <= 0) {
+                        return false;
+                    }
+                    callLogRatio = clampRatio((startSizePx + event.getRawX() - startTouchPx)
+                            / availablePx, CALL_LOG_RATIO_MIN, CALL_LOG_RATIO_MAX);
                     applySplitRatio();
                     return true;
                 case MotionEvent.ACTION_UP:

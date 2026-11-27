@@ -26,6 +26,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -65,6 +66,8 @@ public class LogFragment extends Fragment {
     private LogQSLAdapter logQSLAdapter;
     private boolean loading = false;//防止滑动触发多次查询
     private int lastItemPosition;
+    //한국어판(0.93-kr6): 호출 탭 2분할의 로그 패널이 다시 보일 때 검색 조건이 바뀌었는지 비교하려고 둔다
+    private String lastQueriedCallsign = null;
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
 
 
@@ -285,6 +288,11 @@ public class LogFragment extends Fragment {
      */
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
+        //한국어판(0.93-kr6): 태블릿 가로 호출 탭 2분할에서는 QSO 로그 화면이 둘(패널·탭) 살아 있을 수 있다.
+        //  그래서 컨텍스트 메뉴도 자기 목록에서 나온 항목에만 반응하게 한다.
+        if (!isMyListItemView(item.getActionView())) {
+            return super.onContextItemSelected(item);
+        }
         int position = (Integer) item.getActionView().getTag();
         if (!mainViewModel.logListShowCallsign) {
             switch (item.getItemId()) {
@@ -487,6 +495,41 @@ public class LogFragment extends Fragment {
 
 
     /**
+     * 한국어판(0.93-kr6): 이 항목 보기가 내 QSO 로그 목록에 속해 있는지 확인한다.
+     *
+     * @param view 메뉴를 연 항목 보기
+     * @return 내 목록의 항목이면 true
+     */
+    private boolean isMyListItemView(View view) {
+        if (view == null || binding == null) {
+            return false;
+        }
+        ViewParent parent = view.getParent();
+        while (parent != null) {
+            if (parent == binding.logRecyclerView) {
+                return true;
+            }
+            parent = parent instanceof View ? ((View) parent).getParent() : null;
+        }
+        return false;
+    }
+
+    /**
+     * 한국어판(0.93-kr6): 호출 탭 2분할의 QSO 로그 패널이 다시 보일 때 부른다.
+     * 다른 화면에서 검색어(호출부호)가 바뀌었을 때만 목록을 다시 읽는다.
+     */
+    public void refreshIfQueryChanged() {
+        if (binding == null) {
+            return;
+        }
+        if (lastQueriedCallsign != null && lastQueriedCallsign.equals(mainViewModel.queryKey)) {
+            return;
+        }
+        setShowStyle();
+        queryByCallsign(mainViewModel.queryKey, 0);
+    }
+
+    /**
      * 设置显示模式。通联的呼号和日志两种表现方式
      */
     @SuppressLint("NotifyDataSetChanged")
@@ -513,6 +556,7 @@ public class LogFragment extends Fragment {
      */
     private void queryByCallsign(String callsign, int offset) {
         loading = true;//开始读数据
+        lastQueriedCallsign = callsign;
         //分两种查询
         if (mainViewModel.logListShowCallsign) {
             if (offset == 0) {//说明是新增记录

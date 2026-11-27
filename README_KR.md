@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr5` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr6` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -125,6 +125,33 @@
   `time_sync_failed_network` 문자열로 "인터넷에 연결되어 있지 않아 시각 동기화에 실패했습니다.
   (무전기 Wi-Fi에 연결된 동안에는 동기화가 되지 않습니다)" 를 보여 줍니다.
 
+### (7) 0.93-kr6에서 더한 것
+- **디코드 2열 (태블릿 가로 단독 화면)**: `CallingListFragment` 가 태블릿 가로
+  (`orientation == LANDSCAPE && smallestScreenWidthDp >= 600`) 이고 3분할 패널 안이 아닐 때
+  `GridLayoutManager(context, 2)` 로 목록을 왼쪽·오른쪽 2열로 보여 줍니다.
+  패널 판별은 `MainActivity.isSplitPanelFragment(getTag())` 로 합니다(패널 프래그먼트는
+  `splitDecode`·`splitCalling`·`splitSpectrum`·`splitCallOnly`·`splitLog` 태그를 씀).
+  셀 좌우 여백은 기존 항목 여백(1dp)을 그대로 써서 2열 사이가 2dp로 떨어지고,
+  3분할 안의 목록과 세로·폰 화면은 1열(`LinearLayoutManager`) 그대로입니다.
+- **호출 탭 2분할 (태블릿 가로)**: `layout-sw600dp-land/main_activity.xml` 에
+  `splitCallLogLayout`(왼쪽 `splitCallingOnlyContainer` = `MyCallingFragment`,
+  가운데 드래그 핸들 `splitCallLogHandle`, 오른쪽 `splitLogContainer` = `LogFragment`, 기본 50:50)을
+  추가하고, `MainActivity.updateSplitVisibility()` 가 목적지가 `menu_nav_mycalling` 일 때만
+  이 패널을 띄웁니다(`splitLayout`·NavHost 는 숨김). 경계선을 끌면 30~70% 범위에서
+  좌우 비율이 바뀌고 `tabletSplit/callLogRatio` 에 저장됩니다.
+  디코드 목록에서 행을 눌러 호출 화면으로 넘어갈 때도 목적지가 같아져 같은 2분할이 열립니다.
+- **화면 기억(`lastMode`)**: `tabletSplit/lastMode` 에 `decode`·`myCalling`·`spectrumSplit`·
+  `spectrumOnly` 를 저장해, 앱을 다시 켜면 그 화면으로 시작합니다(기록이 없으면 `splitPreferred`
+  값에 따라 3분할 또는 디코드 단독). `QSO 로그`·`설정` 탭은 지금처럼 전체 화면이고,
+  `스펙트럼` 탭은 3분할(한 번 더 누르면 스펙트럼 단독) 그대로입니다.
+- **QSO 로그 정돈**: 2분할 오른쪽에서도 잘 보이도록 `fragment_log.xml` 의 제목 막대 색을
+  밝은 보라(`purple_500`)에서 디코드·호출 목록과 같은 어두운 인디고(`list_header_bar_color`,
+  `#312E81`)로 맞췄습니다. 로그 항목은 고정 폭 대신 시작 여백(88dp)+유동 폭이라 좁은 패널에서도
+  글씨가 잘리지 않습니다.
+- **컨텍스트 메뉴 가드**: QSO 로그 화면이 패널·로그 탭 두 벌 살아 있을 수 있어,
+  `LogFragment.onContextItemSelected()` 가 자기 목록 항목(`isMyListItemView`)에만 반응하게 했습니다
+  (호출 목록에서 연 메뉴가 로그 항목을 지우거나 QSL 을 바꾸는 일을 막음).
+
 ---
 
 ## 2. 빌드 방법 (우분투 / 윈도우 WSL Ubuntu)
@@ -179,12 +206,14 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/IntervalCqCountSpinnerAdapter.java` | 1회 CQ 횟수 목록 |
 | `build_apk.sh` | 우분투/WSL 원클릭 빌드 스크립트 |
 | `tools/check_source.py` | 빌드 전 정적 검사(Java 문법·XML·리소스 참조) |
+| `tools/check_kr4.py` | (kr4) 리소스 참조·데이터바인딩 필드·3분할 id 검사 |
+| `tools/check_kr6.py` | (kr6) 호출+로그 2분할 배선·디코드 2열 조건·버전·문서 표기 검사 |
 
 고친 파일
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr5`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr6`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |
@@ -197,13 +226,19 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/connector/CableConnector.java` | (kr2) 시리얼 연결 끊김 안내를 리소스 문자열로 변경 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/html/LogHttpServer.java` | (kr2) 웹 UI 업로드 버튼 문구를 리소스 문자열로 변경 |
 | `ft8cn/app/src/main/res/values*/strings.xml` | (kr2) `readme_help`, `rig_address_file`, `html_upload`, `serial_connection_lost` 추가 (zh 계열은 중국어 원문 파일 유지) |
+| `ft8cn/app/src/main/res/layout*/main_activity.xml` | (kr6) `splitCallLogLayout`(호출 창 / QSO 로그 2분할) 추가 — 폰·가로·태블릿 3개 변형 모두 `visibility="gone"` |
+| `ft8cn/app/src/main/res/layout/fragment_log.xml` | (kr6) 제목 막대 색을 `list_header_bar_color`(어두운 인디고)로 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListFragment.java` | (kr6) 태블릿 가로 단독 화면에서 `GridLayoutManager(2)` 2열 보기 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/LogFragment.java` | (kr6) 컨텍스트 메뉴가 자기 목록에만 반응하게 (`isMyListItemView`) |
 
 ## 4. 정적 검사
 
 빌드 전에 아래 명령으로 소스를 점검할 수 있습니다 (파이썬 3 + `pip install javalang`).
 
 ```bash
-python3 tools/check_source.py
+python3 tools/check_source.py     # XML·Java 문법·리소스 참조·문자열
+python3 tools/check_kr4.py        # 3분할 패널·데이터바인딩 필드
+python3 tools/check_kr6.py        # 호출+로그 2분할·디코드 2열·버전 표기
 ```
 
 검사 항목: 모든 XML well-formed, 모든 Java 파일 문법 파싱, `R.string`/`@string`/`R.id`/`@id`/`R.layout`

@@ -24,6 +24,19 @@ Credits
 
 Korean edition changes
 
+  0.93-kr6
+   1. On a tablet in landscape, the Decode tab now shows the decode list in two columns
+      (left and right), so twice as many stations fit on one screen. The narrow list inside
+      the three-pane view stays single-column.
+   2. On a tablet in landscape, the Call tab now opens the calling window on the left and
+      the QSO log on the right, side by side. Drag the divider to change the widths (30-70%);
+      the ratio is kept after a restart.
+   3. Tapping a station in the decode list to call it opens the same two-pane view.
+   4. The app reopens on the screen you left (decode only / call+log / spectrum three-pane or
+      spectrum only). The QSO log and Settings tabs remain full screen, and the Spectrum tab
+      remains the three-pane view.
+   5. The QSO log title bar now uses the same dark indigo tone as the decode and call lists.
+
   0.93-kr5
    1. No more endless repeats of the same message to the same station. After 'no reply for N'
       (default 3) attempts of the same message, automatic calling stops and returns to CQ/idle

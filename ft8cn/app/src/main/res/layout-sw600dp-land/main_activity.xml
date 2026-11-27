@@ -94,6 +94,41 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- 한국어판(0.93-kr6): 태블릿 가로 호출 탭 2분할(왼쪽 호출 창 | 오른쪽 QSO 로그) -->
+        <LinearLayout
+            android:id="@+id/splitCallLogLayout"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/black"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/nav_view"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/utcProgressBar">
+
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/splitCallingOnlyContainer"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="50" />
+
+            <View
+                android:id="@+id/splitCallLogHandle"
+                android:layout_width="16dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/split_handle_vertical"
+                android:clickable="true"
+                android:focusable="false" />
+
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/splitLogContainer"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="50" />
+        </LinearLayout>
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/transmittingLayout"
             android:layout_width="0dp"
