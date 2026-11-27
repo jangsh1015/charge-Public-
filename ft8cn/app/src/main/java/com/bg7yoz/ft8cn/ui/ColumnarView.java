@@ -6,11 +6,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
-import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -46,6 +44,8 @@ public class ColumnarView extends View {
     private int touch_x = -1;
     private Paint touchPaint;
     private int freq_hz=-1;
+    //한국어판(0.93-kr4): 막대마다 레벨에 맞는 색을 칠하기 위해 색을 따로 보관한다.
+    private int[] barColors = new int[0];
 
     public void setBlockSpeed(int blockSpeed) {
         this.blockSpeed = blockSpeed;
@@ -101,14 +101,20 @@ public class ColumnarView extends View {
         }
         newData.clear();
         float rateHeight =  0.95f * getHeight() / 256;//0.95是比率，柱形的最大高度不超过95%
-        for (int i = 0; i < data.length / 2; i++) {
+        int barCount = data.length / 2;
+        if (barColors.length != barCount) {
+            barColors = new int[barCount];
+        }
+        for (int i = 0; i < barCount; i++) {
+            int level = Math.max(data[i], data[i + 1]);
+            barColors[i] = SpectrumColorTable.getColor(level);
             Rect colRect = new Rect();
             if (newData.size() == 0) {
                 colRect.left = 0;
             } else {
-                colRect.left = i * getWidth() / (data.length / 2);
+                colRect.left = i * getWidth() / barCount;
             }
-            colRect.top = getHeight() - Math.round(Math.max(data[i], data[i + 1]) * rateHeight);
+            colRect.top = getHeight() - Math.round(level * rateHeight);
             colRect.right = colRect.left + width - spacing;
             colRect.bottom = getHeight();
             newData.add(colRect);
@@ -123,10 +129,8 @@ public class ColumnarView extends View {
 
         lastBitMap= Bitmap.createBitmap(w,h, ARGB_8888);
         _canvas=new Canvas(lastBitMap);
-        LinearGradient linearGradient=new LinearGradient(0f, 0f, 0f, getHeight(),
-                new int[]{0xff00ffff,0xff00ffff, Color.BLUE}
-                , new float[]{0f, 0.6f, 1f}, Shader.TileMode.CLAMP);
-        paint.setShader(linearGradient);
+        //한국어판(0.93-kr4): 막대 색은 레벨별 색상표(SpectrumColorTable)로 칠한다.
+        paint.setShader(null);
         linePaint = new Paint();
         linePaint.setColor(0xff990000);
         touchPaint = new Paint();
@@ -139,10 +143,16 @@ public class ColumnarView extends View {
         super.onDraw(canvas);
         _canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         for (int i = 0; i < newData.size(); i++) {
+            if (i < barColors.length) {
+                paint.setColor(barColors[i]);
+            }
             _canvas.drawRect(newData.get(i), paint);
         }
         if (drawblock) {
             for (int i = 0; i < blockData.size(); i++) {
+                if (i < barColors.length) {
+                    paint.setColor(barColors[i]);
+                }
                 _canvas.drawRect(blockData.get(i), paint);
             }
         }

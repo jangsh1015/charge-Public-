@@ -45,7 +45,8 @@ public class RigNameList {
      */
     public RigName getRigNameByIndex(int index){
         if (index==-1||index>=rigList.size()){
-            return new RigName("",0xA4,19200,0);
+            //한국어판(0.93-kr4): 기본값은 IC-705 기준(CI-V 0xA4, 115200)
+            return new RigName("",0xA4,115200,0);
         }else {
             return rigList.get(index);
         }
@@ -64,7 +65,7 @@ public class RigNameList {
         try {
             InputStream inputStream= assetManager.open(fileName);
             String[] st=getLinesFromInputStream(inputStream,"\n");
-            rigList.add(new RigName("",0xA4,19200,0));
+            rigList.add(new RigName("",0xA4,115200,0));
             for (int i = 0; i <st.length ; i++) {
                 if (!st[i].contains(",")){
                     continue;

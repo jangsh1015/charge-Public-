@@ -179,7 +179,8 @@ public class GeneralVariables {
     public static int transmitDelay = 500;//发射延迟时间，这个时间也是给上一个周期的解码时间
     public static int pttDelay = 100;//PTT的响应时间，在给电台PTT指令后，一般电台会有一个响应时间，此处默认是100毫秒
     public static int civAddress = 0xa4;//civ地址
-    public static int baudRate = 19200;//波特率
+    //한국어판(0.93-kr4): 기본 통신 속도는 IC-705 기준 115200
+    public static int baudRate = 115200;//波特率
     //한국어판(0.93-kr3): 처음 설치했을 때 기본 밴드를 40m(7.074MHz)로 시작한다
     //  (대한민국 3급은 14MHz 대역이 수신만 가능해, 20m 로 시작하면 송신 사고가 나기 쉽다)
     public static long band = 7074000;//载波频段
@@ -190,10 +191,10 @@ public class GeneralVariables {
     public static int bandListIndex = -1;//电台波段的索引值
     public static MutableLiveData<Integer> mutableBandChange = new MutableLiveData<>();//波段索引值变化
     public static int controlMode = ControlMode.VOX;
-    public static int modelNo = 0;
+    public static int modelNo = 2;//한국어판(0.93-kr4): 기본 무전기는 IC-705(무전기 목록 두 번째 항목)
     public static int launchSupervision = DEFAULT_LAUNCH_SUPERVISION;//发射监管
     public static long launchSupervisionStart = UtcTimer.getSystemTime();//自动发射的起始时间
-    public static int noReplyLimit = 0;//呼叫无回应次数0==忽略
+    public static int noReplyLimit = 3;//呼叫无回应次数0==忽略 (한국어판 0.93-kr4: 기본 3회)
 
     //한국어판: 간헐 CQ(주기적 Auto CQ)
     public static int intervalCQMinutes = 0;//간헐 CQ 주기(분). 0이면 꺼짐(연속 CQ)

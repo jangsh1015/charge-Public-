@@ -17,13 +17,16 @@ import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -31,17 +34,24 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
@@ -51,6 +61,7 @@ import com.bg7yoz.ft8cn.connector.CableSerialPort;
 import com.bg7yoz.ft8cn.database.DatabaseOpr;
 import com.bg7yoz.ft8cn.database.OnAfterQueryConfig;
 import com.bg7yoz.ft8cn.database.OperationBand;
+import com.bg7yoz.ft8cn.database.RigNameList;
 import com.bg7yoz.ft8cn.databinding.MainActivityBinding;
 import com.bg7yoz.ft8cn.floatview.FloatView;
 import com.bg7yoz.ft8cn.floatview.FloatViewButton;
@@ -59,9 +70,12 @@ import com.bg7yoz.ft8cn.log.ImportSharedLogs;
 import com.bg7yoz.ft8cn.log.OnShareLogEvents;
 import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
+import com.bg7yoz.ft8cn.ui.CallingListFragment;
 import com.bg7yoz.ft8cn.ui.FreqDialog;
+import com.bg7yoz.ft8cn.ui.MyCallingFragment;
 import com.bg7yoz.ft8cn.ui.SetVolumeDialog;
 import com.bg7yoz.ft8cn.ui.ShareLogsProgressDialog;
+import com.bg7yoz.ft8cn.ui.SpectrumFragment;
 import com.bg7yoz.ft8cn.ui.ToastMessage;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -83,6 +97,39 @@ public class MainActivity extends AppCompatActivity {
     private FloatView floatView;
 
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
+
+    //한국어판(0.93-kr4): 태블릿 가로 3분할(왼쪽 스펙트럼 | 오른쪽 위 디코드·아래 호출) 패널
+    private static final String PREF_TABLET_SPLIT = "tabletSplit";
+    private static final String KEY_SPLIT_WIDTH_RATIO = "splitWidthRatio";
+    private static final String KEY_SPLIT_HEIGHT_RATIO = "splitHeightRatio";
+    private static final String FRAGMENT_TAG_SPLIT_SPECTRUM = "splitSpectrum";
+    private static final String FRAGMENT_TAG_SPLIT_DECODE = "splitDecode";
+    private static final String FRAGMENT_TAG_SPLIT_CALLING = "splitCalling";
+    private static final float DEFAULT_SPLIT_WIDTH_RATIO = 0.55f;
+    private static final float DEFAULT_SPLIT_HEIGHT_RATIO = 0.50f;
+    private static final float SPLIT_WIDTH_RATIO_MIN = 0.30f;
+    private static final float SPLIT_WIDTH_RATIO_MAX = 0.75f;
+    private static final float SPLIT_HEIGHT_RATIO_MIN = 0.20f;
+    private static final float SPLIT_HEIGHT_RATIO_MAX = 0.80f;
+
+    //한국어판(0.93-kr4): IC-705 기준 초기 설정
+    private static final String PREF_IC705_PRESET = "ic705Preset";
+    private static final String KEY_IC705_PRESET_VERSION = "version";
+    private static final int IC705_PRESET_VERSION = 4;
+    private static final int DEFAULT_IC705_MODEL_INDEX = 2;
+    private static final int DEFAULT_NO_REPLY_LIMIT = 3;
+
+    private LinearLayout splitLayout;
+    private LinearLayout splitRightColumn;
+    private View splitSpectrumContainer;
+    private View splitDecodeContainer;
+    private View splitCallingContainer;
+    private View splitVerticalHandle;
+    private View splitHorizontalHandle;
+    private View navHostContainer;
+    private float splitWidthRatio = DEFAULT_SPLIT_WIDTH_RATIO;
+    private float splitHeightRatio = DEFAULT_SPLIT_HEIGHT_RATIO;
+    private static boolean tabletSplitActive = false;
 
 
     String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO
@@ -211,9 +258,31 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 //Log.e(TAG, "onNavigationItemSelected: "+item.toString() );
-                navController.navigate(item.getItemId());
+                int itemId = item.getItemId();
+                //한국어판(0.93-kr4): 태블릿 3분할에서는 세 패널(스펙트럼·디코드·호출)이 늘 함께 떠 있다.
+                //  그래서 이 세 탭은 화면만 3분할로 되돌리고, QSO 로그·설정에서 왔으면 시작 화면으로 돌아온다.
+                if (splitLayout != null && isSplitPanelTab(itemId)) {
+                    NavDestination currentDestination = navController.getCurrentDestination();
+                    if (currentDestination != null
+                            && currentDestination.getId() != R.id.menu_nav_calling_list) {
+                        navController.popBackStack(R.id.menu_nav_calling_list, false);
+                    }
+                    updateSplitVisibility(R.id.menu_nav_calling_list);
+                    return true;
+                }
+                navController.navigate(itemId);
                 //binding.navView.setLabelFor(item.getItemId());
                 return true;
+            }
+        });
+
+        //한국어판(0.93-kr4): 태블릿 가로 3분할 패널을 준비하고, 화면(목적지)에 따라 표시를 바꾼다.
+        initTabletSplitLayout();
+        navController.addOnDestinationChangedListener(new NavController.OnDestinationChangedListener() {
+            @Override
+            public void onDestinationChanged(@NonNull NavController controller
+                    , @NonNull NavDestination destination, @Nullable Bundle arguments) {
+                updateSplitVisibility(destination.getId());
             }
         });
 
@@ -389,6 +458,283 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    //----------------------------------- 한국어판(0.93-kr4): 태블릿 가로 3분할 패널
+
+    /**
+     * 태블릿 가로(작은 화면 폭 600dp 이상) 구성인지 확인한다.
+     * res/layout-sw600dp-land 와 같은 기준이다.
+     */
+    private boolean isTabletSplitConfiguration() {
+        Configuration configuration = getResources().getConfiguration();
+        return configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                && configuration.smallestScreenWidthDp >= 600;
+    }
+
+    /**
+     * 3분할 패널로 볼 수 있는 탭(디코드·호출·스펙트럼)인지 확인한다.
+     */
+    private boolean isSplitPanelTab(int itemId) {
+        return itemId == R.id.menu_nav_calling_list
+                || itemId == R.id.menu_nav_mycalling
+                || itemId == R.id.menu_nav_spectrum;
+    }
+
+    /**
+     * 3분할 패널을 쓰고 있는지 돌려준다. (패널 안의 프래그먼트가 화면 이동 여부를 판단할 때 쓴다)
+     */
+    public static boolean isTabletSplitActive() {
+        return tabletSplitActive;
+    }
+
+    /**
+     * 태블릿 가로 3분할 패널을 준비한다.
+     * 3분할을 쓰지 않는 구성(스마트폰 등)에서는 이전 구성에서 넘어온 패널 프래그먼트만 정리한다.
+     */
+    private void initTabletSplitLayout() {
+        navHostContainer = findViewById(R.id.fragmentContainerView);
+        View split = findViewById(R.id.splitLayout);
+        if (!isTabletSplitConfiguration() || !(split instanceof LinearLayout)) {
+            tabletSplitActive = false;
+            removeSplitFragments();
+            return;
+        }
+        splitLayout = (LinearLayout) split;
+        splitRightColumn = findViewById(R.id.splitRightColumn);
+        splitSpectrumContainer = findViewById(R.id.splitSpectrumContainer);
+        splitDecodeContainer = findViewById(R.id.splitDecodeContainer);
+        splitCallingContainer = findViewById(R.id.splitCallingContainer);
+        splitVerticalHandle = findViewById(R.id.splitVerticalHandle);
+        splitHorizontalHandle = findViewById(R.id.splitHorizontalHandle);
+        if (splitRightColumn == null || splitSpectrumContainer == null
+                || splitDecodeContainer == null || splitCallingContainer == null
+                || splitVerticalHandle == null || splitHorizontalHandle == null) {
+            splitLayout = null;
+            tabletSplitActive = false;
+            return;
+        }
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment spectrumFragment = fragmentManager.findFragmentById(R.id.splitSpectrumContainer);
+        Fragment decodeFragment = fragmentManager.findFragmentById(R.id.splitDecodeContainer);
+        Fragment callingFragment = fragmentManager.findFragmentById(R.id.splitCallingContainer);
+        if (spectrumFragment == null || decodeFragment == null || callingFragment == null) {
+            //일부만 남아 있는 경우를 대비해 남은 패널은 지우고 세 패널을 새로 붙인다
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            if (spectrumFragment != null) {
+                transaction.remove(spectrumFragment);
+            }
+            if (decodeFragment != null) {
+                transaction.remove(decodeFragment);
+            }
+            if (callingFragment != null) {
+                transaction.remove(callingFragment);
+            }
+            transaction.add(R.id.splitSpectrumContainer, new SpectrumFragment()
+                    , FRAGMENT_TAG_SPLIT_SPECTRUM);
+            transaction.add(R.id.splitDecodeContainer, new CallingListFragment()
+                    , FRAGMENT_TAG_SPLIT_DECODE);
+            transaction.add(R.id.splitCallingContainer, new MyCallingFragment()
+                    , FRAGMENT_TAG_SPLIT_CALLING);
+            transaction.commitNowAllowingStateLoss();
+        }
+
+        SharedPreferences splitPreference = getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE);
+        splitWidthRatio = clampRatio(splitPreference.getFloat(KEY_SPLIT_WIDTH_RATIO
+                , DEFAULT_SPLIT_WIDTH_RATIO), SPLIT_WIDTH_RATIO_MIN, SPLIT_WIDTH_RATIO_MAX);
+        splitHeightRatio = clampRatio(splitPreference.getFloat(KEY_SPLIT_HEIGHT_RATIO
+                , DEFAULT_SPLIT_HEIGHT_RATIO), SPLIT_HEIGHT_RATIO_MIN, SPLIT_HEIGHT_RATIO_MAX);
+        applySplitRatio();
+
+        splitVerticalHandle.setOnTouchListener(new SplitHandleTouchListener(true));
+        splitHorizontalHandle.setOnTouchListener(new SplitHandleTouchListener(false));
+
+        tabletSplitActive = true;
+        //표시 여부는 현재 목적지에 따라 updateSplitVisibility 가 정한다.
+        splitLayout.setVisibility(View.GONE);
+    }
+
+    /**
+     * 3분할을 쓰지 않는 구성으로 바뀌었을 때(회전 등) 남아 있는 패널 프래그먼트를 지운다.
+     */
+    private void removeSplitFragments() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        String[] tags = {FRAGMENT_TAG_SPLIT_SPECTRUM, FRAGMENT_TAG_SPLIT_DECODE
+                , FRAGMENT_TAG_SPLIT_CALLING};
+        FragmentTransaction transaction = null;
+        for (String tag : tags) {
+            Fragment fragment = fragmentManager.findFragmentByTag(tag);
+            if (fragment != null) {
+                if (transaction == null) {
+                    transaction = fragmentManager.beginTransaction();
+                }
+                transaction.remove(fragment);
+            }
+        }
+        if (transaction != null) {
+            transaction.commitNowAllowingStateLoss();
+        }
+    }
+
+    /**
+     * 현재 목적지에 따라 3분할 패널과 전체 화면(NavHost) 중 하나를 보여 준다.
+     */
+    private void updateSplitVisibility(int destinationId) {
+        if (splitLayout == null) {
+            return;
+        }
+        boolean showSplit = isSplitPanelTab(destinationId);
+        splitLayout.setVisibility(showSplit ? View.VISIBLE : View.GONE);
+        if (navHostContainer != null) {
+            //3분할 패널을 볼 때는 뒤의 전체 화면은 보이지 않게만 둔다(프래그먼트 생명주기는 그대로)
+            navHostContainer.setVisibility(showSplit ? View.INVISIBLE : View.VISIBLE);
+        }
+    }
+
+    /**
+     * 저장된 비율을 패널 가중치에 적용한다.
+     */
+    private void applySplitRatio() {
+        if (splitLayout == null) {
+            return;
+        }
+        setSplitWeight(splitSpectrumContainer, splitWidthRatio);
+        setSplitWeight(splitRightColumn, 1f - splitWidthRatio);
+        setSplitWeight(splitDecodeContainer, splitHeightRatio);
+        setSplitWeight(splitCallingContainer, 1f - splitHeightRatio);
+    }
+
+    private void setSplitWeight(View view, float weight) {
+        if (view == null) {
+            return;
+        }
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) view.getLayoutParams();
+        if (params.weight != weight) {
+            params.weight = weight;
+            view.setLayoutParams(params);
+        }
+    }
+
+    private float clampRatio(float ratio, float min, float max) {
+        if (Float.isNaN(ratio)) {
+            return min;
+        }
+        return Math.max(min, Math.min(max, ratio));
+    }
+
+    /**
+     * 조절한 비율을 저장한다. 앱을 다시 켜도 그대로 쓴다.
+     */
+    private void saveSplitRatio() {
+        getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE).edit()
+                .putFloat(KEY_SPLIT_WIDTH_RATIO, splitWidthRatio)
+                .putFloat(KEY_SPLIT_HEIGHT_RATIO, splitHeightRatio)
+                .apply();
+    }
+
+    /**
+     * 경계선 손잡이를 끌어 패널 비율을 바꾸는 처리.
+     */
+    private class SplitHandleTouchListener implements View.OnTouchListener {
+        private final boolean vertical;
+        private float startTouchPx = 0;
+        private float startSizePx = 0;
+        private float availablePx = 0;
+
+        SplitHandleTouchListener(boolean vertical) {
+            this.vertical = vertical;
+        }
+
+        @SuppressLint("ClickableViewAccessibility")
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (vertical) {
+                        availablePx = splitLayout.getWidth() - splitVerticalHandle.getWidth();
+                        startSizePx = splitSpectrumContainer.getWidth();
+                        startTouchPx = event.getRawX();
+                    } else {
+                        availablePx = splitRightColumn.getHeight() - splitHorizontalHandle.getHeight();
+                        startSizePx = splitDecodeContainer.getHeight();
+                        startTouchPx = event.getRawY();
+                    }
+                    return availablePx > 0;
+                case MotionEvent.ACTION_MOVE:
+                    if (availablePx <= 0) {
+                        return false;
+                    }
+                    if (vertical) {
+                        splitWidthRatio = clampRatio((startSizePx + event.getRawX() - startTouchPx)
+                                / availablePx, SPLIT_WIDTH_RATIO_MIN, SPLIT_WIDTH_RATIO_MAX);
+                    } else {
+                        splitHeightRatio = clampRatio((startSizePx + event.getRawY() - startTouchPx)
+                                / availablePx, SPLIT_HEIGHT_RATIO_MIN, SPLIT_HEIGHT_RATIO_MAX);
+                    }
+                    applySplitRatio();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (availablePx > 0) {
+                        saveSplitRatio();
+                    }
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr4): IC-705 기준 초기 설정을 앱을 처음 켜는 때 한 번만 넣는다.
+     * 한 번 넣은 뒤에는 다시 건드리지 않으므로, 그 뒤에 바꾼 값은 그대로 유지된다.
+     */
+    private void applyIc705PresetIfNeeded() {
+        SharedPreferences presetPreference = getSharedPreferences(PREF_IC705_PRESET, MODE_PRIVATE);
+        if (presetPreference.getInt(KEY_IC705_PRESET_VERSION, 0) >= IC705_PRESET_VERSION) {
+            return;
+        }
+
+        RigNameList rigNameList = RigNameList.getInstance(getBaseContext());
+        int modelIndex = getIc705ModelIndex(rigNameList.rigList);
+        RigNameList.RigName ic705 = rigNameList.getRigNameByIndex(modelIndex);
+
+        GeneralVariables.modelNo = modelIndex;
+        GeneralVariables.instructionSet = ic705.instructionSet;
+        GeneralVariables.civAddress = ic705.address;
+        GeneralVariables.baudRate = ic705.bauRate;
+        GeneralVariables.swr_switch_on = true;
+        GeneralVariables.alc_switch_on = true;
+        GeneralVariables.noReplyLimit = DEFAULT_NO_REPLY_LIMIT;
+
+        mainViewModel.databaseOpr.writeConfigs(new String[][]{
+                {"model", String.valueOf(GeneralVariables.modelNo)},
+                {"instruction", String.valueOf(GeneralVariables.instructionSet)},
+                {"civ", GeneralVariables.getCivAddressStr()},
+                {"baudRate", String.valueOf(GeneralVariables.baudRate)},
+                {"swrSwitch", GeneralVariables.swr_switch_on ? "1" : "0"},
+                {"alcSwitch", GeneralVariables.alc_switch_on ? "1" : "0"},
+                {"noReplyLimit", String.valueOf(GeneralVariables.noReplyLimit)}
+        });
+
+        presetPreference.edit().putInt(KEY_IC705_PRESET_VERSION, IC705_PRESET_VERSION).apply();
+        Log.e(TAG, String.format("applyIc705PresetIfNeeded: IC-705 초기 설정 적용 (model=%d, civ=%s, baud=%d)"
+                , GeneralVariables.modelNo, GeneralVariables.getCivAddressStr()
+                , GeneralVariables.baudRate));
+    }
+
+    /**
+     * 무전기 목록에서 IC-705 의 위치를 찾는다. 없으면 기본 위치를 쓴다.
+     */
+    private int getIc705ModelIndex(ArrayList<RigNameList.RigName> rigList) {
+        for (int i = 0; i < rigList.size(); i++) {
+            String modelName = rigList.get(i).modelName;
+            if (modelName != null && modelName.toUpperCase().contains("IC-705")) {
+                return i;
+            }
+        }
+        return DEFAULT_IC705_MODEL_INDEX;
+    }
+
     /**
      * 添加浮动按钮
      */
@@ -486,6 +832,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void doOnAfterQueryConfig(String KeyName, String Value) {
                 mainViewModel.configIsLoaded = true;
+                //한국어판(0.93-kr4): IC-705 기준 초기 설정(115200·CI-V A4·SWR/ALC 경보·무응답 3회)을 한 번만 넣는다
+                applyIc705PresetIfNeeded();
                 //此处梅登海德已经通过数据库得到了，但是如果GPS能获取到，还是用GPS的
                 String grid = MaidenheadGrid.getMyMaidenheadGrid(getApplicationContext());
                 if (!grid.equals("")) {//说明获取到了GPS数据

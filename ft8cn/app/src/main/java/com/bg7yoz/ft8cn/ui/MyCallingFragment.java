@@ -20,6 +20,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 
@@ -99,6 +100,24 @@ public class MyCallingFragment extends Fragment {
 
 
     /**
+     * 한국어판(0.93-kr4): 태블릿 3분할에서는 목록이 둘 이상 살아 있을 수 있으므로,
+     * 컨텍스트 메뉴는 자가 목록에서 나온 항목에만 반응하게 한다.
+     */
+    private boolean isMyListItemView(View view) {
+        if (view == null || transmitRecycleView == null) {
+            return false;
+        }
+        ViewParent parent = view.getParent();
+        while (parent != null) {
+            if (parent == transmitRecycleView) {
+                return true;
+            }
+            parent = parent instanceof View ? ((View) parent).getParent() : null;
+        }
+        return false;
+    }
+
+    /**
      * 菜单选项
      *
      * @param item 菜单
@@ -108,7 +127,9 @@ public class MyCallingFragment extends Fragment {
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
         //Ft8Message ft8Message = (Ft8Message) item.getActionView().getTag();
-
+        if (!isMyListItemView(item.getActionView())) {
+            return super.onContextItemSelected(item);
+        }
         int position = (int) item.getActionView().getTag();
         Ft8Message ft8Message = transmitCallListAdapter.getMessageByPosition(position);
         if (ft8Message == null) return super.onContextItemSelected(item);
@@ -199,7 +220,9 @@ public class MyCallingFragment extends Fragment {
         binding = FragmentMyCallingBinding.inflate(inflater, container, false);
 
         //当横屏时显示频谱图
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        //한국어판(0.93-kr4): 태블릿 3분할용 레이아웃(layout-sw600dp-land)에는 스펙트럼이 따로 없으므로 null 검사를 한다
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
+                && binding.messageSpectrumView != null) {
             binding.messageSpectrumView.run(mainViewModel, this);
         }
 

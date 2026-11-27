@@ -24,6 +24,18 @@ Credits
 
 Korean edition changes
 
+  0.93-kr4
+   1. On a tablet held in landscape the screen is split into three panes:
+      spectrum/waterfall on the left, the decode list at the top right, and the calling
+      window at the bottom right. Drag the handle (pill) on either divider to resize,
+      and the sizes are remembered after the app restarts.
+      (spectrum 30-75%, decode 20-80%)
+   2. Softer spectrum colours: the noise background is a deep navy instead of bright blue,
+      while real signals stand out in cyan, yellow, orange and red.
+   3. Out-of-the-box settings for the IC-705: radio model ICOM IC-705 (CI-V A4),
+      115200 baud, SWR/ALC alarms on, and auto-call stops after 3 unanswered calls.
+      These are applied once on first launch; later changes are kept as they are.
+
   0.93-kr3
    1. When auto-follow gives up on a station for no reply, that callsign is excluded
       from automatic re-calls for 30 minutes. (Tapping the callsign yourself, or the

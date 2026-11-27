@@ -567,6 +567,20 @@ public class DatabaseOpr extends SQLiteOpenHelper {
         new WriteConfig(db, KeyName, Value, onAfterWriteConfig).execute();
     }
 
+    /**
+     * 한국어판(0.93-kr4): 여러 개의 설정 값을 한 번에 저장한다. (IC-705 기준 초기 설정용)
+     * 부르는 쪽이 이미 배경 스레드일 때 쓴다.
+     *
+     * @param keyValues {키, 값} 쌍의 배열
+     */
+    public void writeConfigs(String[][] keyValues) {
+        for (String[] keyValue : keyValues) {
+            db.execSQL("DELETE FROM config where KeyName =?", new String[]{keyValue[0]});
+            db.execSQL("INSERT INTO config (KeyName,Value)Values(?,?)"
+                    , new String[]{keyValue[0], keyValue[1]});
+        }
+    }
+
     public void writeMessage(ArrayList<Ft8Message> messages) {
         new WriteMessages(db, messages).execute();
     }
@@ -2110,7 +2124,8 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.civAddress = result.equals("") ? 0xa4 : Integer.parseInt(result, 16);
                 }
                 if (name.equalsIgnoreCase("baudRate")) {
-                    GeneralVariables.baudRate = result.equals("") ? 19200 : Integer.parseInt(result);
+                    //한국어판(0.93-kr4): 기본 통신 속도는 IC-705 기준 115200
+                    GeneralVariables.baudRate = result.equals("") ? 115200 : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("bandFreq")) {
                     //한국어판(0.93-kr3): 저장된 밴드가 없으면 40m(7.074MHz)로 시작한다
@@ -2126,7 +2141,8 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.controlMode = result.equals("") ? ControlMode.VOX : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("model")) {//电台型号
-                    GeneralVariables.modelNo = result.equals("") ? 0 : Integer.parseInt(result);
+                    //한국어판(0.93-kr4): 기본 무전기는 IC-705(목록 두 번째 항목)
+                    GeneralVariables.modelNo = result.equals("") ? 2 : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("instruction")) {//指令集
                     GeneralVariables.instructionSet = result.equals("") ? 0 : Integer.parseInt(result);
@@ -2136,7 +2152,8 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                             GeneralVariables.DEFAULT_LAUNCH_SUPERVISION : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("noReplyLimit")) {//
-                    GeneralVariables.noReplyLimit = result.equals("") ? 0 : Integer.parseInt(result);
+                    //한국어판(0.93-kr4): 기본은 3회 무응답이면 중단(0이면 무시)
+                    GeneralVariables.noReplyLimit = result.equals("") ? 3 : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("intervalCQ")) {//한국어판: 간헐 CQ 주기(분)
                     GeneralVariables.intervalCQMinutes = result.equals("") ? 0 : Integer.parseInt(result);

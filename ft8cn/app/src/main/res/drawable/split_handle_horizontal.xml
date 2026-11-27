@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 한국어판(0.93-kr4): 태블릿 3분할 가로 경계선 손잡이(가운데 알약 모양) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:gravity="center">
+        <shape android:shape="rectangle">
+            <size
+                android:width="52dp"
+                android:height="4dp" />
+            <corners android:radius="2dp" />
+            <solid android:color="#8C8FA6BC" />
+        </shape>
+    </item>
+</layer-list>

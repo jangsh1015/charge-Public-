@@ -19,6 +19,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.animation.AnimationUtils;
 
 import androidx.annotation.NonNull;
@@ -34,6 +35,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bg7yoz.ft8cn.Ft8Message;
 import com.bg7yoz.ft8cn.GeneralVariables;
+import com.bg7yoz.ft8cn.MainActivity;
 import com.bg7yoz.ft8cn.MainViewModel;
 import com.bg7yoz.ft8cn.R;
 import com.bg7yoz.ft8cn.databinding.FragmentCallingListBinding;
@@ -70,8 +72,9 @@ public class CallingListFragment extends Fragment {
         requireActivity().registerForContextMenu(callListRecyclerView);//注册菜单
 
         //当横屏时显示频谱图
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            assert binding.spectrumView != null;
+        //한국어판(0.93-kr4): 태블릿 3분할용 레이아웃(layout-sw600dp-land)에는 스펙트럼이 따로 없으므로 null 검사를 한다
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
+                && binding.spectrumView != null) {
             binding.spectrumView.run(mainViewModel, this);
         }
         //设置呼号滑动，用于快速呼叫
@@ -341,9 +344,31 @@ public class CallingListFragment extends Fragment {
      * 跳转到发射界面
      */
     private void navigateToMyCallFragment() {
+        //한국어판(0.93-kr4): 태블릿 3분할에서는 호출 패널이 이미 오른쪽 아래에 떠 있으므로 화면을 옮기지 않는다
+        if (MainActivity.isTabletSplitActive()) {
+            return;
+        }
         NavController navController = Navigation.findNavController(requireActivity()
                 , R.id.fragmentContainerView);
         navController.navigate(R.id.action_menu_nav_calling_list_to_menu_nav_mycalling);//跳转到发射界面
+    }
+
+    /**
+     * 한국어판(0.93-kr4): 태블릿 3분할에서는 디코드 목록이 둘 이상 살아 있을 수 있다(패널과 화면).
+     * 그래서 컨텍스트 메뉴도 자가 목록에서 나온 항목에만 반응하게 한다.
+     */
+    private boolean isMyListItemView(View view) {
+        if (view == null || callListRecyclerView == null) {
+            return false;
+        }
+        ViewParent parent = view.getParent();
+        while (parent != null) {
+            if (parent == callListRecyclerView) {
+                return true;
+            }
+            parent = parent instanceof View ? ((View) parent).getParent() : null;
+        }
+        return false;
     }
 
     /**
@@ -357,6 +382,9 @@ public class CallingListFragment extends Fragment {
     public boolean onContextItemSelected(@NonNull MenuItem item) {
 
         //Ft8Message ft8Message = (Ft8Message) item.getActionView().getTag();
+        if (!isMyListItemView(item.getActionView())) {
+            return super.onContextItemSelected(item);
+        }
         int position = (int) item.getActionView().getTag();
         Ft8Message ft8Message = callingListAdapter.getMessageByPosition(position);
         if (ft8Message == null) return super.onContextItemSelected(item);

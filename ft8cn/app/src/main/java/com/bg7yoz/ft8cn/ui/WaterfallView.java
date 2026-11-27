@@ -232,17 +232,9 @@ public class WaterfallView extends View {
         lastSequential = sequential;
 
         //色块分布
+        //한국어판(0.93-kr4): 잡음은 어두운 딥 네이비, 신호는 청록→노랑→주황→빨강으로 칠한다.
         for (int i = 0; i < data.length; i++) {
-
-
-            if (data[i] < 128) {//低于一半的音量，用蓝色0~256
-                colors[i] = 0xff000000 | (data[i] << 1);
-            } else if (data[i] < 192) {
-                colors[i] = 0xff0000ff | (((data[i] - 127)) << 10);//放大4倍
-//                colors[i] = 0xff000000 | (data[i] * 2 * 256 + 255);
-            } else {
-                colors[i] = 0xff00ffff | (((data[i] - 127)) << 18);//放大4倍
-            }
+            colors[i] = SpectrumColorTable.getColor(data[i]);
         }
         LinearGradient linearGradient = new LinearGradient(0, 0, getWidth() * 2, 0, colors
                 , null, Shader.TileMode.CLAMP);

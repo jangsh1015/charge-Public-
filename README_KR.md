@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr3` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr4` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -68,6 +68,32 @@
   `MainActivity.InitData()`에서 밴드 목록 위치(`bandListIndex`)도 기본 밴드로 맞춥니다.
   (대한민국 3급은 14 MHz 대역이 수신만 가능해, 새 기기에서 20m로 시작하던 것을 40m로 바꿈)
 
+### (5) 0.93-kr4에서 더한 것
+- **태블릿 가로 3분할**: `res/layout-sw600dp-land/main_activity.xml` 에 3분할 컨테이너를 두고,
+  작은 화면 폭이 600dp 이상이면서 가로일 때만 켭니다(`MainActivity.isTabletSplitConfiguration()`).
+  - 왼쪽: `SpectrumFragment`(스펙트럼·워터폴), 오른쪽 위: `CallingListFragment`(디코드 목록),
+    오른쪽 아래: `MyCallingFragment`(호출). 태블릿 가로에서는 두 목록 프래그먼트가
+    `layout-sw600dp-land/fragment_calling_list.xml`·`fragment_my_calling.xml`(스펙트럼 없는 목록 전용)을
+    쓰므로 스펙트럼이 겹치지 않습니다. 스마트폰 세로·가로 화면의 기존 2분할은 그대로입니다.
+  - 경계선 손잡이(16dp 터치 영역, 가운데 4dp 알약)를 끌어 비율을 바꿉니다. 스펙트럼 30~75%,
+    디코드 20~80% 범위로 제한하고, `SharedPreferences`(`tabletSplit/splitWidthRatio`·`splitHeightRatio`)에
+    저장해 재시작 후에도 유지합니다.
+  - 하단 탭에서 디코드·호출·스펙트럼을 누르면 3분할을 보여 주고, QSO 로그·설정·QRZ 화면은
+    기존처럼 전체 화면(NavHost)으로 엽니다. 3분할 패널 프래그먼트는 계속 살아 있어
+    탭을 오가도 구성과 스펙트럼이 유지됩니다.
+  - 회전 등으로 3분할 레이아웃이 아니게 되면 남은 패널 프래그먼트를 정리해
+    `No view found for id` 오류가 나지 않게 했습니다.
+- **워터폴·스펙트럼 색감**: `SpectrumColorTable` 을 새로 두고 256단계 색상표를 미리 계산합니다.
+  잡음 구간은 `#04070F`~`#0E2755` 딥 네이비, 신호는 청록(`#18CEE2`) → 노랑(`#FFE03A`) →
+  주황(`#FF9612`) → 빨강(`#FF2E2E`)으로 올라갑니다. `WaterfallView` 의 원색 파랑 계산을 이 표로 바꾸고,
+  `ColumnarView` 는 상단 청록/하단 원색 파랑 그라데이션 대신 막대마다 레벨 색을 칠합니다.
+- **IC-705 기준 초기 설정**: `GeneralVariables` 기본값을 `modelNo`=IC-705(무전기 목록에서 이름으로 찾고,
+  없으면 2번), `civAddress`=0xA4, `baudRate`=115200, `noReplyLimit`=3 으로 바꿨습니다(SWR·ALC 경보는 원래 기본 ON).
+  이미 쓰던 설치본도 혜택을 보도록 앱을 처음 켜는 때 `MainActivity.applyIc705PresetIfNeeded()` 가
+  `model`·`instruction`·`civ`·`baudRate`·`swrSwitch`·`alcSwitch`·`noReplyLimit` 7개 값을 DB에 한 번만 넣습니다
+  (`ic705Preset/version`=4 로 기록, 이후에는 사용자가 바꾼 값을 다시 덮지 않음).
+  제어 방식(`ctrMode`)과 Icom LAN 주소·포트 설정은 건드리지 않습니다.
+
 ---
 
 ## 2. 빌드 방법 (우분투 / 윈도우 WSL Ubuntu)
@@ -127,7 +153,7 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr3`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr4`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |
