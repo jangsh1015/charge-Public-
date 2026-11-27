@@ -180,7 +180,9 @@ public class GeneralVariables {
     public static int pttDelay = 100;//PTT的响应时间，在给电台PTT指令后，一般电台会有一个响应时间，此处默认是100毫秒
     public static int civAddress = 0xa4;//civ地址
     public static int baudRate = 19200;//波特率
-    public static long band = 14074000;//载波频段
+    //한국어판(0.93-kr3): 처음 설치했을 때 기본 밴드를 40m(7.074MHz)로 시작한다
+    //  (대한민국 3급은 14MHz 대역이 수신만 가능해, 20m 로 시작하면 송신 사고가 나기 쉽다)
+    public static long band = 7074000;//载波频段
     public static int serialDataBits = 8;//默认是8
     public static int serialParity = 0;//UsbSerialPort.PARITY_NONE默认是0，即：无
     public static int serialStopBits = 1;//停止位的对应关系：1=1,2=3,3=1.5

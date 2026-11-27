@@ -24,6 +24,12 @@ Credits
 
 Korean edition changes
 
+  0.93-kr3
+   1. When auto-follow gives up on a station for no reply, that callsign is excluded
+      from automatic re-calls for 30 minutes. (Tapping the callsign yourself, or the
+      station calling you first, works as before; after 30 minutes it can be called again.)
+   2. A fresh install now starts on 40m (7.074 MHz).
+
   0.93-kr2
    1. The About window is translated into Korean, with original/editor credits.
    2. Chinese text in the radio model list and in some error messages is localized.

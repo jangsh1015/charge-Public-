@@ -6,3 +6,5 @@ About Auto Call Tracked
 
 After the target callsign is set to track, FT8CN will automatically call the callsign when the target callsign has CQ behavior.
 FT8CN will preserve the tracking callsigns for a long time. Every time you use FT8CN, FT8CN will push the new message of the tracking callsigns to the list of the "Calling" interface. If you want to unfollow a callsign, you can delete the callsign through background operations (accessing FT8CN with a browser on the lan).
+
+Since 0.93-kr3, when auto-call gives up on a station for no reply, that station is not called automatically again for 30 minutes; FT8CN looks for another new CQ station instead. Tapping the callsign yourself, or the station calling you first, still works.

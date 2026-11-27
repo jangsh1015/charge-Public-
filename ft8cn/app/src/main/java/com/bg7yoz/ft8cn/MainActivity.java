@@ -468,6 +468,12 @@ public class MainActivity extends AppCompatActivity {
             mainViewModel.operationBand = OperationBand.getInstance(getBaseContext());
         }
 
+        //한국어판(0.93-kr3): 처음 설치했을 때 기본 밴드는 40m(7.074MHz)이다.
+        //  저장된 밴드가 없어 목록 위치가 정해지지 않았다면 기본 밴드의 위치를 찾아 둔다.
+        if (GeneralVariables.bandListIndex < 0) {
+            GeneralVariables.bandListIndex = OperationBand.getIndexByFreq(GeneralVariables.band);
+        }
+
         mainViewModel.databaseOpr.getQslDxccToMap();
 
         //获取所有的配置参数

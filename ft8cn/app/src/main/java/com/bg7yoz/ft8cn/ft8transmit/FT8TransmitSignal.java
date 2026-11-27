@@ -30,6 +30,8 @@ import com.bg7yoz.ft8cn.ui.ToastMessage;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -65,6 +67,17 @@ public class FT8TransmitSignal {
     private String intervalCQStatus = "";
     //화면에 표시할 간헐 CQ 상태 문자열(""이면 표시 안 함)
     public MutableLiveData<String> mutableIntervalCQStatus = new MutableLiveData<>();
+
+    //********************************************
+    //한국어판(0.93-kr3): 무응답으로 중단된 콜사인의 자동 재호출 방지
+    //  - '무응답 N회 중단'(GeneralVariables.noReplyLimit)으로 호출이 중단되면
+    //    그 콜사인(대문자)을 아래 맵에 넣고 30분 동안 추적 자동 호출에서 제외한다.
+    //  - 화면에서 직접 터치해 부르거나 상대가 먼저 나를 부르면 기록과 관계없이 응답하고,
+    //    그때는 기록도 지운다.
+    //  - 30분이 지난 기록은 확인할 때와 1초마다 도는 하트비트에서 정리한다.
+    private static final long NO_REPLY_COOLDOWN_MS = 30 * 60 * 1000L;//30분
+    private static final ConcurrentHashMap<String, Long> noReplyCooldown
+            = new ConcurrentHashMap<>();//콜사인(대문자) -> 만료 시각(ms)
 
     //public MutableLiveData<Integer> currentOrder = new MutableLiveData<>();//当前要发射的指令
 
@@ -134,6 +147,8 @@ public class FT8TransmitSignal {
             public void doHeartBeatTimer(long utc) {
                 //1초마다 간헐 CQ 남은 시간 표시를 갱신한다
                 updateIntervalCQStatus();
+                //한국어판(0.93-kr3): 30분이 지난 무응답 쿨다운 기록을 정리한다
+                cleanupNoReplyCooldown();
             }
 
             //@RequiresApi(api = Build.VERSION_CODES.N)
@@ -234,6 +249,10 @@ public class FT8TransmitSignal {
         } else {
             this.toMaidenheadGrid = "";
         }
+        //한국어판(0.93-kr3): 직접 터치해 부르거나 상대가 먼저 불러 응답하는 경우에는
+        //  무응답 쿨다운과 관계없이 정상적으로 부르고, 그 콜사인의 쿨다운은 지운다.
+        clearNoReplyCooldown(transmitCallsign.callsign);
+
         mutableToCallsign.postValue(transmitCallsign);//设定呼叫的目标对象（含报告、时序，频率，呼号）
         toCallsign = transmitCallsign;//设定呼叫的目标
         //mutableToCallsign.postValue(toCallsign);//设定呼叫的目标
@@ -764,6 +783,12 @@ public class FT8TransmitSignal {
                     && !GeneralVariables.checkIsMyCallsign(msg.callsignFrom))) {//不是我自己
                     //&& !msg.callsignFrom.equals(GeneralVariables.myCallsign))) {//不是我自己
 
+                //한국어판(0.93-kr3): 무응답으로 중단됐던 국이라도 30분 안에 새 CQ를 내면
+                //  자동으로 다시 부르지 않고 건너뛰어 다른 CQ 국을 찾는다.
+                if (isNoReplyCoolingDown(msg.getCallsignFrom())) {
+                    continue;
+                }
+
                 resetTargetReport();
                 setTransmit(new TransmitCallsign(msg.i3, msg.n3, msg.getCallsignFrom(), msg.freq_hz
                         , msg.getSequence(), msg.snr), 1, msg.extraInfo);
@@ -914,7 +939,13 @@ public class FT8TransmitSignal {
             GeneralVariables.noReplyCount++;
         }
         //如果超出无反应限定值，复位到CQ状态
-        if ((GeneralVariables.noReplyCount > GeneralVariables.noReplyLimit) && (GeneralVariables.noReplyLimit > 0)) {
+        //한국어판(0.93-kr3): 설정한 횟수(무응답 N회 중단)를 채우는 순간 중단한다.
+        //  (원본의 '>' 는 N+1회까지 부르게 되어, 3회로 두면 4번 부르고 끊겼다.)
+        if ((GeneralVariables.noReplyCount >= GeneralVariables.noReplyLimit) && (GeneralVariables.noReplyLimit > 0)) {
+            //한국어판(0.93-kr3): 무응답으로 호출이 중단된 국은 30분 동안 자동 재호출에서 뺀다.
+            if (toCallsign != null) {
+                startNoReplyCooldown(toCallsign.callsign);
+            }
             //检查关注消息列表，如果没有新的CQ，就进入到CQ状态，如果有，就转入到呼叫新的目标。
             if (!getNewTargetCallsign(messages)) {//检查关注列表中的CQ消息，如果有新的目标，返回TRUE;
                 functionOrder = 6;
@@ -944,6 +975,10 @@ public class FT8TransmitSignal {
             }
             //不是CQ,不理会
             if (!ft8Message.checkIsCQ()) {
+                continue;
+            }
+            //한국어판(0.93-kr3): 무응답으로 중단된 국은 30분 동안 새 목표로 삼지 않는다.
+            if (isNoReplyCoolingDown(ft8Message.getCallsignFrom())) {
                 continue;
             }
             //不是当前的目标呼号，且之前没有通联成功过
@@ -1157,6 +1192,92 @@ public class FT8TransmitSignal {
         if (!text.equals(intervalCQStatus)) {
             intervalCQStatus = text;
             mutableIntervalCQStatus.postValue(text);
+        }
+    }
+
+    //=================================================================
+    // 한국어판(0.93-kr3): 무응답 콜사인 자동 재호출 방지(30분 쿨다운)
+    //=================================================================
+
+    /**
+     * 콜사인을 쿨다운 맵의 키로 쓸 수 있게 정리한다(앞뒤 공백 제거·대문자).
+     *
+     * @param callsign 콜사인
+     * @return 정리된 콜사인(없으면 빈 문자열)
+     */
+    private static String normalizeNoReplyCallsign(String callsign) {
+        if (callsign == null) {
+            return "";
+        }
+        return callsign.trim().toUpperCase(Locale.US);
+    }
+
+    /**
+     * 무응답으로 호출이 중단된 콜사인을 30분 쿨다운에 넣는다.
+     * 이 콜사인은 30분 동안 추적 자동 호출에서 건너뛴다.
+     *
+     * @param callsign 중단된 상대 콜사인
+     */
+    private void startNoReplyCooldown(String callsign) {
+        String key = normalizeNoReplyCallsign(callsign);
+        if (key.length() < 3 || "CQ".equals(key)) {
+            return;
+        }
+        noReplyCooldown.put(key, UtcTimer.getSystemTime() + NO_REPLY_COOLDOWN_MS);
+        Log.d(TAG, "startNoReplyCooldown: " + key);
+    }
+
+    /**
+     * 해당 콜사인이 지금 무응답 쿨다운 중인지 확인한다.
+     * 30분이 지난 기록은 이때 지운다.
+     *
+     * @param callsign 확인할 콜사인
+     * @return 쿨다운 중이면 true
+     */
+    private boolean isNoReplyCoolingDown(String callsign) {
+        String key = normalizeNoReplyCallsign(callsign);
+        if (key.length() < 3) {
+            return false;
+        }
+        Long until = noReplyCooldown.get(key);
+        if (until == null) {
+            return false;
+        }
+        if (UtcTimer.getSystemTime() >= until) {
+            noReplyCooldown.remove(key, until);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 콜사인의 무응답 쿨다운을 지운다.
+     * 화면에서 직접 불렀거나 상대가 먼저 나를 불러 응답할 때 사용한다.
+     *
+     * @param callsign 지울 콜사인
+     */
+    private void clearNoReplyCooldown(String callsign) {
+        String key = normalizeNoReplyCallsign(callsign);
+        if (key.length() < 3 || "CQ".equals(key)) {
+            return;
+        }
+        if (noReplyCooldown.remove(key) != null) {
+            Log.d(TAG, "clearNoReplyCooldown: " + key);
+        }
+    }
+
+    /**
+     * 30분이 지난 무응답 쿨다운 기록을 정리한다(1초마다 호출).
+     */
+    private void cleanupNoReplyCooldown() {
+        if (noReplyCooldown.isEmpty()) {
+            return;
+        }
+        long now = UtcTimer.getSystemTime();
+        for (Map.Entry<String, Long> entry : noReplyCooldown.entrySet()) {
+            if (now >= entry.getValue()) {
+                noReplyCooldown.remove(entry.getKey(), entry.getValue());
+            }
         }
     }
 

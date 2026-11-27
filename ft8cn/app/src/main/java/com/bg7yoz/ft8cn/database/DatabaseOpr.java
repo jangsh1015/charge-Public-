@@ -2113,7 +2113,8 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.baudRate = result.equals("") ? 19200 : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("bandFreq")) {
-                    GeneralVariables.band = result.equals("") ? 14074000 : Long.parseLong(result);
+                    //한국어판(0.93-kr3): 저장된 밴드가 없으면 40m(7.074MHz)로 시작한다
+                    GeneralVariables.band = result.equals("") ? 7074000 : Long.parseLong(result);
                     GeneralVariables.bandListIndex = OperationBand.getIndexByFreq(GeneralVariables.band);
                 }
 

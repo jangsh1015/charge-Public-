@@ -23,11 +23,12 @@ public class OperationBand {
     private static OperationBand operationBand = null;
 
     public static long getDefaultBand() {
-        return 14074000;
+        //한국어판(0.93-kr3): 기본 밴드는 40m(7.074MHz)
+        return 7074000;
     }
 
     public static String getDefaultWaveLength() {
-        return "20m";
+        return "40m";
     }
 
     public static ArrayList<Band> bandList = new ArrayList<>();
@@ -47,7 +48,8 @@ public class OperationBand {
     }
 
     /**
-     * 获取操作波段的数据，以列表的索引值查找，如果没有返回默认值14.074，20m
+     * 获取操作波段的数据，以列表的索引值查找，如果没有返回默认值7.074，40m
+     * (한국어판 0.93-kr3에서 기본값을 40m 로 바꿈)
      * @param index 索引
      * @return
      */
@@ -124,7 +126,8 @@ public class OperationBand {
     }
     public static long getBandFreq(int index){
         if (index>bandList.size()){
-            return 14074000;
+            //한국어판(0.93-kr3): 기본 밴드는 40m(7.074MHz)
+            return 7074000;
         }
         return bandList.get(index).band;
     }

@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr2` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr3` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -55,6 +55,18 @@
 - 무전기 모델 목록(`rigaddress_ko.txt`)과 시리얼 연결 끊김 안내, 웹 UI 업로드 버튼 문구를 한국어로 바꿨습니다.
 - 간헐 CQ 대기 중에는 송신 감시 시간을 세지 않아, 대기 중에 자동 송신이 꺼지지 않습니다.
 - 호출 탭의 확성기 아이콘: 송신 중은 빨간색 깜빡임, **자동 송신이 켜진 대기 중은 주황색**, 꺼짐은 X 아이콘입니다.
+
+### (4) 0.93-kr3에서 더한 것
+- **무응답 재호출 방지(30분 쿨다운)**: `추적 자동 호출`이 부른 국이 `무응답 N회 중단`으로 끊기면,
+  그 콜사인(대문자로 정리)을 30분 쿨다운 목록(`ConcurrentHashMap<String, Long>`)에 넣고
+  30분 동안 추적 자동 호출에서 건너뜁니다. 같은 국이 계속 CQ를 내도 다시 물고 들어가지 않고
+  다른 새 CQ 국을 찾습니다. 직접 콜사인을 눌러 부르거나 상대가 먼저 부르면 쿨다운과 관계없이
+  응답하며(이때 쿨다운도 지움), 30분이 지난 기록은 확인할 때와 1초 하트비트에서 자동 정리합니다.
+- `무응답 N회 중단` 설정은 원래 `무시(0)` ~ `30회`까지 고를 수 있어 `3회`·`5회`·`7회`도 그대로 선택할 수 있습니다.
+- **초기 기본 주파수 40m**: `GeneralVariables.band`·`OperationBand.getDefaultBand()`·
+  `DatabaseOpr` 의 `bandFreq` 기본값을 `7.074 MHz (40m)`로 바꾸고, 처음 설치해 저장된 밴드가 없을 때는
+  `MainActivity.InitData()`에서 밴드 목록 위치(`bandListIndex`)도 기본 밴드로 맞춥니다.
+  (대한민국 3급은 14 MHz 대역이 수신만 가능해, 새 기기에서 20m로 시작하던 것을 40m로 바꿈)
 
 ---
 
@@ -115,7 +127,7 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr2`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr3`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |
