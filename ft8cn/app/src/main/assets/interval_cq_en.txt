@@ -1,0 +1,28 @@
+About Interval CQ (periodic Auto CQ)
+
+For a ground-floor or portable setup where the rig heats up and the battery drains,
+this feature sends a short burst of CQ every few minutes and only listens in between,
+instead of calling CQ continuously.
+
+[Interval CQ] selects the period.
+  Off (continuous) : behave like the original FT8CN and keep calling CQ.
+  5 / 10 / 15 / 20 / 30 / 60 min : send a CQ burst once per period.
+
+[CQ per burst] sets how many CQ transmissions go out in one burst (1-5, default 3).
+FT8 transmits only on your own 15-second slot (even or odd), so 3 transmissions take
+about one minute; the rest of the period is receive-only.
+
+How it works
+  - Decoding and reception continue while waiting.
+  - If another station calls your callsign or answers, the normal Auto Answer sequence
+    starts immediately.
+  - When the QSO ends, the app returns to interval CQ, sends one burst, then waits again.
+  - The target line at the top of the screen shows the remaining time, e.g. (Interval 10 min - next CQ 4:32).
+
+Notes
+  - If the TX watchdog in Settings is shorter than the interval period, automatic TX
+    stops early. For overnight use, raise it above the period or set it to Ignore.
+  - Interval CQ applies only while you are calling CQ. While working a station the app
+    transmits as usual.
+  - With Auto track CQ / Auto call tracked enabled, the app may still call new stations
+    found during the waiting period. Turn both off to keep the radio quiet.

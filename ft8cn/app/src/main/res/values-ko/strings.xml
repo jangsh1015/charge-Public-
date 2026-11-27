@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FT8CN 한국어 번역 (values-ko)
+  - 원본 values/strings.xml (영어) 의 모든 번역 대상 문자열을 순서대로 옮겼다.
+  - translatable="false" 항목(map_name, swr_switch_on/off, alc_switch_on/off)은
+    번역 대상이 아니므로 기본 values 에만 둔다.
+  - 간헐 CQ(주기적 Auto CQ) 기능을 위해 추가한 문자열은 파일 끝에 모아 두었다.
+-->
+<resources>
+    <string name="app_name">FT8CN KR</string>
+    <string name="nav_menu_title_call_list">수신 목록</string>
+    <string name="nav_menu_title_decode_list">디코드</string>
+    <string name="nav_menu_title_my_calling">호출</string>
+    <string name="nav_menu_title_history">QSO 로그</string>
+    <string name="nav_menu_title_config">설정</string>
+
+    <string name="run_decode">디코드 시작</string>
+    <string name="db">dB</string>
+    <string name="dt">Δt</string>
+    <string name="locate">위치</string>
+    <string name="message">메시지</string>
+    <string name="freq">주파수</string>
+    <string name="decode">디코드</string>
+    <string name="delete">삭제</string>
+    <string name="sequence">순.</string>
+    <string name="dist">거리</string>
+    <string name="location">위치</string>
+    <string name="mycall">호출부호</string>
+    <string name="pl_mycall">호출부호를 입력하세요</string>
+    <string name="headGrid">그리드</string>
+    <string name="pl_grid">메이든헤드 그리드를 입력하세요</string>
+    <string name="decoding">디코드 중…</string>
+    <string name="send">송신</string>
+    <string name="check">확인</string>
+    <string name="sendFreq">송신 주파수</string>
+    <string name="sendDefaultFreq">오디오 주파수</string>
+    <string name="pl_sendFreq">오디오 주파수 범위 0~2900</string>
+    <string name="transmitting">송신 …</string>
+    <string name="synFrequency">송신=수신 고정</string>
+    <string name="spectrum">스펙트럼</string>
+    <string name="pl_trans_delay">송신 지연 시간(ms)</string>
+    <string name="tran_delay">송신 지연</string>
+
+    <string name="timeOffset">시각 오프셋</string>
+    <string name="help">도움말</string>
+    <string name="scroll_down">▾</string>
+    <string name="about_me">FT8CN 정보</string>
+
+    <string name="connectMode">제어</string>
+    <string name="VOX">VOX</string>
+    <string name="CAT">CAT</string>
+    <string name="operationBand">밴드</string>
+    <string name="civ_address">CI-V</string>
+    <string name="pl_civ_address">무전기의 CI-V 주소</string>
+    <string name="serial_port">시리얼 포트</string>
+    <string name="bau_rate">통신 속도</string>
+    <string name="pl_select_serial_port">시리얼 포트를 선택하세요</string>
+    <string name="close">닫기</string>
+    <string name="rig_name">무전기</string>
+    <string name="debug">디버그</string>
+    <string name="logo_image">FT8CN</string>
+    <string name="RTS">RTS</string>
+    <string name="FAQ">FAQ</string>
+    <string name="launch_supervision">송신 감시</string>
+    <string name="no_response_count">무응답</string>
+    <string name="break_launch">중단</string>
+    <string name="follow_cq">CQ 자동 추적</string>
+    <string name="auto_call_follow">추적 자동 호출</string>
+    <string name="DTR">DTR</string>
+    <string name="launch">송신</string>
+    <string name="export">내보내기</string>
+    <string name="view_style">표시 방식</string>
+    <string name="ptt_delay">PTT 지연</string>
+    <string name="filter">필터</string>
+    <string name="pl_filter">필터를 선택하세요</string>
+    <string name="filter_all">전체 보기</string>
+    <string name="filter_is_qsl">확인된 것만</string>
+    <string name="filter_none_qsl">미확인만</string>
+    <string name="cable_connect">USB</string>
+    <string name="bluetooth_connect">블루투스</string>
+    <string name="cable_mode">연결 방식</string>
+    <string name="pl_select_bluetooth">연결할 블루투스 기기를 선택하세요</string>
+    <string name="bluetooth_set">블루투스 설정</string>
+    <string name="spp_device">블루투스 SPP 기기</string>
+    <string name="headset_device">블루투스 헤드셋</string>
+    <string name="disconnect_rig">무전기 연결이 끊어졌습니다</string>
+    <string name="connected_rig">무전기 연결에 성공했습니다.</string>
+    <string name="current_frequency">현재 주파수 : %s</string>
+    <string name="radio_communication_error">무전기 통신 오류: %s</string>
+    <string name="does_not_support_recording">블루투스 기기가 녹음을 지원하지 않습니다</string>
+    <string name="bluetooth_headset_mode">블루투스 헤드셋 모드로 전환</string>
+    <string name="bluetooth_Headset_mode_cancelled">블루투스 헤드셋 모드 해제</string>
+
+    <string name="version_info">FT8CN 버전 %s\nBG7YOZ\n%s</string>
+
+    <string name="exit">종료</string>
+    <string name="cancel">취소</string>
+    <string name="exit_confirmation">정말 종료하시겠습니까?</string>
+
+    <!--   FT8Message-->
+    <string name="std_msg">표준 메시지</string>
+    <string name="none_std_msg">비표준 호출</string>
+    <string name="free_text">자유 텍스트</string>
+    <string name="dXpedition">DX페디션</string>
+    <string name="field_day">필드데이</string>
+    <string name="telemetry">텔레메트리</string>
+    <string name="rtty_ru_msg">RTTY RU</string>
+
+    <!--   설정 -->
+    <string name="offset_time_sec">%.1f초</string>
+
+    <!--   스펙트럼 -->
+    <string name="decoding_takes_milliseconds">디코드 : %d ms</string>
+    <string name="sound_frequency_is_set_to">오디오 주파수 %d Hz</string>
+    <string name="de_noise">노이즈 제거</string>
+    <string name="raw_spectrum_data">원본</string>
+    <string name="markMessage">메시지 표시</string>
+    <string name="unMarkMessage">메시지 숨기기</string>
+
+    <!--   블루투스 기기 선택 -->
+    <string name="select_bluetooth_device">블루투스 기기 선택 : %s</string>
+
+    <!--   PTT 지연(ms) -->
+    <string name="milliseconds">%d ms</string>
+    <!--   무응답 횟수 -->
+    <string name="ignore">무시</string>
+    <string name="times">%d회</string>
+
+    <!--   호출 화면 -->
+    <string name="sound_frequency_is">주파수 : %.0f Hz</string>
+    <string name="target_callsign">대상 : %s</string>
+    <string name="transmission_sequence">송신 순서 : %d</string>
+    <string name="message_count">메시지(%d)</string>
+
+    <!--   로그 내보내기 -->
+    <string name="export_info">같은 LAN에 연결된 다른 기기의 웹 브라우저로 백그라운드에서 내보내기를 실행하세요.\n브라우저 주소창에 다음을 입력하세요:\nhttp://%s:%d</string>
+    <!--   송신 감시 -->
+    <string name="minutes">%d분</string>
+
+    <!--   송신 감시 -->
+    <string name="freq_syn">송신=수신 고정</string>
+    <string name="freq_asyn">송수신 분리</string>
+    <string name="auto_follow_cq">CQ 자동 추적</string>
+    <string name="not_concerned_about_CQ">CQ 추적 안 함</string>
+    <string name="automatic_call_following">추적 자동 호출</string>
+    <string name="do_not_call_the_following_callsign">추적 호출 안 함</string>
+
+    <!--   디코드 -->
+    <string name="message_count_count">메시지(%d/%d)</string>
+    <string name="average_offset_seconds">평균 오프셋 : %.2f초</string>
+    <string name="my_grid">그리드 : %s</string>
+
+    <!--   디코드 목록 -->
+    <string name="tracking_receiver">수신 추적 %s(%s)</string>
+    <string name="calling_receiver">수신 호출 %s(%s)</string>
+    <string name="reply_to">응답 %s(%s)</string>
+    <string name="tracking">추적 %s(%s)</string>
+    <string name="calling">호출 %s(%s)</string>
+
+    <!--   그리드 거리 계산 -->
+    <string name="distance">%.0f km</string>
+
+    <!--   로그 목록 -->
+    <string name="confirmed">확인됨</string>
+    <string name="unconfirmed">미확인</string>
+    <string name="lotw_confirmation">LoTW 확인</string>
+    <string name="manual_confirmation">수동 확인</string>
+    <string name="log_start_time">시작 시간 : %s</string>
+    <string name="log_end_time">종료 시간 : %s</string>
+    <string name="log_last_time">최근 교신 : %s</string>
+    <string name="log_grid">그리드 : %s</string>
+    <string name="log_mode">모드 : %s</string>
+    <string name="log_cancel_confirmation">확인 취소 (%s)</string>
+    <string name="log_manual_confirmation">수동 확인 (%s)</string>
+
+    <!--   QSL 로그 목록 -->
+    <string name="qsl_grid">그리드 : %s</string>
+    <string name="qsl_start_time">시작 시간 : %s</string>
+    <string name="qsl_end_time">종료 시간 : %s</string>
+    <string name="qsl_rst_rcvd">받은 RST : %s</string>
+    <string name="html_rst_rcvd">받은 RST</string>
+    <string name="qsl_rst_sent">보낸 RST : %s</string>
+    <string name="html_rst_sent">보낸 RST</string>
+    <string name="qsl_band">밴드 : %s</string>
+    <string name="qsl_freq">주파수 : %s</string>
+    <string name="qsl_mode">모드 : %s</string>
+    <string name="qsl_lotw_confirmation">LoTW 확인</string>
+    <string name="qsl_manual_confirmation">수동 확인</string>
+    <string name="qsl_unconfirmed">미확인</string>
+    <string name="qsl_cancel_confirmation">확인 취소 (%s)</string>
+    <string name="qsl_manual_confirmation_s">수동 확인 (%s)</string>
+    <string name="qsl_qrz_confirmation_s">QRZ (%s)</string>
+
+    <!--   QSL 기록 -->
+    <string name="qsl_record_import_time">가져온 시간 : %s</string>
+
+    <!--   HTML (웹 UI) -->
+    <string name="html_track_operation_information">운용 정보 모니터</string>
+    <string name="html_track_callsign_hash_table">호출부호 해시 테이블 모니터</string>
+    <string name="html_trace_parsed_messages">파싱된 메시지 모니터</string>
+    <string name="html_trace_callsign_and_grid_correspondence_table">호출부호와 그리드 대응표 모니터</string>
+    <string name="html_query_communication_message">QSO 조회</string>
+    <string name="html_query_configuration_information">설정 정보 조회</string>
+    <string name="html_query_all_table">모든 데이터 표 조회</string>
+    <string name="html_manage_tracking_callsign">추적 호출부호 관리</string>
+    <string name="html_manage_communication_callsigns">QSO 호출부호 관리</string>
+    <string name="html_show_communication_callsigns">QSO 호출부호 보기</string>
+    <string name="html_export_log">로그 내보내기</string>
+    <string name="html_import_log">로그 가져오기</string>
+    <string name="html_to_the_third_party">로그 내보내기 (백업 및 제3자 플랫폼 확인용 업로드)</string>
+    <string name="html_from_jtdx_lotw">로그 내보내기 (백업, 제3자 플랫폼 확인용 업로드, JTDX 로그 동기화, LoTW 확인 동기화에 사용. JTDX·LoTW·Log32·N1mm 의 ADI 데이터로 동기화하는 것을 권장합니다)</string>
+    <string name="html_return">돌아가기</string>
+
+    <string name="html_import_count">ADI 파일에 %d건이 있고 %d건을 가져왔습니다. %d건은 형식이 잘못되었습니다.</string>
+    <string name="html_import_failed">가져오기 실패! %s</string>
+    <string name="html_illegal_command">잘못된 명령입니다. 업로드에 실패했습니다!</string>
+    <string name="html_callsign">호출부호</string>
+    <string name="html_operation">작업</string>
+    <string name="html_delete">삭제</string>
+    <string name="html_qsl_start_time">QSO 시작 시각</string>
+    <string name="html_qsl_start_day">QSO 시작 날짜</string>
+    <string name="html_qsl_end_time">QSO 종료 시각</string>
+    <string name="html_qsl_end_date">QSO 종료 날짜</string>
+    <string name="html_qsl_mode">모드</string>
+    <string name="html_qsl_grid">그리드</string>
+    <string name="html_qsl_band">밴드</string>
+    <string name="html_qsl_freq">주파수</string>
+    <string name="html_qsl_manual_confirmation">수동 확인</string>
+    <string name="html_qsl_lotw_confirmation">LoTW 확인</string>
+    <string name="html_qsl_data_source">데이터 출처</string>
+    <string name="html_qsl_import_data_from_external">외부에서 가져옴</string>
+    <string name="html_qsl_native_data">내부 데이터</string>
+    <string name="html_variable">변수</string>
+    <string name="html_value">값</string>
+    <string name="html_my_callsign">호출부호</string>
+    <string name="html_my_grid">그리드</string>
+    <string name="html_decodes_in_this_cycle">이번 주기 디코드 수</string>
+    <string name="html_total_number_of_decodes">전체 디코드 수</string>
+    <string name="html_in_recording_state">녹음 상태</string>
+    <string name="html_recording">녹음 중</string>
+    <string name="html_no_recording">녹음 안 함</string>
+    <string name="html_time_consuming_for_this_decoding">이번 디코드 소요 시간</string>
+    <string name="html_milliseconds">%d밀리초</string>
+    <string name="html_average_delay_time_of_this_cycle">이번 주기 평균 지연</string>
+    <string name="html_seconds">%.3f초</string>
+    <string name="html_sound_frequency">신호의 오디오 주파수</string>
+    <string name="html_transmission_delay_time">송신 지연</string>
+    <string name="html_launch_supervision">송신 감시</string>
+    <string name="html_automatic_program_run_time">자동 프로그램 운용 시간</string>
+    <string name="html_no_reply_limit">무응답 한도</string>
+    <string name="html_no_reply_count">무응답 횟수</string>
+    <string name="html_mark_message">워터폴에 메시지 표시</string>
+    <string name="html_marking_message">메시지 표시 중</string>
+    <string name="html_do_not_mark_message">메시지 표시 안 함</string>
+    <string name="html_operation_mode">운용 모드</string>
+    <string name="html_civ_address">CI-V 주소</string>
+    <string name="html_baud_rate">통신 속도</string>
+    <string name="html_connect_mode">연결 방식</string>
+    <string name="html_available_serial_ports">사용 가능한 시리얼 포트</string>
+    <string name="html_serial_port_in_use">사용 중인 시리얼 포트</string>
+    <string name="html_instruction_set">명령 세트</string>
+    <string name="html_target_callsign">대상 호출부호</string>
+    <string name="html_sequential">송신 순서</string>
+
+    <string name="html_carrier_frequency_band">밴드</string>
+    <string name="html_radio_frequency">무전기 주파수</string>
+    <string name="html_successful_callsign">%s에 교신 성공한 호출부호</string>
+    <string name="html_tracking_callsign">추적 호출부호</string>
+    <string name="html_tracking_qso_information">추적 QSO 정보</string>
+
+    <string name="html_hash_value">해시</string>
+    <string name="html_please_select">선택하세요</string>
+    <string name="html_adi_format">ADI 형식의 로그 파일</string>
+    <string name="html_file_in_other_format">그 밖의 형식 파일은 정상적으로 파싱·가져오기되지 않을 수 있습니다.</string>
+    <string name="html_time">시각</string>
+    <string name="html_total">합계</string>
+    <string name="html_all_logs">전체 로그</string>
+    <string name="html_download">내려받기</string>
+    <string name="html_today_log">오늘 로그</string>
+    <string name="html_download_all">전체 내려받기</string>
+    <string name="html_download_unconfirmed">미확인 내려받기</string>
+    <string name="callsign_error">호출부호가 올바르지 않습니다!</string>
+    <string name="adjust_call_target">호출 대상 변경 : %s</string>
+    <string name="use_wspr2_error">현재 주파수 %s는 WSPR-2용 주파수입니다. 이 주파수에서는 FT8 송신이 금지됩니다!</string>
+    <string name="none">없음</string>
+    <string name="connect_bluetooth_spp">블루투스 시리얼 포트 %s 연결 중…</string>
+    <string name="bluetooth_is_connected">블루투스 기기 %s가 연결되었습니다.</string>
+    <string name="bluetooth_is_diconnected">블루투스 기기 %s 연결이 끊어졌습니다.</string>
+    <string name="sound_source_switched">오디오 입력이 전환되었습니다.</string>
+    <string name="bluetooth_turn_off">블루투스가 꺼져 있습니다.</string>
+    <string name="bluetooth_turn_on">블루투스가 켜져 있습니다.</string>
+    <string name="can_not_location">위치를 확인할 수 없습니다. 위치 권한이 있는지 확인하세요.</string>
+    <string name="statistical">통계</string>
+    <string name="count_up">상위</string>
+    <string name="count_down">하위</string>
+    <string name="band_statistics">밴드 통계</string>
+    <string name="count_total">합계 : %d</string>
+    <string name="confirmation_statistics">로그 확인 통계</string>
+    <string name="count_confirmed">확인됨</string>
+    <string name="count_unconfirmed">미확인</string>
+    <string name="count_total_logs">전체 : %d</string>
+    <string name="count_confirmed_log">확인 : %d</string>
+    <string name="count_lotw_confirmed">LoTW 확인 : %d</string>
+    <string name="count_manually_confirmed">수동 확인 : %d</string>
+    <string name="count_confirmed_proportion">확인 비율 : %.1f%%</string>
+    <string name="count_tota_callsigns">호출부호 합계 : %d</string>
+    <string name="count_zone">존 %s</string>
+    <string name="itu_completion_statistics">ITU 달성 통계</string>
+    <string name="count_incomplete">미달성</string>
+    <string name="count_completed">달성</string>
+    <string name="count_total_itu">ITU 전체 : %d\n달성 %d(%.1f%%)</string>
+    <string name="count_itu_completed_scale">ITU 통계</string>
+    <string name="count_cqzone_completed">CQ 존 통계</string>
+    <string name="count_total_cqzone">CQ 존 전체 : %d \n 달성 : %d(%.1f%%)</string>
+    <string name="count_cqzone_proportion">CQ 존 통계</string>
+    <string name="dxcc_completion_statistics">DXCC 통계</string>
+    <string name="count_total_dxcc">DXCC 전체 : %d \n달성 : %d(%.1f%%)</string>
+    <string name="count_dxcc_proportion">DXCC 통계</string>
+    <string name="callsign_info">호출부호:%s\n위치:%s\nCQ 존:%d\nITU 존:%d\n대륙:%s\n경도·위도:%.2f,%.2f\n시간대:%.0f\nDXCC 접두어:%s</string>
+    <string name="maximum_distance">최장 거리\n\n%s</string>
+    <string name="minimum_distance">최단 거리\n\n%s</string>
+    <string name="count_distance_info">최장 거리:%.0f km (%s)\n최단 거리:%.0f km (%s)</string>
+    <string name="distance_statistics">거리 통계</string>
+    <string name="dxcc_image">dxcc</string>
+    <string name="cqzone">CQ 존</string>
+    <string name="itu_image">ITU 존</string>
+    <string name="recorder_cannot_record">녹음할 수 없습니다. 권한을 확인하세요. %s</string>
+    <string name="recorder_stop_record_error">녹음 중지 오류! %s</string>
+    <string name="delete_confirmation">삭제 확인</string>
+    <string name="are_you_sure_delete">정말 삭제하시겠습니까?</string>
+    <string name="ok_confirmed">확인</string>
+    <string name="network_connect">네트워크</string>
+    <string name="pl_select_flex_radio">사용 가능한 FlexRadio를 선택하세요</string>
+    <string name="select_flex_device">FlexRadio 기기 선택 : %s</string>
+    <string name="select_xiegu_device">Xiegu 라디오 기기 선택 : %s</string>
+    <string name="only_flex_supported">현재는 FlexRadio 또는 ICOM 계열만 지원합니다!</string>
+    <string name="flex_connect_failed">FlexRadio %s 연결에 실패했습니다!</string>
+    <string name="xiegu_connect_failed">Xiegu 라디오 %s 연결에 실패했습니다!</string>
+    <string name="init_flex_operation">%s 운용을 초기화하는 중입니다.</string>
+    <string name="html_max_message_cache">캐시 메시지 최대 개수</string>
+    <string name="instruction_failed">명령 %s 실행에 실패했습니다. 메시지 : %s</string>
+    <string name="instruction_success">명령 %s을(를) 실행했습니다.</string>
+    <string name="flex_ip_addr">IP</string>
+    <string name="pl_input_flex_ip">IP 주소를 입력하세요</string>
+    <string name="connect_flex">FlexRadio 연결</string>
+    <string name="connect_flex_ip">FlexRadio %s 연결 중…</string>
+    <string name="get_new_version">최신 버전 확인</string>
+    <string name="login_icom_help">ICOM 로그인</string>
+    <string name="pl_input_icom_port">제어 포트(UDP)</string>
+    <string name="icom_port">포트</string>
+    <string name="icom_user_name">사용자</string>
+    <string name="pl_icom_user">사용자 이름을 입력하세요</string>
+    <string name="icom_password">비밀번호</string>
+    <string name="pl_icom_password">비밀번호를 입력하세요</string>
+    <string name="icom_login_button">로그인</string>
+    <string name="show_password">비밀번호 표시</string>
+    <string name="connect_icom_ip">ICOM 무전기 %s 연결 중…</string>
+    <string name="connect_xiegu_ip">XIEGU 무전기 %s 연결 중…</string>
+    <string name="network_exception">%s : 네트워크 전송 예외 : %s</string>
+    <string name="login_succeed">로그인에 성공했습니다!</string>
+    <string name="loging_failed">로그인 실패. 사용자 이름 또는 비밀번호가 올바르지 않습니다.</string>
+    <string name="data_stream">데이터 스트림</string>
+    <string name="control_stream">제어 스트림</string>
+    <string name="civ_stream">CI-V 스트림</string>
+    <string name="audio_stream">오디오 스트림</string>
+    <string name="alc_high_alert">경고! ALC가 너무 높습니다.</string>
+
+    <string name="swr_high_alert">경고! SWR이 너무 높습니다.</string>
+    <string name="volume_percent">신호 출력 세기 %.0f%%</string>
+    <string name="signal_strength">신호 출력 세기</string>
+    <string name="html_distance">거리</string>
+    <string name="html_callsign_qth">호출부호의 QTH</string>
+    <string name="html_update_time">갱신 시각</string>
+    <string name="grid_tracker_new_grid">새 그리드 발견 : %s</string>
+    <string name="tracker_open_messages">메시지 열기</string>
+    <string name="tracker_close_messages">메시지 닫기</string>
+    <string name="tracker_decoded_new">%d개 메시지를 디코드했습니다.</string>
+    <string name="tracker_call_this">이 호출부호 호출</string>
+    <string name="tracker_show_info_mode">표시 모드</string>
+    <string name="tracker_tips_all">전체</string>
+    <string name="tracker_tips_new">신규</string>
+    <string name="tracker_tips_none">없음</string>
+    <string name="tracker_show_cq_tips">CQ 표시</string>
+    <string name="tracker_hide_cq_tips">CQ 숨기기</string>
+    <string name="tracker_show_qsx_tips">QSX 표시</string>
+    <string name="tracker_hide_qsx_tips">QSX 숨기기</string>
+    <string name="track_sample_text_qsl">QSL</string>
+    <string name="tracker_sample_qso_text">QSO</string>
+    <string name="tracker_sample_qsx_text">QSX</string>
+    <string name="tracker_cq_text">CQ</string>
+    <string name="tracker_qso_text">QSO</string>
+    <string name="tracker_new_zone_found">새 존 발견 : %s</string>
+    <string name="transmit_freeText">자유 텍스트를 입력하세요</string>
+    <string name="trans_free_text_mode">자유 텍스트 모드</string>
+    <string name="trans_standard_messge_mode">표준 메시지 모드</string>
+    <string name="launch_supervision_ignore">무시</string>
+    <string name="be_excluded_callsigns">제외할 호출부호 접두어</string>
+    <string name="pl_callsing_prefix">호출부호 접두어를 입력하세요</string>
+    <string name="cache_clear">비우기</string>
+    <string name="cache_clear_title">캐시 비우기</string>
+    <string name="follow_callsign_data">추적 호출부호</string>
+    <string name="cancel_clear_cache">취소</string>
+    <string name="log_statistics_cache">캐시된 로그 수</string>
+    <string name="logs_cache">디코드 메시지</string>
+    <string name="band_total">밴드 \t 합계</string>
+    <string name="modifier_editor">CQ 수식어</string>
+    <string name="pl_input_modifier">수식어를 입력하세요</string>
+    <string name="flex_start_atu">ATU 시작</string>
+    <string name="flex_max_tx_power">최대 송신 출력 %d W</string>
+    <string name="flex_tune_power">ATU 튜닝 출력 %d W</string>
+    <string name="html_flex_max_rf_power">최대 송신 출력</string>
+    <string name="html_atu_tune_power">ATU 튜닝 출력</string>
+    <string name="flex_atu_tune_off">TUNE 끔</string>
+    <string name="flex_atu_tune_on">TUNE 켬</string>
+    <string name="flex_logo_text">FlexRadio</string>
+    <string name="map_location_image">지도에서 위치 보기</string>
+    <string name="log_menu_location">위치</string>
+    <string name="tracker_query_qso_info">QSO 데이터 조회 중…</string>
+    <string name="html_callsign_grid_total">합계 : %d</string>
+    <string name="html_message_page_count">페이지 수 : %d</string>
+    <string name="html_message_page_size">페이지 크기 :</string>
+    <string name="html_message_query">검색</string>
+    <string name="config_save_swl">디코드 저장</string>
+    <string name="config_donot_save_swl">디코드 저장 안 함</string>
+    <string name="config_save_swl_qso">SWL용 QSO 저장</string>
+    <string name="config_donot_save_swl_qso">SWL용 QSO 저장 안 함</string>
+    <string name="html_query_swl_message">디코드 메시지 조회(SWL)</string>
+    <string name="log_statistics_decode_msg">전체 디코드 메시지 수</string>
+    <string name="config_Syn_time">시각 동기화</string>
+    <string name="utc_time_sync_delay_slow">동기화되었습니다. 기기 시계가 %d밀리초 느립니다</string>
+    <string name="utc_time_sync_delay_faster">동기화되었습니다. 기기 시계가 %d밀리초 빠릅니다</string>
+    <string name="config_clock_is_accurate">기기 시계가 정확합니다!</string>
+    <string name="html_start_date_swl_message">시작 날짜</string>
+    <string name="html_end_date_swl_message">종료 날짜</string>
+    <string name="html_query_qso_swl">SWL QSO 조회</string>
+    <string name="html_export_csv">CSV 파일로 내보내기</string>
+    <string name="html_export_text">TEXT 파일로 내보내기</string>
+    <string name="html_export_adi">ADIF 파일로 내보내기</string>
+    <string name="log_statistics_swl_qso">전체 디코드 QSO 수</string>
+    <string name="config_clear_swl_qso">디코드 QSO</string>
+    <string name="audioOutput">오디오 출력</string>
+    <string name="audio16_bit">16비트 정수</string>
+    <string name="audio32_bit">32비트 부동소수</string>
+    <string name="html_audio_bits">오디오 - 비트 심도</string>
+    <string name="audio_rate_12k">12kHz</string>
+    <string name="audio_rate_24k">24kHz</string>
+    <string name="audio_rate_48k">48kHz</string>
+    <string name="audio_rate">샘플레이트</string>
+    <string name="html_audio_rate">오디오 - 샘플레이트</string>
+    <string name="audio_bit_depth">비트 심도</string>
+    <string name="callsign_help">callsign_ko.txt</string>
+    <string name="maidenhead_help">maidenhead_ko.txt</string>
+    <string name="frequency_help">frequency_ko.txt</string>
+    <string name="transDelay_help">transDelay_ko.txt</string>
+    <string name="timeoffset_help">timeoffset_ko.txt</string>
+    <string name="pttdelay_help">pttdelay_ko.txt</string>
+    <string name="operationBand_help">operationBand_ko.txt</string>
+    <string name="controlMode_help">controlMode_ko.txt</string>
+    <string name="civ_help">civ_help_ko.txt</string>
+    <string name="rig_model_help">rig_model_help_ko.txt</string>
+    <string name="launch_supervision_help">launch_supervision_ko.txt</string>
+    <string name="no_response_help">no_response_help_ko.txt</string>
+    <string name="auto_follow_help">auto_follow_help_ko.txt</string>
+    <string name="connectMode_help">connectMode_ko.txt</string>
+    <string name="excludeCallsign_help">excludeCallsign_ko.txt</string>
+    <string name="swlMode_help">swlMode_ko.txt</string>
+    <string name="audio_output_help">audio_output_help_ko.txt</string>
+    <string name="deep_mode_help">decode_help_ko.txt</string>
+    <string name="clear_cache_data_help">clear_cache_data_ko.txt</string>
+    <string name="html_query_logs">로그 조회</string>
+    <string name="html_qso_all">전체</string>
+    <string name="html_qso_source">데이터 출처</string>
+    <string name="html_qso_unconfirmed">미확인</string>
+    <string name="html_qso_confirmed">확인됨</string>
+    <string name="html_qso_raw_log">로컬 로그</string>
+    <string name="html_qso_external_logs">외부 로그</string>
+    <string name="html_qso_external">외부</string>
+    <string name="html_qso_raw">로컬 로그</string>
+    <string name="html_protocol">프로토콜</string>
+    <string name="html_comment">비고</string>
+    <string name="decode_mode_text">디코드 모드</string>
+    <string name="fast_mode">고속 디코드</string>
+    <string name="deep_mode">심층 디코드</string>
+    <string name="export_null">같은 LAN에 연결된 다른 기기의 웹 브라우저에서 웹 UI로 내보내기를 실행하세요.\n유효한 Wi-Fi에 연결되어 있어야 합니다.</string>
+    <string name="null_task_html">작업이 없습니다!</string>
+    <string name="log_importing_html">가져오는 중...</string>
+    <string name="log_import_finished_html">완료!</string>
+    <string name="import_read_error_count_html">오류 줄: %d</string>
+    <string name="import_new_count_html">추가 QSL: %d</string>
+    <string name="import_update_count_html">갱신 QSL: %d</string>
+    <string name="import_invalid_count_html">잘못된 QSL: %d</string>
+    <string name="import_progress_html">"진행: "</string>
+    <string name="import_readed_html">검증된 QSL: %d</string>
+    <string name="import_canceled_html">취소되었습니다!</string>
+    <string name="import_cancel_button">중지</string>
+    <string name="qsl_query_log_menu">로그 (%s)</string>
+    <string name="message_list_simple_mode">간단 목록 모드</string>
+    <string name="message_list_standard_mode">표준 목록 모드</string>
+    <string name="config_msg_mode">메시지 모드</string>
+    <string name="config_msg_std_mode">표준</string>
+    <string name="config_msg_simple_mode">간단</string>
+    <string name="message_mode_help">messageMode_ko.txt</string>
+    <string name="pl_select_xiegu_radio">사용 가능한 XIEGU 라디오를 선택하세요</string>
+    <string name="x6100_packet_lost">패킷 손실: %d</string>
+    <string name="xiegu_name_label">XIEGU</string>
+    <string name="xiegu_ping_value">핑: %d ms</string>
+    <string name="xiegu_start_atu">ATU 시작</string>
+    <string name="xiegu_atu_on">ATU 켬</string>
+    <string name="xiegu_atu_off">ATU 끔</string>
+    <string name="xiegu_band_str">밴드 : %s</string>
+    <string name="alc_low_alert">경고! ALC가 너무 낮습니다.</string>
+    <string name="xiegu_meter_info">S 미터: %.1f dBm\nSWR: %s\nALC: %.1f\n전압: %.1fV\n송신 출력: %.1f W\n최대 송신 출력: %.1f\n송신 볼륨: %d%%</string>
+    <string name="serial_connect_no_access">시리얼 포트에 연결할 수 없습니다. USB 기기 접근 권한이 있는지 확인하세요!</string>
+    <string name="serial_connect_failed">시리얼 포트 열기에 실패했습니다!</string>
+    <string name="serial_no_driver">시리얼 포트에 연결할 수 없습니다. 시리얼 포트를 찾지 못했습니다!</string>
+    <string name="serial_data_bits">데이터 비트</string>
+    <string name="serial_parity">패리티 비트</string>
+    <string name="serial_parity_none">없음</string>
+    <string name="serial_parity_odd">홀</string>
+    <string name="serial_parity_even">짝</string>
+    <string name="serial_parity_mark">마크</string>
+    <string name="serial_parity_space">스페이스</string>
+    <string name="serial_stop_bits">정지 비트</string>
+    <string name="serial_default">기본</string>
+    <string name="serial_setting_help">serial_help_ko.txt</string>
+    <string name="tcp_connect_closed">네트워크 연결이 끊어졌습니다.</string>
+    <string name="share_logs">로그 공유</string>
+    <string name="config_clear_share_data">캐시 파일 삭제</string>
+    <string name="preparing_log_data">로그 데이터 준비 중…</string>
+    <string name="total_logs">전체 %d건의 로그가 있습니다.</string>
+    <string name="get_log_no">%d건의 로그를 내려받았습니다.</string>
+    <string name="write_file_error">파일 쓰기 중 오류가 발생했습니다: %s</string>
+    <string name="import_share_failed">로그 데이터 가져오기에 실패했습니다! %s</string>
+    <string name="preparing_import_logs">로그 가져오기 준비 중…</string>
+    <string name="share_logs_been_read">%d건의 로그를 읽었습니다.</string>
+    <string name="share_import_log_data">로그 데이터를 가져오는 중…</string>
+    <string name="cloudlog_settings">Cloudlog 설정</string>
+    <string name="config_enable_cloudlog">Cloudlog 동기화 사용</string>
+    <string name="cloudlog_addr">서버 주소</string>
+    <string name="cloudlog_api_key">API 키</string>
+    <string name="test_cloudlog_config">테스트</string>
+    <string name="cloudlog_station_id">스테이션 ID</string>
+    <string name="cloudlog_help">cloudlog_ko.txt</string>
+    <string name="pass">통과!</string>
+    <string name="fail">실패!</string>
+    <string name="testing">확인 중…</string>
+    <string name="test">테스트</string>
+    <string name="qrz_settings">QRZ.com 설정</string>
+    <string name="qrz_api_key">API 키</string>
+    <string name="config_enable_qrz">QRZ 동기화 사용</string>
+    <string name="qrz_help">qrz_ko.txt</string>
+    <string name="alram_switch">경보 스위치</string>
+
+    <!-- ============================================================
+         간헐 CQ (주기적 Auto CQ) - 한국어판 추가 기능
+         ============================================================ -->
+    <string name="interval_cq_period">간헐 CQ</string>
+    <string name="interval_cq_period_off">꺼짐(연속)</string>
+    <string name="interval_cq_minutes">%d분마다</string>
+    <string name="interval_cq_count">1회 CQ 송신</string>
+    <string name="interval_cq_count_item">%d회</string>
+    <string name="interval_cq_help">interval_cq_ko.txt</string>
+    <string name="interval_cq_status_burst">%1$d분 CQ %2$d/%3$d</string>
+    <string name="interval_cq_status_wait">간헐 %1$d분 %2$s</string>
+    <string name="interval_cq_watchdog_warning">송신 감시(%1$d분)가 간헐 CQ 주기보다 짧아 곧 자동 송신이 멈춥니다. 설정에서 송신 감시를 늘리거나 (무시)로 바꾸세요.</string>
+</resources>
