@@ -57,8 +57,12 @@ public class IcomRigConstant {
     public static final byte CMD_SET_OPERATING_MODE = 0x06;//设置操作的模式
 
     public static final byte CMD_READ_METER = 0x15;//读meter
+    public static final byte CMD_READ_METER_PO = 0x11;//读meter子命令，输出功率表(한국어판 0.93-kr14)
     public static final byte CMD_READ_METER_SWR = 0x12;//读meter子命令，驻波表
     public static final byte CMD_READ_METER_ALC = 0x13;//读meter子命令，ALC表
+    //한국어판(0.93-kr14): 송신 출력(RF POWER) 읽기/설정
+    public static final byte CMD_RF_POWER = 0x14;//0x14 는 각종 레벨 설정 명령
+    public static final byte CMD_RF_POWER_LEVEL = 0x0A;//子命令 0x0A = RF POWER (0000~0255)
     public static final byte CMD_CONNECTORS = 0x1A;//Connector设置，读取
     public static final byte CMD_CONNECTORS_DATA_MODE = 0x05;//Connector设置，读取
     public static final int CMD_CONNECTORS_DATA_WLAN_LEVEL = 0x050117;//Connector设置，读取
@@ -140,6 +144,28 @@ public class IcomRigConstant {
     }
 
     /**
+     * 한국어판(0.93-kr14): 안테나 튜너를 켜는(TUNER ON) 명령을 만든다.
+     * FE FE &lt;rigAddr&gt; &lt;ctrAddr&gt; 1C 01 01 FD
+     * 튜너가 꺼져 있으면 1C 01 02(오토튠 시작)가 먹지 않으므로 먼저 이 명령을 보낸다.
+     *
+     * @param ctrAddr 내 주소
+     * @param rigAddr 무전기 주소
+     * @return 명령 데이터 패킷
+     */
+    public static byte[] setTunerOn(int ctrAddr, int rigAddr) {
+        byte[] data = new byte[8];
+        data[0] = (byte) 0xfe;
+        data[1] = (byte) 0xfe;
+        data[2] = (byte) rigAddr;
+        data[3] = (byte) ctrAddr;
+        data[4] = SET_TUNER_ON[0];//主指令代码1C
+        data[5] = SET_TUNER_ON[1];//子指令代码01(튜너)
+        data[6] = SET_TUNER_ON[2];//상태 01=튜너 켜기
+        data[7] = (byte) 0xfd;
+        return data;
+    }
+
+    /**
      * 读驻波表
      *
      * @param ctrAddr 我的地址
@@ -177,6 +203,98 @@ public class IcomRigConstant {
         data[5] = (byte) CMD_READ_METER_ALC;//子指令代码ALC
         data[6] = (byte) 0xfd;
         return data;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 출력(Po) 미터를 읽는 명령을 만든다.
+     * FE FE &lt;rigAddr&gt; &lt;ctrAddr&gt; 15 11 FD (응답: 15 11 &lt;BCD 상위&gt; &lt;BCD 하위&gt; FD, 0~255)
+     *
+     * @param ctrAddr 내 주소
+     * @param rigAddr 무전기 주소
+     * @return 명령 데이터 패킷
+     */
+    public static byte[] getPOState(int ctrAddr, int rigAddr) {
+        byte[] data = new byte[7];
+        data[0] = (byte) 0xfe;
+        data[1] = (byte) 0xfe;
+        data[2] = (byte) rigAddr;
+        data[3] = (byte) ctrAddr;
+        data[4] = (byte) CMD_READ_METER;
+        data[5] = (byte) CMD_READ_METER_PO;
+        data[6] = (byte) 0xfd;
+        return data;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 정수(0~255)를 ICOM CI-V 2바이트 BCD 로 바꾼다. (상위 바이트가 앞)
+     * 이 클래스의 twoByteBcdToInt 와 짝을 이룬다.
+     *
+     * @param value 0~9999
+     * @return {상위 BCD, 하위 BCD}
+     */
+    public static byte[] intToTwoByteBcd(int value) {
+        if (value < 0) value = 0;
+        if (value > 9999) value = 9999;
+        byte high = (byte) (((value / 1000) % 10) << 4 | ((value / 100) % 10));
+        byte low = (byte) (((value / 10) % 10) << 4 | (value % 10));
+        return new byte[]{high, low};
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 송신 출력을 %로 맞추는 명령(14 0A)을 만든다.
+     * FE FE &lt;rigAddr&gt; &lt;ctrAddr&gt; 14 0A &lt;BCD 상위&gt; &lt;BCD 하위&gt; FD
+     * 값은 0~255(255 = 100%)이며, 예를 들어 100% 는 02 55, 50% 는 01 28, 10% 는 00 26 이다.
+     *
+     * @param ctrAddr 내 주소
+     * @param rigAddr 무전기 주소
+     * @param percent 0~100 %
+     * @return 명령 데이터 패킷
+     */
+    public static byte[] setRfPower(int ctrAddr, int rigAddr, int percent) {
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
+        int value = Math.round(percent * 255f / 100f);
+        byte[] bcd = intToTwoByteBcd(value);
+        byte[] data = new byte[9];
+        data[0] = (byte) 0xfe;
+        data[1] = (byte) 0xfe;
+        data[2] = (byte) rigAddr;
+        data[3] = (byte) ctrAddr;
+        data[4] = CMD_RF_POWER;
+        data[5] = CMD_RF_POWER_LEVEL;
+        data[6] = bcd[0];
+        data[7] = bcd[1];
+        data[8] = (byte) 0xfd;
+        return data;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 무전기에 설정된 송신 출력을 읽는 명령(14 0A)을 만든다.
+     * 데이터 없이 보내면 14 0A &lt;BCD 상위&gt; &lt;BCD 하위&gt; 로 응답한다.
+     *
+     * @param ctrAddr 내 주소
+     * @param rigAddr 무전기 주소
+     * @return 명령 데이터 패킷
+     */
+    public static byte[] getRfPower(int ctrAddr, int rigAddr) {
+        byte[] data = new byte[7];
+        data[0] = (byte) 0xfe;
+        data[1] = (byte) 0xfe;
+        data[2] = (byte) rigAddr;
+        data[3] = (byte) ctrAddr;
+        data[4] = CMD_RF_POWER;
+        data[5] = CMD_RF_POWER_LEVEL;
+        data[6] = (byte) 0xfd;
+        return data;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): CI-V 14 0A 값(0~255)을 출력 % 로 바꾼다.
+     */
+    public static int rfPowerValueToPercent(int value) {
+        if (value <= 0) return 0;
+        if (value >= 255) return 100;
+        return Math.round(value * 100f / 255f);
     }
 
     public static byte[] getConnectorWLanLevel(int ctrAddr, int rigAddr){

@@ -24,6 +24,28 @@ Credits
 
 Korean edition changes
 
+  0.93-kr14
+   1. Tapping TUNE now switches the radio's antenna tuner (TUNER) on before starting auto tune.
+      - With the tuner off the auto tune command was simply ignored. The app now sends 1C 01 01 (tuner on)
+        and, about 0.12 s later, 1C 01 02 (start auto tune). The IC-705 function menu no longer has to be
+        set to TUNER first.
+      - The screen never freezes while the two commands are being sent.
+      - No ALC warning is raised during the 8 s the tuner runs, because a high ALC is normal while tuning.
+   2. While transmitting, the RF output (Po) and ALC are shown in % next to SWR.
+      - They appear on a second, smaller line under SWR, e.g. `Po 95% · ALC 35%`. The radio is read every
+        0.5 s during transmission (ICOM).
+      - Po is CI-V 15 11, converted to % with the ICOM scale (0 = 0%, 143 = 50%, 213 = 100%).
+      - ALC is CI-V 15 13 (0 to 120), shown as 0 to 100%.
+      - After a transmission the last values stay on screen dimmed, and they are cleared when the radio
+        is disconnected.
+   3. A PWR (transmit power) button now sits next to TUNE.
+      - One tap offers 10% / 25% / 50% / 75% / 100%. (ICOM CI-V 14 0A, the 0-255 value in 2-byte BCD)
+      - The chosen level is set on the radio at once and the app says "Radio RF power set to N% ."
+      - The button shows the current level on a small line under PWR, e.g. `100%`. It is read again at the
+        start of every transmission, so a level changed with the knob on the radio is reflected on the
+        next transmission.
+      - Radios without RF power control (Yaesu, Kenwood and others) say they are not supported.
+
   0.93-kr13
    1. The live SWR of the radio is shown on screen while transmitting.
       - A small SWR badge appears at the top of the waterfall, between the UTC clock and the
@@ -44,6 +66,7 @@ Korean edition changes
       - Radios without auto tune (Yaesu, Kenwood and others) say they are not supported.
       - On an IC-705 the antenna tuner (TUNER) must be switched on in the radio's function menu
         for TUNE to work.
+        (From 0.93-kr14 the app switches the tuner on itself when TUNE is tapped.)
 
   0.93-kr12
    1. The message lists (decode and call) now use five row colours.

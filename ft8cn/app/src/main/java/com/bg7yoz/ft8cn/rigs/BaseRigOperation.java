@@ -162,4 +162,33 @@ public class BaseRigOperation {
         if (swr >= 10f) return "10+";
         return String.format(Locale.US, "%.1f", swr);
     }
+
+    /**
+     * 한국어판(0.93-kr14): ICOM CI-V 0x15 0x11(출력 Po 미터) 원값을 출력 % 로 바꾼다.
+     * ICOM 눈금은 0=0%, 143=최대 출력의 50%, 213=100% 로 알려져 있어, 그 두 구간을 직선으로 잇는다.
+     * (IC-705 는 배터리 5W, 외부 DC 10W 로 최대 출력이 달라지므로 % 로 보여 준다)
+     *
+     * @param meter 미터 원값(0~255)
+     * @return 출력 %(0~100)
+     */
+    public static int poMeterToPercent(int meter) {
+        float m = meter;
+        if (m <= 0f) return 0;
+        if (m <= 143f) return Math.round(m * 50f / 143f);          //0 ~ 50%
+        if (m <= 213f) return Math.round(50f + (m - 143f) * 50f / 70f); //50 ~ 100%
+        return 100;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): ICOM CI-V 0x15 0x13(ALC 미터) 원값을 % 로 바꾼다.
+     * ICOM 은 0~120 이 ALC 눈금 전체이므로 120 을 100% 로 본다.
+     *
+     * @param meter 미터 원값(0~255)
+     * @return ALC %(0~100)
+     */
+    public static int alcMeterToPercent(int meter) {
+        if (meter <= 0) return 0;
+        if (meter >= 120) return 100;
+        return Math.round(meter * 100f / 120f);
+    }
 }

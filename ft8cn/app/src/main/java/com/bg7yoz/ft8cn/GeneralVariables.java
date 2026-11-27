@@ -184,6 +184,11 @@ public class GeneralVariables {
     public static MutableLiveData<Float> mutableBaseFrequency = new MutableLiveData<>();
     //한국어판(0.93-kr13): 송신 중 무전기에서 읽은 실시간 SWR (0 이하면 측정값 없음 → 화면에서 숨김)
     public static MutableLiveData<Float> mutableSwr = new MutableLiveData<>(0f);
+    //한국어판(0.93-kr14): 송신 중 무전기에서 읽은 출력(Po)과 ALC 를 %로 표시 (음수 = 측정값 없음 → 화면에서 숨김)
+    public static MutableLiveData<Integer> mutablePo = new MutableLiveData<>(-1);
+    public static MutableLiveData<Integer> mutableAlc = new MutableLiveData<>(-1);
+    //한국어판(0.93-kr14): 무전기에 설정된 송신 출력 % (음수 = 아직 읽지 못함)
+    public static MutableLiveData<Integer> mutableRfPower = new MutableLiveData<>(-1);
     public static String cloudlogServerAddress = "";//cloudlog的服务器地址
     public static String cloudlogApiKey = "";//cloudlog的APIKEY
     public static String cloudlogStationID = "";//cloudlog的站点ID

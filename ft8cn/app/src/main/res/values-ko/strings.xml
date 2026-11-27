@@ -372,6 +372,9 @@
     <string name="tune_while_transmitting">송신 중에는 오토튠을 실행할 수 없습니다.</string>
     <string name="tune_connect_first">먼저 무전기를 연결하세요.</string>
     <string name="tune_not_supported">현재 연결된 무전기에서는 오토튠을 지원하지 않습니다.</string>
+    <string name="rf_power_button_desc">무전기 송신 출력 조절(RF POWER)</string>
+    <string name="rf_power_set">무전기 출력을 %d%%로 설정했습니다.</string>
+    <string name="rf_power_not_supported">현재 연결된 무전기에서는 출력 조절을 지원하지 않습니다.</string>
     <string name="volume_percent">신호 출력 세기 %.0f%%</string>
     <string name="signal_strength">신호 출력 세기</string>
     <string name="html_distance">거리</string>

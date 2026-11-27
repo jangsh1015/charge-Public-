@@ -52,6 +52,47 @@ public abstract class BaseRig {
         GeneralVariables.mutableSwr.postValue(swr > 0f ? swr : 0f);
     }
 
+    /**
+     * 한국어판(0.93-kr14): 송신 중에 읽은 출력(Po)·ALC 를 %로 화면에 알린다. 음수는 '측정값 없음'.
+     *
+     * @param percent 0~100 %, 음수면 표시하지 않는다
+     */
+    protected void postPo(int percent) {
+        GeneralVariables.mutablePo.postValue(percent < 0 ? -1 : Math.min(percent, 100));
+    }
+
+    protected void postAlc(int percent) {
+        GeneralVariables.mutableAlc.postValue(percent < 0 ? -1 : Math.min(percent, 100));
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 무전기에 설정된 송신 출력 % 를 화면에 알린다. 음수는 '모름'.
+     *
+     * @param percent 0~100 %, 음수면 모름
+     */
+    protected void postRfPower(int percent) {
+        GeneralVariables.mutableRfPower.postValue(percent < 0 ? -1 : Math.min(percent, 100));
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 무전기의 송신 출력(RF POWER)을 %로 맞춘다.
+     * 지원하지 않는 무전기는 false 를 돌려주고, 화면에서는 지원하지 않는다고 알린다.
+     *
+     * @param percent 0~100 %
+     * @return 명령을 보냈으면 true
+     */
+    public boolean setRfPowerPercent(int percent) {
+        return false;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 무전기에 설정된 송신 출력을 읽어 온다. 읽으면 true.
+     * 읽은 값은 postRfPower 로 화면에 알린다.
+     */
+    public boolean readRfPower() {
+        return false;
+    }
+
     private final OnConnectReceiveData onConnectReceiveData = new OnConnectReceiveData() {
         @Override
         public void onData(byte[] data) {
@@ -161,6 +202,9 @@ public abstract class BaseRig {
 
     public void onDisconnecting() {
         postSwr(0f);//한국어판(0.93-kr13): 연결을 끊으면 SWR 표시를 지운다
+        postPo(-1);//한국어판(0.93-kr14): Po·ALC·출력 표시도 지운다
+        postAlc(-1);
+        postRfPower(-1);
     }
 
 }

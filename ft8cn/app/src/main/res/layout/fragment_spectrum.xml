@@ -65,6 +65,7 @@
             tools:text="波特率设置" />
 
         <!-- 한국어판(0.93-kr13): 송신 중 무전기의 실시간 SWR 과 안테나 튜너(TUNE) 버튼.
+             한국어판(0.93-kr14): 같은 자리에 출력(Po)·ALC 와 송신 출력(PWR) 단추를 더했다.
              워터폴 맨 위, UTC 시각과 주파수·밴드 글자 사이에 작게 놓아 폰·태블릿 어디서나 보인다. -->
         <LinearLayout
             android:id="@+id/swrTuneLayout"
@@ -74,27 +75,53 @@
             android:baselineAligned="false"
             android:gravity="center_vertical"
             android:orientation="horizontal"
+            app:layout_constrainedWidth="true"
             app:layout_constraintEnd_toStartOf="@+id/freqBandTextView"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toEndOf="@+id/timersTextView"
             app:layout_constraintTop_toTopOf="@+id/waterfallView">
 
-            <TextView
-                android:id="@+id/swrTextView"
+            <!-- 미터 상자: 첫 줄 SWR, 둘째 줄 Po·ALC -->
+            <LinearLayout
+                android:id="@+id/meterBox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/spectrum_text_back_ground"
-                android:paddingStart="6dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="3dp"
                 android:paddingTop="1dp"
-                android:paddingEnd="6dp"
+                android:paddingEnd="3dp"
                 android:paddingBottom="1dp"
-                android:textColor="@color/spectrum_text_color"
-                android:textSize="11sp"
-                android:textStyle="bold"
                 android:visibility="gone"
-                tools:ignore="SmallSp"
-                tools:text="SWR 1.2"
-                tools:visibility="visible" />
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/swrTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:textColor="@color/spectrum_text_color"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:ignore="SmallSp"
+                    tools:text="SWR 1.2"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/meterTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/spectrum_switch_color"
+                    android:textSize="10sp"
+                    android:visibility="gone"
+                    tools:ignore="SmallSp"
+                    tools:text="Po 95% · ALC 35%"
+                    tools:visibility="visible" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tuneTextView"
@@ -114,6 +141,28 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 tools:ignore="SmallSp" />
+
+            <TextView
+                android:id="@+id/pwrTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:background="@drawable/spectrum_text_back_ground"
+                android:clickable="true"
+                android:contentDescription="@string/rf_power_button_desc"
+                android:focusable="true"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="7dp"
+                android:paddingTop="1dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="1dp"
+                android:text="PWR"
+                android:textColor="@color/spectrum_switch_color"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:ignore="SmallSp"
+                tools:text="PWR\n100%" />
         </LinearLayout>
 
         <Switch

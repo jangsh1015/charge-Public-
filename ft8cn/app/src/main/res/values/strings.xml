@@ -370,6 +370,9 @@
     <string name="tune_while_transmitting">Can not start auto tune while transmitting .</string>
     <string name="tune_connect_first">Please connect the radio first .</string>
     <string name="tune_not_supported">Auto tune is not supported on the connected radio .</string>
+    <string name="rf_power_button_desc">Adjust the radio transmit power (RF POWER)</string>
+    <string name="rf_power_set">Radio RF power set to %d%% .</string>
+    <string name="rf_power_not_supported">RF power control is not supported on the connected radio .</string>
     <string name="volume_percent">Signal output strength %.0f %%</string>
     <string name="signal_strength">Signal output strength</string>
     <string name="html_distance">Distance</string>

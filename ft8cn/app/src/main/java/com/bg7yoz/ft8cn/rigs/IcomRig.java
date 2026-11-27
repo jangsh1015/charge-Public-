@@ -18,6 +18,11 @@ import com.bg7yoz.ft8cn.ui.ToastMessage;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 public class IcomRig extends BaseRig {
     private static final String TAG = "IcomRig";
@@ -26,6 +31,7 @@ public class IcomRig extends BaseRig {
     private byte[] dataBuffer = new byte[0];//数据缓冲区
     private int alc = 0;
     private int swr = 0;
+    private int po = 0;//한국어판(0.93-kr14): 출력(Po) 미터 원값
     private boolean alcMaxAlert = false;
     private boolean swrAlert = false;
     private Timer meterTimer;//查询meter的Timer
@@ -34,10 +40,31 @@ public class IcomRig extends BaseRig {
     //한국어판(0.93-kr13): 오토튠을 시작한 뒤 이 시간 동안은 송신 전이라도 SWR을 계속 읽어 화면에 보여 준다
     private long tuneMeterUntil = 0;
     private static final long TUNE_METER_WINDOW_MS = 8000;
+    //한국어판(0.93-kr14): 튜너를 켠 뒤 오토튠을 시작하기까지 기다리는 시간
+    private static final long TUNER_ON_DELAY_MS = 120;
+    private ScheduledExecutorService tuneExecutor;//튜너 켜기 → 오토튠 시작을 잇는 지연 실행기
     //private boolean isPttOn = false;
 
     private boolean isTuneMeterActive() {
         return System.currentTimeMillis() < tuneMeterUntil;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 화면을 막지 않고 잠시 뒤에 CI-V 명령을 보내기 위한 실행기.
+     * 데몬 스래드라서 앱이 끝나면 같이 끝난다.
+     */
+    private ScheduledExecutorService getTuneExecutor() {
+        if (tuneExecutor == null || tuneExecutor.isShutdown()) {
+            tuneExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r, "IcomRigTune");
+                    t.setDaemon(true);
+                    return t;
+                }
+            });
+        }
+        return tuneExecutor;
     }
 
     @Override
@@ -55,6 +82,9 @@ public class IcomRig extends BaseRig {
             } else {
                 sendCivData(IcomRigConstant.setConnectorDataMode(ctrAddress, getCivAddress(), (byte) 0x02));
             }
+            //한국어판(0.93-kr14): 송신을 시작할 때마다 무전기에 걸린 출력을 다시 읽어 단추에 보여 준다
+            //  (무전기 앞면 손잡이로 바꿔 둔 경우도 다음 송신에 바로 반영된다)
+            readRfPower();
         }
 
         if (getConnector() != null) {
@@ -188,13 +218,29 @@ public class IcomRig extends BaseRig {
             case IcomRigConstant.CMD_READ_METER://读meter//此处的指令，只在网络模式实现，以后可能会在串口方面实现
                 if (icomCommand.getSubCommand() == IcomRigConstant.CMD_READ_METER_ALC) {
                     alc = IcomRigConstant.twoByteBcdToInt(icomCommand.getData(true));
+                    //한국어판(0.93-kr14): ALC 원값을 %로 바꿔 화면에 보낸다
+                    postAlc(BaseRigOperation.alcMeterToPercent(alc));
                 }
                 if (icomCommand.getSubCommand() == IcomRigConstant.CMD_READ_METER_SWR) {
                     swr = IcomRigConstant.twoByteBcdToInt(icomCommand.getData(true));
                     //한국어판(0.93-kr13): 미터 원값을 실제 SWR 값으로 바꿔 화면에 보낸다
                     postSwr(BaseRigOperation.meterToSwr(swr));
                 }
+                if (icomCommand.getSubCommand() == IcomRigConstant.CMD_READ_METER_PO) {
+                    //한국어판(0.93-kr14): 출력(Po) 미터를 %로 바꿔 화면에 보낸다
+                    po = IcomRigConstant.twoByteBcdToInt(icomCommand.getData(true));
+                    postPo(BaseRigOperation.poMeterToPercent(po));
+                }
                 showAlert();//检查meter值是否在告警范围
+                break;
+            case IcomRigConstant.CMD_RF_POWER://한국어판(0.93-kr14): 14 0A 송신 출력 응답
+                if (icomCommand.getSubCommand() == IcomRigConstant.CMD_RF_POWER_LEVEL) {
+                    byte[] powerData = icomCommand.getData(true);
+                    if (powerData != null && powerData.length >= 2) {
+                        postRfPower(IcomRigConstant.rfPowerValueToPercent(
+                                IcomRigConstant.twoByteBcdToInt(powerData)));
+                    }
+                }
                 break;
             case IcomRigConstant.CMD_CONNECTORS:
                 break;
@@ -213,7 +259,8 @@ public class IcomRig extends BaseRig {
         } else {
             swrAlert = false;
         }
-        if ((alc > IcomRigConstant.alc_alert_max) && GeneralVariables.alc_switch_on) {//网络模式下不警告ALC
+        if ((alc > IcomRigConstant.alc_alert_max) && GeneralVariables.alc_switch_on
+                && !isTuneMeterActive()) {//한국어판(0.93-kr14): 오토튠 중에는 ALC가 높은 것이 당연하므로 경보를 내지 않는다
             if (!alcMaxAlert) {
                 alcMaxAlert = true;
                 ToastMessage.show(GeneralVariables.getStringFromResource(R.string.alc_high_alert));
@@ -276,6 +323,8 @@ public class IcomRig extends BaseRig {
                 if ((isPttOn() || isTuneMeterActive()) && !oldVersion) {
                     sendCivData(IcomRigConstant.getSWRState(ctrAddress, getCivAddress()));
                     sendCivData(IcomRigConstant.getALCState(ctrAddress, getCivAddress()));
+                    //한국어판(0.93-kr14): 출력(Po)도 같이 읽는다
+                    sendCivData(IcomRigConstant.getPOState(ctrAddress, getCivAddress()));
                 }
             }
         }, 0, IComPacketTypes.METER_TIMER_PERIOD_MS);
@@ -283,6 +332,7 @@ public class IcomRig extends BaseRig {
 
     /**
      * 한국어판(0.93-kr13): 안테나 튜너 오토튠(TUNE)을 시작한다.
+     * 한국어판(0.93-kr14): 튜너(TUNER)가 꺼져 있어도 되도록, 먼저 튜너를 켜고 잠시 뒤에 오토튠을 시작한다.
      * IC-705 + AH-705 는 튜너가 켜져 있어야 동작하므로, 명령을 보낸 후 8초 동안 SWR을 계속 읽는다.
      *
      * @return 명령을 보냈으면 true
@@ -297,14 +347,66 @@ public class IcomRig extends BaseRig {
         }
         tuneMeterUntil = System.currentTimeMillis() + TUNE_METER_WINDOW_MS;
         swrAlert = false;
+        alcMaxAlert = false;
         postSwr(0f);//새 측정값부터 다시 보여 준다
-        sendCivData(IcomRigConstant.setTuneStart(ctrAddress, getCivAddress()));
+        postPo(-1);
+        postAlc(-1);
+        //한국어판(0.93-kr14): TUNER OFF 상태에서는 1C 01 02(오토튠 시작)가 무시된다.
+        //  먼저 1C 01 01(튜너 켜기)을 보내고 TUNER_ON_DELAY_MS 뒤에 1C 01 02 를 보낸다.
+        //  (무전기가 켜짐 상태를 받아들일 시간을 주되, 화면은 막지 않는다)
+        sendCivData(IcomRigConstant.setTunerOn(ctrAddress, getCivAddress()));
+        final Runnable tuneStart = new Runnable() {
+            @Override
+            public void run() {
+                sendCivData(IcomRigConstant.setTuneStart(ctrAddress, getCivAddress()));
+            }
+        };
+        try {
+            getTuneExecutor().schedule(tuneStart, TUNER_ON_DELAY_MS, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            tuneStart.run();// 실행기를 만들 수 없으면 바로 보낸다
+        }
+        return true;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 무전기의 송신 출력(RF POWER)을 %로 맞춘다. (CI-V 14 0A)
+     *
+     * @param percent 0~100 %
+     * @return 명령을 보냈으면 true
+     */
+    @Override
+    public boolean setRfPowerPercent(int percent) {
+        if (getConnector() == null || !isConnected()) {
+            return false;
+        }
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
+        sendCivData(IcomRigConstant.setRfPower(ctrAddress, getCivAddress(), percent));
+        postRfPower(percent);
+        return true;
+    }
+
+    /**
+     * 한국어판(0.93-kr14): 무전기에 설정된 송신 출력을 읽어 온다. (CI-V 14 0A, 데이터 없음)
+     *
+     * @return 명령을 보냈으면 true
+     */
+    @Override
+    public boolean readRfPower() {
+        if (getConnector() == null || !isConnected()) {
+            return false;
+        }
+        sendCivData(IcomRigConstant.getRfPower(ctrAddress, getCivAddress()));
         return true;
     }
 
     @Override
     public void onDisconnecting() {
         tuneMeterUntil = 0;
+        if (tuneExecutor != null) {
+            tuneExecutor.shutdownNow();
+        }
         super.onDisconnecting();
     }
 
