@@ -64,6 +64,58 @@
             tools:ignore="SmallSp"
             tools:text="波特率设置" />
 
+        <!-- 한국어판(0.93-kr13): 송신 중 무전기의 실시간 SWR 과 안테나 튜너(TUNE) 버튼.
+             워터폴 맨 위, UTC 시각과 주파수·밴드 글자 사이에 작게 놓아 폰·태블릿 어디서나 보인다. -->
+        <LinearLayout
+            android:id="@+id/swrTuneLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:baselineAligned="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toStartOf="@+id/freqBandTextView"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@+id/timersTextView"
+            app:layout_constraintTop_toTopOf="@+id/waterfallView">
+
+            <TextView
+                android:id="@+id/swrTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/spectrum_text_back_ground"
+                android:paddingStart="6dp"
+                android:paddingTop="1dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="1dp"
+                android:textColor="@color/spectrum_text_color"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:ignore="SmallSp"
+                tools:text="SWR 1.2"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tuneTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:background="@drawable/spectrum_text_back_ground"
+                android:clickable="true"
+                android:contentDescription="@string/tune_button_desc"
+                android:focusable="true"
+                android:paddingStart="7dp"
+                android:paddingTop="1dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="1dp"
+                android:text="TUNE"
+                android:textColor="@color/spectrum_switch_color"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:ignore="SmallSp" />
+        </LinearLayout>
+
         <Switch
             android:id="@+id/deNoiseSwitch"
             android:layout_width="wrap_content"

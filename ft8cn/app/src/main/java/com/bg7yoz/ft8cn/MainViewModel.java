@@ -178,12 +178,14 @@ public class MainViewModel extends ViewModel {
         @Override
         public void onDisconnected() {
             //与电台连接中断
+            GeneralVariables.mutableSwr.postValue(0f);//한국어판(0.93-kr13): SWR 표시 지우기
             ToastMessage.show(getStringFromResource(R.string.disconnect_rig));
         }
 
         @Override
         public void onConnected() {
             //与电台建立连接
+            GeneralVariables.mutableSwr.postValue(0f);//한국어판(0.93-kr13): 새 연결의 측정값부터 보여 준다
             ToastMessage.show(getStringFromResource(R.string.connected_rig));
         }
 

@@ -3,6 +3,7 @@ package com.bg7yoz.ft8cn.rigs;
 import androidx.lifecycle.MutableLiveData;
 
 import com.bg7yoz.ft8cn.Ft8Message;
+import com.bg7yoz.ft8cn.GeneralVariables;
 import com.bg7yoz.ft8cn.connector.BaseRigConnector;
 
 /**
@@ -31,6 +32,25 @@ public abstract class BaseRig {
     public abstract void readFreqFromRig();//从电台读取频率
 
     public abstract String getName();//获取电台的名字
+
+    /**
+     * 한국어판(0.93-kr13): 안테나 튜너 오토튠(TUNE)을 시작한다.
+     * 지원하지 않는 무전기는 false 를 돌려주고, 화면에서는 지원하지 않는다고 알린다.
+     *
+     * @return 명령을 보냈으면 true
+     */
+    public boolean startAutoTune() {
+        return false;
+    }
+
+    /**
+     * 한국어판(0.93-kr13): 송신 중에 측정한 SWR 값을 화면에 알린다. 0 이하면 '측정값 없음'으로 본다.
+     *
+     * @param swr 실제 SWR 값
+     */
+    protected void postSwr(float swr) {
+        GeneralVariables.mutableSwr.postValue(swr > 0f ? swr : 0f);
+    }
 
     private final OnConnectReceiveData onConnectReceiveData = new OnConnectReceiveData() {
         @Override
@@ -140,6 +160,7 @@ public abstract class BaseRig {
     }
 
     public void onDisconnecting() {
+        postSwr(0f);//한국어판(0.93-kr13): 연결을 끊으면 SWR 표시를 지운다
     }
 
 }

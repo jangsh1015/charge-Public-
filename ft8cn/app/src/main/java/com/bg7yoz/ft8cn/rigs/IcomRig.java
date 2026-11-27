@@ -31,7 +31,14 @@ public class IcomRig extends BaseRig {
     private Timer meterTimer;//查询meter的Timer
 
     private boolean oldVersion = false;//针对老电台，可能不支持SWR查询
+    //한국어판(0.93-kr13): 오토튠을 시작한 뒤 이 시간 동안은 송신 전이라도 SWR을 계속 읽어 화면에 보여 준다
+    private long tuneMeterUntil = 0;
+    private static final long TUNE_METER_WINDOW_MS = 8000;
     //private boolean isPttOn = false;
+
+    private boolean isTuneMeterActive() {
+        return System.currentTimeMillis() < tuneMeterUntil;
+    }
 
     @Override
     public void setPTT(boolean on) {
@@ -184,6 +191,8 @@ public class IcomRig extends BaseRig {
                 }
                 if (icomCommand.getSubCommand() == IcomRigConstant.CMD_READ_METER_SWR) {
                     swr = IcomRigConstant.twoByteBcdToInt(icomCommand.getData(true));
+                    //한국어판(0.93-kr13): 미터 원값을 실제 SWR 값으로 바꿔 화면에 보낸다
+                    postSwr(BaseRigOperation.meterToSwr(swr));
                 }
                 showAlert();//检查meter值是否在告警范围
                 break;
@@ -194,7 +203,9 @@ public class IcomRig extends BaseRig {
     }
 
     private void showAlert() {
-        if ((swr >= IcomRigConstant.swr_alert_max) && GeneralVariables.swr_switch_on) {
+        //한국어판(0.93-kr13): 오토튠 중에는 SWR이 높은 것이 당연하므로 경보를 내지 않는다
+        if (!isTuneMeterActive()
+                && (swr >= IcomRigConstant.swr_alert_max) && GeneralVariables.swr_switch_on) {
             if (!swrAlert) {
                 swrAlert = true;
                 ToastMessage.show(GeneralVariables.getStringFromResource(R.string.swr_high_alert));
@@ -261,12 +272,40 @@ public class IcomRig extends BaseRig {
         meterTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if (isPttOn() && !oldVersion) {//当Ptt被按下去的时候测量,并且不是老版本的电台
+                //한국어판(0.93-kr13): 오토튠 중에도 SWR·ALC를 읽어 화면에 보여 준다
+                if ((isPttOn() || isTuneMeterActive()) && !oldVersion) {
                     sendCivData(IcomRigConstant.getSWRState(ctrAddress, getCivAddress()));
                     sendCivData(IcomRigConstant.getALCState(ctrAddress, getCivAddress()));
                 }
             }
         }, 0, IComPacketTypes.METER_TIMER_PERIOD_MS);
+    }
+
+    /**
+     * 한국어판(0.93-kr13): 안테나 튜너 오토튠(TUNE)을 시작한다.
+     * IC-705 + AH-705 는 튜너가 켜져 있어야 동작하므로, 명령을 보낸 후 8초 동안 SWR을 계속 읽는다.
+     *
+     * @return 명령을 보냈으면 true
+     */
+    @Override
+    public boolean startAutoTune() {
+        if (getConnector() == null || !isConnected()) {
+            return false;
+        }
+        if (isPttOn()) {//송신 중에는 튜너를 돌리지 않는다
+            return false;
+        }
+        tuneMeterUntil = System.currentTimeMillis() + TUNE_METER_WINDOW_MS;
+        swrAlert = false;
+        postSwr(0f);//새 측정값부터 다시 보여 준다
+        sendCivData(IcomRigConstant.setTuneStart(ctrAddress, getCivAddress()));
+        return true;
+    }
+
+    @Override
+    public void onDisconnecting() {
+        tuneMeterUntil = 0;
+        super.onDisconnecting();
     }
 
 

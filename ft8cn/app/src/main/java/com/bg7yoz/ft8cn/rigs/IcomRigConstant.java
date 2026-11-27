@@ -73,6 +73,9 @@ public class IcomRigConstant {
     public static final byte[] READ_TRANSCEIVER_STATE = {0x1A, 0x00, 0x48};//读取电台发射状态
     public static final byte[] SET_TRANSCEIVER_STATE_ON = {0x1C, 0x00, 0x01};//设置电台处于发射状态TX
     public static final byte[] SET_TRANSCEIVER_STATE_OFF = {0x1C, 0x00, 0x00};//设置电台关闭发射状态RX
+    //한국어판(0.93-kr13): 안테나 튜너(IC-705 + AH-705, IC-7300 등) 자동 조정(TUNE)
+    public static final byte[] SET_TUNER_TUNE = {0x1C, 0x01, 0x02};//튜너 오토튠 시작
+    public static final byte[] SET_TUNER_ON = {0x1C, 0x01, 0x01};//튜너 켜기(참고용)
     public static final byte[] READ_TRANSMIT_FREQUENCY = {0x1C, 0x03};//读取电台发射时的频率
 
     public static String getModeStr(int mode) {
@@ -111,6 +114,27 @@ public class IcomRigConstant {
         data[4] = (byte) 0x1c;//主指令代码
         data[5] = (byte) 0x00;//子指令代码
         data[6] = (byte) state;//状态 01=tx 00=rx
+        data[7] = (byte) 0xfd;
+        return data;
+    }
+
+    /**
+     * 한국어판(0.93-kr13): 안테나 튜너 오토튠(TUNE) 시작 명령을 만든다.
+     * FE FE &lt;rigAddr&gt; &lt;ctrAddr&gt; 1C 01 02 FD (IC-705 + AH-705, IC-7300 등)
+     *
+     * @param ctrAddr 내 주소
+     * @param rigAddr 무전기 주소
+     * @return 명령 데이터 패킷
+     */
+    public static byte[] setTuneStart(int ctrAddr, int rigAddr) {
+        byte[] data = new byte[8];
+        data[0] = (byte) 0xfe;
+        data[1] = (byte) 0xfe;
+        data[2] = (byte) rigAddr;
+        data[3] = (byte) ctrAddr;
+        data[4] = SET_TUNER_TUNE[0];//主指令代码1C
+        data[5] = SET_TUNER_TUNE[1];//子指令代码01(튜너)
+        data[6] = SET_TUNER_TUNE[2];//状态 02=튜닝 시작
         data[7] = (byte) 0xfd;
         return data;
     }

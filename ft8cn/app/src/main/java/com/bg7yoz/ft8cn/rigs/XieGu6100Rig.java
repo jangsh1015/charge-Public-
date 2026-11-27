@@ -170,6 +170,8 @@ public class XieGu6100Rig extends BaseRig {
                     int temp = IcomRigConstant.twoByteBcdToIntBigEnd(xieGu6100Command.getData(true));
                     if (temp != 255) {
                         swr = temp;//
+                        //한국어판(0.93-kr13): 미터 원값을 실제 SWR 값으로 바꿔 화면에 보낸다
+                        postSwr(BaseRigOperation.meterToSwr(swr));
                     }
                 }
 

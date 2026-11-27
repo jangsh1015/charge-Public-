@@ -367,6 +367,11 @@
     <string name="alc_high_alert">경고! ALC가 너무 높습니다.</string>
 
     <string name="swr_high_alert">경고! SWR이 너무 높습니다.</string>
+    <string name="tune_started">무전기에 오토튠(TUNE) 명령을 보냈습니다.</string>
+    <string name="tune_button_desc">안테나 튜너 자동 조정(TUNE)</string>
+    <string name="tune_while_transmitting">송신 중에는 오토튠을 실행할 수 없습니다.</string>
+    <string name="tune_connect_first">먼저 무전기를 연결하세요.</string>
+    <string name="tune_not_supported">현재 연결된 무전기에서는 오토튠을 지원하지 않습니다.</string>
     <string name="volume_percent">신호 출력 세기 %.0f%%</string>
     <string name="signal_strength">신호 출력 세기</string>
     <string name="html_distance">거리</string>

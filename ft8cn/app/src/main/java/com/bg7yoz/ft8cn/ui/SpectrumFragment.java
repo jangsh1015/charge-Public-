@@ -22,6 +22,8 @@ import com.bg7yoz.ft8cn.GeneralVariables;
 import com.bg7yoz.ft8cn.MainViewModel;
 import com.bg7yoz.ft8cn.R;
 import com.bg7yoz.ft8cn.databinding.FragmentSpectrumBinding;
+import com.bg7yoz.ft8cn.rigs.BaseRig;
+import com.bg7yoz.ft8cn.rigs.BaseRigOperation;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 
 /**
@@ -35,6 +37,13 @@ public class SpectrumFragment extends Fragment {
 
 
     private int frequencyLineTimeOut = 0;//画频率线的时间量
+
+    //한국어판(0.93-kr13): SWR 표시 색과 오토튠 감시 시간
+    private static final int COLOR_SWR_GOOD = 0xFF00E676;//1.5 이하 : 초록
+    private static final int COLOR_SWR_WARN = 0xFFFFC400;//1.5 ~ 2.0 : 호박
+    private static final int COLOR_SWR_BAD = 0xFFFF5252;//2.0 초과 : 빨강
+    private static final long TUNE_WATCH_MS = 8000;//튜너가 도는 동안 SWR을 밝게 보여 주는 시간
+    private long tuneWatchUntil = 0;//오토튠을 시작한 시각 + 감시 시간
 
 
     static {
@@ -58,6 +67,7 @@ public class SpectrumFragment extends Fragment {
         binding.waterfallView.setDrawMessage(false);
         setDeNoiseSwitchState();
         setMarkMessageSwitchState();
+        initSwrAndTune();//한국어판(0.93-kr13): SWR 표시와 TUNE 버튼
 
         binding.rulerFrequencyView.setFreq(Math.round(GeneralVariables.getBaseFrequency()));
         mainViewModel.currentMessages=null;
@@ -186,6 +196,85 @@ public class SpectrumFragment extends Fragment {
         } else {
             binding.waterfallView.setWaveData(fft, UtcTimer.getNowSequential(), null);
         }
+    }
+
+    /**
+     * 한국어판(0.93-kr13): 송신 중 실시간 SWR 표시와 안테나 튜너(TUNE) 버튼.
+     * - 송신 중에는 밝게, 송신이 끝난 뒤에는 마지막 송신의 SWR을 흐리게 남긴다.
+     * - 색: 1.5 이하는 초록, 1.5~2.0은 호박, 2.0을 넘으면 빨강.
+     */
+    private void initSwrAndTune() {
+        mainViewModel.ft8TransmitSignal.mutableIsTransmitting.observe(getViewLifecycleOwner()
+                , new Observer<Boolean>() {
+                    @Override
+                    public void onChanged(Boolean aBoolean) {
+                        updateSwrView();
+                    }
+                });
+
+        GeneralVariables.mutableSwr.observe(getViewLifecycleOwner(), new Observer<Float>() {
+            @Override
+            public void onChanged(Float aFloat) {
+                updateSwrView();
+            }
+        });
+
+        binding.tuneTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                doAutoTune();
+            }
+        });
+    }
+
+    private void updateSwrView() {
+        float swr = GeneralVariables.mutableSwr.getValue() == null
+                ? 0f : GeneralVariables.mutableSwr.getValue();
+        if (swr <= 0f) {
+            binding.swrTextView.setVisibility(View.GONE);
+            return;
+        }
+        binding.swrTextView.setVisibility(View.VISIBLE);
+        binding.swrTextView.setText("SWR " + BaseRigOperation.getSwrStr(swr));
+        if (swr <= 1.5f) {
+            binding.swrTextView.setTextColor(COLOR_SWR_GOOD);
+        } else if (swr <= 2.0f) {
+            binding.swrTextView.setTextColor(COLOR_SWR_WARN);
+        } else {
+            binding.swrTextView.setTextColor(COLOR_SWR_BAD);
+        }
+        //송신 중이거나 오토튠이 도는 중에만 또렷하게, 그 밖에는 직전 송신 값을 흐리게
+        boolean live = mainViewModel.ft8TransmitSignal.isTransmitting()
+                || System.currentTimeMillis() < tuneWatchUntil;
+        binding.swrTextView.setAlpha(live ? 1.0f : 0.55f);
+    }
+
+    /**
+     * 한국어판(0.93-kr13): 무전기에 안테나 튜너 오토튠(TUNE) 명령을 보낸다.
+     */
+    private void doAutoTune() {
+        BaseRig rig = mainViewModel.baseRig;
+        if (rig == null || !rig.isConnected()) {
+            ToastMessage.show(getString(R.string.tune_connect_first), true);
+            return;
+        }
+        if (mainViewModel.ft8TransmitSignal.isTransmitting()) {
+            ToastMessage.show(getString(R.string.tune_while_transmitting), true);
+            return;
+        }
+        if (!rig.startAutoTune()) {
+            ToastMessage.show(getString(R.string.tune_not_supported), true);
+            return;
+        }
+        tuneWatchUntil = System.currentTimeMillis() + TUNE_WATCH_MS;
+        ToastMessage.show(getString(R.string.tune_started), true);
+        updateSwrView();
+        binding.getRoot().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                updateSwrView();
+            }
+        }, TUNE_WATCH_MS + 500);
     }
 
     private void setDeNoiseSwitchState() {

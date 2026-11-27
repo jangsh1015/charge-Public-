@@ -182,6 +182,8 @@ public class GeneralVariables {
     public static boolean alc_switch_on = true;//alc告警开关
 
     public static MutableLiveData<Float> mutableBaseFrequency = new MutableLiveData<>();
+    //한국어판(0.93-kr13): 송신 중 무전기에서 읽은 실시간 SWR (0 이하면 측정값 없음 → 화면에서 숨김)
+    public static MutableLiveData<Float> mutableSwr = new MutableLiveData<>(0f);
     public static String cloudlogServerAddress = "";//cloudlog的服务器地址
     public static String cloudlogApiKey = "";//cloudlog的APIKEY
     public static String cloudlogStationID = "";//cloudlog的站点ID

@@ -7,6 +7,8 @@ package com.bg7yoz.ft8cn.rigs;
 
 import android.annotation.SuppressLint;
 
+import java.util.Locale;
+
 public class BaseRigOperation {
     @SuppressLint("DefaultLocale")
     public static String getFrequencyStr(long freq) {
@@ -134,5 +136,30 @@ public class BaseRigOperation {
             s.append(String.format("0x%02x ", data[i] & 0xff));
         }
         return s.toString();
+    }
+
+    /**
+     * 한국어판(0.93-kr13): ICOM(CI-V 0x15 0x12)·시에구의 SWR 미터 원값(0~255)을 실제 SWR 값으로 바꾼다.
+     * 눈금은 0=1.0, 48=1.5, 80=2.0, 120=3.0, 255=25.5 로 알려져 있어, 그 네 구간을 직선으로 잇는다.
+     *
+     * @param meter 미터 원값(0~255)
+     * @return 실제 SWR 값(1.0 ~ 25.5)
+     */
+    public static float meterToSwr(int meter) {
+        float m = meter;
+        if (m < 0) return 0f;
+        if (m > 255f) m = 255f;
+        if (m <= 48f) return 1.0f + m * (0.5f / 48f);            //1.0 ~ 1.5
+        if (m <= 80f) return 1.5f + (m - 48f) * (0.5f / 32f);    //1.5 ~ 2.0
+        if (m <= 120f) return 2.0f + (m - 80f) * (1.0f / 40f);   //2.0 ~ 3.0
+        return 3.0f + (m - 120f) * (22.5f / 135f);                //3.0 ~ 25.5
+    }
+
+    /**
+     * 한국어판(0.93-kr13): SWR 값을 화면에 쓸 문자열로 바꿉니다. (예: 1.0, 1.2, 2.1 / 10 이상은 "10+")
+     */
+    public static String getSwrStr(float swr) {
+        if (swr >= 10f) return "10+";
+        return String.format(Locale.US, "%.1f", swr);
     }
 }

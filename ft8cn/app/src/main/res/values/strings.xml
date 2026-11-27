@@ -365,6 +365,11 @@
     <string name="alc_high_alert">Warning ! ALC is too high .</string>
 
     <string name="swr_high_alert">Warning ! SWR is too high .</string>
+    <string name="tune_started">Auto tune (TUNE) command sent to the radio .</string>
+    <string name="tune_button_desc">Auto tune antenna tuner (TUNE)</string>
+    <string name="tune_while_transmitting">Can not start auto tune while transmitting .</string>
+    <string name="tune_connect_first">Please connect the radio first .</string>
+    <string name="tune_not_supported">Auto tune is not supported on the connected radio .</string>
     <string name="volume_percent">Signal output strength %.0f %%</string>
     <string name="signal_strength">Signal output strength</string>
     <string name="html_distance">Distance</string>

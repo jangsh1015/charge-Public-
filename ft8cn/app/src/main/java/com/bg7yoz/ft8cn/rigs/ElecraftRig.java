@@ -146,6 +146,8 @@ public class ElecraftRig extends BaseRig {
             } else if (elecraftCommand.getCommandID().equalsIgnoreCase("SW")) {//METER
                 if (ElecraftCommand.isSWRMeter(elecraftCommand)) {
                     swr = ElecraftCommand.getSWRMeter(elecraftCommand);
+                    //한국어판(0.93-kr13): Elecraft 는 1/10 단위(13 = 1.3)로 온다
+                    postSwr(swr / 10f);
                 }
 
                 showAlert();

@@ -24,6 +24,27 @@ Credits
 
 Korean edition changes
 
+  0.93-kr13
+   1. The live SWR of the radio is shown on screen while transmitting.
+      - A small SWR badge appears at the top of the waterfall, between the UTC clock and the
+        frequency/band text. (e.g. SWR 1.2)
+      - While transmitting, the app reads the SWR from the radio every 0.5 s, so the number keeps
+        up in real time. The same works with an IC-705 over a USB cable or over Wi-Fi
+        (Elecraft and Xiegu are supported too).
+      - The colour shows how safe it is:
+        1.5 or lower green / 1.5 to 2.0 amber / over 2.0 red. If it turns red, check the antenna and coax.
+      - When the transmission ends, the last SWR stays on screen dimmed, so you can still see how
+        that 13 s transmission went after it finishes.
+      - The badge disappears when the radio is switched off or disconnected.
+   2. A TUNE (auto tuner) button now sits next to the SWR badge.
+      - One tap sends the ICOM CI-V command 1C 01 02 (start auto tune) to the radio
+        (IC-705 with AH-705, IC-7300 and others).
+      - The SWR is read for 8 seconds while the tuner is running, so you can watch it drop right there.
+      - It refuses to run while transmitting or when no radio is connected, and says why.
+      - Radios without auto tune (Yaesu, Kenwood and others) say they are not supported.
+      - On an IC-705 the antenna tuner (TUNER) must be switched on in the radio's function menu
+        for TUNE to work.
+
   0.93-kr12
    1. The message lists (decode and call) now use five row colours.
       - Stations calling me : pink is now yellow. (e.g. DS2YTO BG5JQV -23)
