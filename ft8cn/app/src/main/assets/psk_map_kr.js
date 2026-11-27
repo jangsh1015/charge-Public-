@@ -447,8 +447,8 @@
     var DEFAULT_ONCE_KEY = 'psk-kr-defaults-v1';
     var DEFAULT_ON_NAMES = ['showgrid', 'showsnr', 'showsnrinlogbook'];
     var DEFAULT_DROPDOWNS = [
-        ['#selectband', '40m', 'all bands'],
-        ['#selectmode', 'FT8', 'all modes']
+        ['#selectband', '40m', 'all'],
+        ['#selectmode', 'FT8', 'all']
     ];
 
     function readLocalFlag(key) {
@@ -467,19 +467,18 @@
         } catch (e) { /* 다음에 또 시도한다 */ }
     }
 
-    // 밴드/모드 드롭다운: 아직 고른 적이 없(기본값 그대로)을 때만 원하는 값으로 맞춘다
-    function selectDefaultOption(selector, wanted, fallbackText) {
+    // 밴드/모드 드롭다운: 아직 고른 적이 없(값이 'all', 기본값 그대로)을 때만 원하는 값으로 맞춘다.
+    //  고른 값은 한글로 바뀌어 있어도 되돌아가지 않게, 지금 값(value)이 기본값인지로 본다.
+    function selectDefaultOption(selector, wantedText, defaultValue) {
         var sel = doc.querySelector(selector);
         if (!sel || !sel.options || !sel.options.length) {
             return false;
         }
-        var current = sel.options[sel.selectedIndex];
-        var currentText = current ? norm(current.textContent) : '';
-        if (currentText.toLowerCase() !== fallbackText.toLowerCase()) {
+        if (sel.value !== defaultValue) {
             return false; // 이미 사용자가 고른 값이면 그대로 둔다
         }
         for (var i = 0; i < sel.options.length; i++) {
-            if (norm(sel.options[i].textContent).toLowerCase() === wanted.toLowerCase()) {
+            if (norm(sel.options[i].textContent).toLowerCase() === wantedText.toLowerCase()) {
                 sel.selectedIndex = i;
                 sel.dispatchEvent(new Event('change', { bubbles: true }));
                 return true;
