@@ -69,7 +69,8 @@
     <color name="calling_list_isMyCall_color">#FF0202</color>
 
     <!-- 한국어판(0.93-kr5): 교신 목록 색 - 다크 배경에 눈이 편하고 대비는 또렷하게 -->
-    <!--   CQ = 초록, 나를 호출한 수신 = 핑크, 내 송신(TX) = 빨강, 일반 = 다크 네이비 -->
+    <!--   CQ = 초록, 나를 호출한 수신 = 노랑, 내 송신 QSO(TX) = 빨강, 일반 = 다크 네이비 -->
+    <!-- 한국어판(0.93-kr12): 내 CQ 송신(TX CQ)은 호박색으로 따로 떼어, 내 교신 송신(빨강)과 한눈에 갈린다. -->
     <color name="list_normal_bg_start_color">#FF1E293B</color>
     <color name="list_normal_bg_end_color">#FF162238</color>
     <color name="list_normal_text_color">#FFE2E8F0</color>
@@ -82,17 +83,28 @@
     <color name="list_cq_muted_color">#FF86EFAC</color>
     <color name="list_cq_accent_color">#FFBBF7D0</color>
 
-    <color name="list_mine_bg_start_color">#FF9D174D</color>
-    <color name="list_mine_bg_end_color">#FF831843</color>
-    <color name="list_mine_text_color">#FFFCE7F3</color>
-    <color name="list_mine_muted_color">#FFF9A8D4</color>
-    <color name="list_mine_accent_color">#FFFBCFE8</color>
+    <!-- 한국어판(0.93-kr12): 나를 호출한 수신(RX) = 노랑. 밝은 노랑 바탕에는 검정에 가까운 글씨로 대비를 확보한다
+         (본문 #111111 약 10:1, 곁들인 숫자 #4A3800 약 4.6~6:1, 순번·나라 배지 #6B2E00 약 4.4~5.6:1) -->
+    <color name="list_mine_bg_start_color">#FFE6B800</color>
+    <color name="list_mine_bg_end_color">#FFD6A100</color>
+    <color name="list_mine_text_color">#FF111111</color>
+    <color name="list_mine_muted_color">#FF4A3800</color>
+    <color name="list_mine_accent_color">#FF6B2E00</color>
 
+    <!-- 한국어판(0.93-kr12): 내 교신 송신(TX QSO) = 빨강(그대로) -->
     <color name="list_tx_bg_start_color">#FFB91C1C</color>
     <color name="list_tx_bg_end_color">#FF991B1B</color>
     <color name="list_tx_text_color">#FFFFFFFF</color>
     <color name="list_tx_muted_color">#FFFECACA</color>
     <color name="list_tx_accent_color">#FFFFFFFF</color>
+
+    <!-- 한국어판(0.93-kr12): 내 CQ 송신(TX CQ) = 호박색. 빨강(교신 송신)과 초록(남의 CQ) 사이에서 바로 갈린다
+         (본문 흰색 약 5.0~7.4:1, 곁들인 숫자 크림색 약 4.4~6.6:1) -->
+    <color name="list_tx_cq_bg_start_color">#FFB25600</color>
+    <color name="list_tx_cq_bg_end_color">#FF8C3F00</color>
+    <color name="list_tx_cq_text_color">#FFFFFFFF</color>
+    <color name="list_tx_cq_muted_color">#FFFFEFD0</color>
+    <color name="list_tx_cq_accent_color">#FFFFFFFF</color>
 
     <!-- 굵은 제목 막대(교신 목록·호출 목록)와 열 제목 줄 -->
     <color name="list_header_bar_color">#FF312E81</color>

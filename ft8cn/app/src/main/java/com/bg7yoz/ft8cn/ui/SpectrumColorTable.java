@@ -7,6 +7,11 @@ package com.bg7yoz.ft8cn.ui;
  *   실제 신호가 있는 중·고레벨은 밝은 청록 → 노랑 → 주황 → 빨강으로 대비가
  *   뚜렷하게 올라가도록 256단계 색상을 미리 계산해 둔다.
  *
+ * 한국어판(0.93-kr12): 케이블 USB 오디오로 잡음 바닥이 거의 없어지자 신호 자취가
+ *   너무 흐리게 보인다는 요청에 맞춰, 잡음 구간(0~132단계)은 그대로 두고
+ *   신호 구간(146~236단계)만 약 25~30% 밝고 선명하게 올렸다.
+ *   빈 주파수는 여전히 어두운 네이비이고, 실제 신호만 또렷하게 떠오른다.
+ *
  * @author DS2YTO
  */
 public final class SpectrumColorTable {
@@ -21,18 +26,18 @@ public final class SpectrumColorTable {
      * STOPS 위치의 색상(ARGB).
      */
     private static final int[] COLORS = {
-            0xFF04070F, // 0   거의 검정
-            0xFF060D1E, // 64  아주 어두운 네이비
-            0xFF091528, // 96  딥 네이비
-            0xFF0C1E3C, // 120 잡음 바닥
-            0xFF0E2755, // 132 어두운 딥 블루(잡음 상단)
-            0xFF12518C, // 146 파랑
-            0xFF1086B4, // 160 하늘색
-            0xFF18CEE2, // 178 밝은 청록
-            0xFF7DF0F6, // 198 아주 밝은 하늘색
-            0xFFFFE03A, // 218 노랑
-            0xFFFF9612, // 236 주황
-            0xFFFF2E2E  // 255 빨강
+            0xFF04070F, // 0   거의 검정 (kr12 그대로)
+            0xFF060D1E, // 64  아주 어두운 네이비 (kr12 그대로)
+            0xFF091528, // 96  딥 네이비 (kr12 그대로)
+            0xFF0C1E3C, // 120 잡음 바닥 (kr12 그대로)
+            0xFF0E2755, // 132 어두운 딥 블루(잡음 상단) (kr12 그대로)
+            0xFF165FA5, // 146 파랑 (kr12: #12518C 에서 약 40% 밝게)
+            0xFF1498CD, // 160 하늘색 (kr12: #1086B4 에서 약 30% 밝게)
+            0xFF1EE0F0, // 178 밝은 청록 (kr12: #18CEE2 에서 밝게)
+            0xFF94F6FA, // 198 아주 밝은 하늘색 (kr12: #7DF0F6 에서 밝게)
+            0xFFFFEB5A, // 218 노랑 (kr12: #FFE03A 에서 밝게)
+            0xFFFFA72C, // 236 주황 (kr12: #FF9612 에서 밝게)
+            0xFFFF3838  // 255 빨강 (kr12: #FF2E2E 에서 조금 밝게)
     };
 
     private static final int[] LEVEL_COLORS = buildLevelColors();

@@ -24,6 +24,23 @@ Credits
 
 Korean edition changes
 
+  0.93-kr12
+   1. The message lists (decode and call) now use five row colours.
+      - Stations calling me : pink is now yellow. (e.g. DS2YTO BG5JQV -23)
+        A bright yellow row with near-black text, so the dB and time numbers beside it stay crisp.
+      - My CQ transmissions (TX CQ) : amber (dark orange), a new colour. (e.g. CQ DS2YTO PM37)
+      - My QSO transmissions (TX QSO) : red, as before. (e.g. DS2YTO BG5JQV -19)
+      - Someone else's CQ is still green and other traffic is still dark navy.
+      - You can now tell at a glance whether you are calling CQ or working a QSO.
+   2. The waterfall traces are a little brighter.
+      - With clean wired USB audio there is almost no noise, so signals looked faint and empty
+        slots were hard to find.
+      - Noise and empty frequencies stay dark navy, and only the signal range
+        (blue, sky blue, cyan, yellow, orange) is about 25-30% brighter and more vivid.
+        Red is raised slightly.
+      - The background does not get brighter, so the screen stays easy on the eyes and only
+        signals stand out.
+
   0.93-kr11
    1. Fixed the Display options dialog on the [Grid / PSK] screen.
       - The dialog could be taller than the screen, so [Save and Close] at the bottom was cut off,

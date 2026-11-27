@@ -24,8 +24,8 @@ android {
         applicationId "com.bg7yoz.ft8cn.kr"
         minSdk 23
         targetSdk 33
-        versionCode 11
-        versionName '0.93-kr11'
+        versionCode 12
+        versionName '0.93-kr12'
 
 
         dataBinding{

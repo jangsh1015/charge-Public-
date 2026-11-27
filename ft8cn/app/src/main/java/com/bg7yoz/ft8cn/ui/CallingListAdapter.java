@@ -341,7 +341,8 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         holder.isWeakSignalImageView.setVisibility(holder.ft8Message.isWeakSignal ? View.VISIBLE:View.INVISIBLE);
 
         //한국어판(0.93-kr5): 행 색을 4개 시차가 아니라 뜻으로 나눈다.
-        //  내 송신(TX)=빨강, 나를 호출한 수신(RX)=핑크, CQ=초록, 그 밖의 교신=다크 네이비.
+        //  내 송신(TX QSO)=빨강, 내 CQ 송신(TX CQ)=호박, 나를 호출한 수신(RX)=노랑, CQ=초록, 그 밖의 교신=다크 네이비.
+        //  (한국어판 0.93-kr12에서 CQ 송신을 호박색으로 떼고, 나를 부른 수신을 노랑으로 바꿨다)
         applyRowStyle(holder);
 
         holder.callingListIdBTextView.setText(holder.ft8Message.getdB());
@@ -449,8 +450,9 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
 
     /**
      * 한국어판(0.93-kr5): 행 하나의 배경과 글씨 색을 한 번에 정한다.
-     * 아이폰 FT8-Improved·WSJT-X와 같은 결로 CQ=초록, 나를 호출한 수신=핑크,
+     * 아이폰 FT8-Improved·WSJT-X와 같은 결로 CQ=초록, 나를 호출한 수신=노랑,
      * 내 송신=빨강, 그 밖의 교신=다크 네이비를 쓴다.
+     * 한국어판(0.93-kr12): 내 송신을 다시 둘로 나눈다 — CQ 송신=호박색, 교신 송신(QSO)=빨강.
      *
      * @param holder 목록 행
      */
@@ -462,16 +464,27 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
                 && GeneralVariables.checkIsMyCallsign(callsignFrom)
                 && !GeneralVariables.checkIsMyCallsign(callsignTo);
         boolean isTx = holder.ft8Message.freq_hz <= 0.01f || isMyOwnMessage;//내가 보낸 메시지
+        //한국어판(0.93-kr12): 내가 보낸 줄이 CQ인지(CQ DS2YTO PM37) 아니면 교신용인지(DS2YTO BG5JQV -19)를 가른다
+        boolean isTxCq = isTx && holder.ft8Message.callsignTo != null
+                && holder.ft8Message.checkIsCQ();
         boolean isMine = !isTx && holder.ft8Message.inMyCall();//나를 부른 수신(RX)
         boolean isCq = !isTx && !isMine && holder.ft8Message.checkIsCQ();
 
         int backgroundResId;
-        if (isTx) {
+        if (isTxCq) {
+            //CQ 송신 = 호박색(흰 글씨)
+            backgroundResId = R.drawable.calling_list_cell_tx_cq_style;
+            holder.rowPrimaryColor = context.getColor(R.color.list_tx_cq_text_color);
+            holder.rowSecondaryColor = context.getColor(R.color.list_tx_cq_muted_color);
+            holder.rowAccentColor = context.getColor(R.color.list_tx_cq_accent_color);
+        } else if (isTx) {
+            //교신 송신(QSO) = 빨강(흰 글씨)
             backgroundResId = R.drawable.calling_list_cell_tx_style;
             holder.rowPrimaryColor = context.getColor(R.color.list_tx_text_color);
             holder.rowSecondaryColor = context.getColor(R.color.list_tx_muted_color);
             holder.rowAccentColor = context.getColor(R.color.list_tx_accent_color);
         } else if (isMine) {
+            //나를 부른 수신 = 노랑(검은 글씨)
             backgroundResId = R.drawable.calling_list_cell_mine_style;
             holder.rowPrimaryColor = context.getColor(R.color.list_mine_text_color);
             holder.rowSecondaryColor = context.getColor(R.color.list_mine_muted_color);

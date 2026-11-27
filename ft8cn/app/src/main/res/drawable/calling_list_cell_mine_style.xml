@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 한국어판(0.93-kr5): 나를 호출한 수신(RX) 행 - 다크 핑크/로즈 -->
+<!-- 한국어판(0.93-kr12): 나를 호출한 수신(RX) 행 - 노랑/골드 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <padding
         android:bottom="0dp"
