@@ -429,6 +429,7 @@
     <string name="utc_time_sync_delay_slow">Synced . Local clock is %d milliseconds behind</string>
     <string name="utc_time_sync_delay_faster">Synced. Local clock is %d milliseconds ahead</string>
     <string name="config_clock_is_accurate">Local clock is exact!</string>
+    <string name="time_sync_failed_network">Time sync failed: no internet connection. (Time sync does not work while the radio Wi-Fi is connected.)</string>
     <string name="html_start_date_swl_message">Start date</string>
     <string name="html_end_date_swl_message">End date</string>
     <string name="html_query_qso_swl">Query the QSOs of SWL</string>

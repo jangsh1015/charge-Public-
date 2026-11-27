@@ -66,6 +66,38 @@
     <color name="textview_none_color">#00FFFFFF</color>
     <color name="calling_list_isMyCall_color">#FF0202</color>
 
+    <!-- 한국어판(0.93-kr5): 교신 목록 색 - 다크 배경에 눈이 편하고 대비는 또렷하게 -->
+    <!--   CQ = 초록, 나를 호출한 수신 = 핑크, 내 송신(TX) = 빨강, 일반 = 다크 네이비 -->
+    <color name="list_normal_bg_start_color">#FF1E293B</color>
+    <color name="list_normal_bg_end_color">#FF162238</color>
+    <color name="list_normal_text_color">#FFE2E8F0</color>
+    <color name="list_normal_muted_color">#FF94A3B8</color>
+    <color name="list_normal_accent_color">#FF93C5FD</color>
+
+    <color name="list_cq_bg_start_color">#FF166534</color>
+    <color name="list_cq_bg_end_color">#FF14532D</color>
+    <color name="list_cq_text_color">#FFDCFCE7</color>
+    <color name="list_cq_muted_color">#FF86EFAC</color>
+    <color name="list_cq_accent_color">#FFBBF7D0</color>
+
+    <color name="list_mine_bg_start_color">#FF9D174D</color>
+    <color name="list_mine_bg_end_color">#FF831843</color>
+    <color name="list_mine_text_color">#FFFCE7F3</color>
+    <color name="list_mine_muted_color">#FFF9A8D4</color>
+    <color name="list_mine_accent_color">#FFFBCFE8</color>
+
+    <color name="list_tx_bg_start_color">#FFB91C1C</color>
+    <color name="list_tx_bg_end_color">#FF991B1B</color>
+    <color name="list_tx_text_color">#FFFFFFFF</color>
+    <color name="list_tx_muted_color">#FFFECACA</color>
+    <color name="list_tx_accent_color">#FFFFFFFF</color>
+
+    <!-- 굵은 제목 막대(교신 목록·호출 목록)와 열 제목 줄 -->
+    <color name="list_header_bar_color">#FF312E81</color>
+    <color name="list_header_strip_color">#FF1B2437</color>
+    <color name="list_row_stroke_color">#33FFFFFF</color>
+    <color name="list_warning_text_color">#FFFDE047</color>
+
     <color name="calling_list_item_color">#B552AEF8</color>
     <color name="calling_follow_list_item_color">#851D3B53</color>
     <color name="transmitting_color">#E91E63</color>

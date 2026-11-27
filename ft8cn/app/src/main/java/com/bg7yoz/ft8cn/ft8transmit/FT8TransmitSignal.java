@@ -79,6 +79,20 @@ public class FT8TransmitSignal {
     private static final ConcurrentHashMap<String, Long> noReplyCooldown
             = new ConcurrentHashMap<>();//콜사인(대문자) -> 만료 시각(ms)
 
+    //********************************************
+    //한국어판(0.93-kr5): 같은 상대에게 같은 단계의 메시지를 끝없이 되풀이하지 않게 하는 안전장치
+    //  - 무응답 제한이 어떤 경로로든 동작하지 못하는 경우(상대가 리포트를 되풀이하는 등)에도
+    //    같은 콜사인·같은 단계의 메시지를 '무응답 N회 중단' 횟수만큼 보내면 자동 호출을 멈추고
+    //    CQ/대기로 돌아간다.
+    private String repeatedTxCallsign = "";//되풀이 중인 상대
+    private int repeatedTxOrder = -1;//되풀이 중인 메시지 단계
+    private int repeatedTxCount = 0;//같은 상대·같은 단계로 보낸 횟수
+    private static final int REPEAT_LIMIT_WHEN_IGNORED = 20;//무응답 제한이 '무시(0)'일 때의 상한
+
+    //한국어판(0.93-kr5): 상대가 RR73/RRR/73으로 교신을 끝냈을 때,
+    //  리포트를 더 보내지 않고 73을 한 번만 보낸 뒤 CQ로 돌아가기 위한 표시
+    private boolean qsoCompleteAfterTransmit = false;
+
     //public MutableLiveData<Integer> currentOrder = new MutableLiveData<>();//当前要发射的指令
 
     //********************************************
@@ -215,6 +229,11 @@ public class FT8TransmitSignal {
         if (!activated) {
             return;
         }
+        //한국어판(0.93-kr5): 같은 상대에게 같은 단계의 메시지를 되풀이하고 있지 않은지 먼저 확인한다.
+        //  (되풀이 한도를 넘었으면 이번 송신을 하지 않고 CQ/대기로 돌아간다)
+        if (isSameMessageRepeatLimitReached()) {
+            return;
+        }
         //检测是不是黑名单频率，WSPR-2的频率，频率=电台频率+声音频率
         if (BaseRigOperation.checkIsWSPR2(
                 GeneralVariables.band + Math.round(GeneralVariables.getBaseFrequency()))) {
@@ -242,6 +261,8 @@ public class FT8TransmitSignal {
             , int functionOrder, String toMaidenheadGrid) {
 
         messageStartTime = 0;//复位起始的时间
+        //한국어판(0.93-kr5): 새 목표·새 단계를 잡았으면 '73 한 번 보내고 끝내기' 표시를 지운다
+        qsoCompleteAfterTransmit = false;
 
         Log.d(TAG, "准备发射数据...");
         if (GeneralVariables.checkFun1(toMaidenheadGrid)) {
@@ -515,6 +536,67 @@ public class FT8TransmitSignal {
             audioTrack.release();
             audioTrack = null;
         }
+        //한국어판(0.93-kr5): 상대가 이미 RR73/73으로 교신을 끝냈으면 73을 한 번 보낸 것으로 마치고
+        //  CQ/대기로 돌아간다(리포트를 다시 보내며 끝없이 부르지 않게).
+        if (qsoCompleteAfterTransmit) {
+            qsoCompleteAfterTransmit = false;
+            Log.d(TAG, "afterPlayAudio: 교신을 마치고 CQ 상태로 돌아갑니다.");
+            resetToCQ();
+            setCurrentFunctionOrder(functionOrder);
+            mutableToCallsign.postValue(toCallsign);
+            mutableFunctionOrder.postValue(functionOrder);
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr5): 같은 상대에게 같은 단계의 메시지를 계속 보내고 있는지 확인한다.
+     * 무응답 제한이 어떤 이유로든 동작하지 못해도(상대가 리포트를 되풀이하는 등),
+     * 설정한 '무응답 N회 중단' 횟수만큼 같은 메시지를 보내면 호출을 멈춘다.
+     *
+     * @return true 이면 이번에는 송신하지 않는다
+     */
+    private boolean isSameMessageRepeatLimitReached() {
+        if (transmitFreeText) {
+            return false;
+        }
+        String target = (toCallsign == null || toCallsign.callsign == null)
+                ? "" : toCallsign.callsign.trim();
+        //CQ 나 목표가 정해지지 않은 때는 세지 않는다
+        if (target.length() < 3 || "CQ".equalsIgnoreCase(target) || functionOrder == 6) {
+            repeatedTxCallsign = target;
+            repeatedTxOrder = functionOrder;
+            repeatedTxCount = 0;
+            return false;
+        }
+        if (!target.equals(repeatedTxCallsign) || functionOrder != repeatedTxOrder) {
+            repeatedTxCallsign = target;
+            repeatedTxOrder = functionOrder;
+            repeatedTxCount = 0;
+        }
+        repeatedTxCount++;
+
+        int limit = GeneralVariables.noReplyLimit > 0
+                ? GeneralVariables.noReplyLimit : REPEAT_LIMIT_WHEN_IGNORED;
+        if (limit < 3) {
+            limit = 3;
+        }
+        if (repeatedTxCount <= limit) {
+            return false;
+        }
+
+        Log.e(TAG, String.format(Locale.US
+                , "isSameMessageRepeatLimitReached: %s 에게 %d단계 메시지를 %d번 보내 호출을 멈추고 CQ로 돌아갑니다."
+                , target, functionOrder, repeatedTxCount));
+        startNoReplyCooldown(target);
+        repeatedTxCallsign = "";
+        repeatedTxOrder = 6;
+        repeatedTxCount = 0;
+        qsoCompleteAfterTransmit = false;
+        resetToCQ();
+        setCurrentFunctionOrder(functionOrder);
+        mutableToCallsign.postValue(toCallsign);
+        mutableFunctionOrder.postValue(functionOrder);
+        return true;
     }
 
     //当通联成功时的动作
@@ -729,7 +811,7 @@ public class FT8TransmitSignal {
             //if (msg.getCallsignTo().equals(GeneralVariables.myCallsign)
             if (GeneralVariables.checkIsMyCallsign(msg.getCallsignTo())
                     && msg.getCallsignFrom().equals(toCallsign.callsign)//todo 注意测试复合呼号的情况
-                    && !GeneralVariables.checkFun5(msg.extraInfo)) {//cq我、不是73、发送方是我关注的目标
+                    && !GeneralVariables.checkFun4_5(msg.extraInfo)) {//cq我、73/RR73이 아닌 응답、发送方是我关注的目标
                 //设置发射之前，确定消息的序号，避免从头开始
                 setTransmit(new TransmitCallsign(msg.i3, msg.n3, msg.getCallsignFrom(), msg.freq_hz
                                 , msg.getSequence(), msg.snr)
@@ -744,8 +826,10 @@ public class FT8TransmitSignal {
             Ft8Message msg = messages.get(i);
             if (isExcludeMessage(msg)) continue;//检查是不是属于排除的消息：
             //if ((msg.getCallsignTo().equals(GeneralVariables.myCallsign)
+            //한국어판(0.93-kr5): 73/RR73/RRR은 교신을 끝낸 인사이므로, 여기에 리포트로 답하지 않는다.
+            //  (그대로 두면 상대의 RR73을 받을 때마다 리포트를 다시 보내 끝없이 부르게 된다)
             if ((GeneralVariables.checkIsMyCallsign(msg.getCallsignTo())
-                    && !GeneralVariables.checkFun5(msg.extraInfo))) {//cq我、不是73、
+                    && !GeneralVariables.checkFun4_5(msg.extraInfo))) {//cq我、73/RR73/RRR이 아닌 응답
                 //设置发射之前，确定消息的序号，避免从头开始
                 setTransmit(new TransmitCallsign(msg.i3, msg.n3, msg.getCallsignFrom(), msg.freq_hz
                                 , msg.getSequence(), msg.snr)
@@ -870,13 +954,44 @@ public class FT8TransmitSignal {
 
 
         int newOrder = checkFunctionOrdFromMessages(messages);//检查消息中对方回复的消息序号，-1为没有收到
-        if (newOrder != -1) {//如果有消息序号，说明有回应，复位错误计数器
-            GeneralVariables.noReplyCount = 0;
+        //한국어판(0.93-kr5): 응답이 와도 단계가 앞으로 나아가지 않으면(같은 리포트를 되풀이하는 등)
+        //  무응답으로 센다. 예전에는 어떤 응답이든 횟수를 0으로 되돌려, 같은 단계를 끝없이 되풀이할 수 있었다.
+        boolean noProgress = false;
+        if (newOrder != -1) {//如果有消息序号，说明有回应
+            if (newOrder >= functionOrder) {
+                GeneralVariables.noReplyCount = 0;//단계가 앞으로 나아갔을 때만 횟수를 되돌린다
+            } else {
+                GeneralVariables.noReplyCount++;//제자리걸음하는 응답도 무응답으로 센다
+                noProgress = true;
+            }
         }
 
         //更新一下通联的列表检查是不是在通联列表中，如果没有记录下来，就保存
         updateQSlRecordList(newOrder, toCallsign);
 
+
+        //한국어판(0.93-kr5): 상대가 RR73/RRR(4)로 교신을 끝냈으면 리포트를 더 보내지 않는다.
+        //  예전에는 RR73을 받으면 5단계(73)로 넘어가기만 해서, 상태가 어긋나면
+        //  R-11 같은 리포트를 끝없이 되풀이했다. 이제는 73을 한 번만 보내고 CQ로 돌아간다.
+        if (newOrder == 4) {
+            if (functionOrder >= 1 && functionOrder <= 4) {
+                functionOrder = 5;//73을 한 번 보낸 뒤 CQ로 돌아간다
+                qsoCompleteAfterTransmit = true;
+                setCurrentFunctionOrder(functionOrder);
+                mutableFunctionOrder.postValue(functionOrder);
+            } else {
+                qsoCompleteAfterTransmit = false;
+                resetToCQ();
+                setCurrentFunctionOrder(functionOrder);
+                mutableFunctionOrder.postValue(functionOrder);
+            }
+            return;
+        }
+
+        //한국어판(0.93-kr5): 같은 리포트를 되풀이하는 응답이 '무응답 N회'를 넘으면 여기서 멈춘다
+        if (noProgress && handleNoReplyLimitReached(messages)) {
+            return;
+        }
 
         // 判断通联成功：对方回73（5）||我是73（5），且对方没回（-1）
         // 或者我是RR73(4),且已经达到无回应阈值，且有无回应限制
@@ -907,8 +1022,14 @@ public class FT8TransmitSignal {
         if (newOrder != -1) {//说明收到消息，且未完成通联
             //原来是newOrder == 1，但有的时候，对方直接给信号报告，也就是消息2.
             if (newOrder == 1 || newOrder == 2) {//说明是别人第一次回复我
+                //한국어판(0.93-kr5): generateFun() 이 무응답 횟수를 0으로 지우므로,
+                //  제자리걸음 응답일 때는 지운 횟수를 되살린다
+                int noReplyCountBackup = GeneralVariables.noReplyCount;
                 resetTargetReport();//把信号报告复位一下
                 generateFun();
+                if (noProgress) {
+                    GeneralVariables.noReplyCount = noReplyCountBackup;
+                }
             }
 
             functionOrder = newOrder + 1;//执行下一个序号的消息
@@ -939,25 +1060,39 @@ public class FT8TransmitSignal {
             GeneralVariables.noReplyCount++;
         }
         //如果超出无反应限定值，复位到CQ状态
-        //한국어판(0.93-kr3): 설정한 횟수(무응답 N회 중단)를 채우는 순간 중단한다.
-        //  (원본의 '>' 는 N+1회까지 부르게 되어, 3회로 두면 4번 부르고 끊겼다.)
-        if ((GeneralVariables.noReplyCount >= GeneralVariables.noReplyLimit) && (GeneralVariables.noReplyLimit > 0)) {
-            //한국어판(0.93-kr3): 무응답으로 호출이 중단된 국은 30분 동안 자동 재호출에서 뺀다.
+        //한국어판(0.93-kr5): 무응답 한도 처리를 한 곳으로 모았다(제자리걸음 응답에서도 같은 규칙을 쓴다)
+        handleNoReplyLimitReached(messages);
+
+    }
+
+    /**
+     * 한국어판(0.93-kr5): 무응답 횟수가 설정한 '무응답 N회 중단'에 이르렀으면
+     * 자동 호출을 멈추고 CQ(또는 새 목표)로 돌아간다.
+     *
+     * @param messages 이번에 디코드된 메시지 목록
+     * @return true 이면 호출을 중단했다
+     */
+    private boolean handleNoReplyLimitReached(ArrayList<Ft8Message> messages) {
+        if (!(GeneralVariables.noReplyLimit > 0
+                && GeneralVariables.noReplyCount >= GeneralVariables.noReplyLimit)) {
+            return false;
+        }
+        //한국어판(0.93-kr3): 무응답으로 호출이 중단된 국은 30분 동안 자동 재호출에서 뺀다.
+        if (toCallsign != null) {
+            startNoReplyCooldown(toCallsign.callsign);
+        }
+        //检查关注消息列表，如果没有新的CQ，就进入到CQ状态，如果有，就转入到呼叫新的目标。
+        if (!getNewTargetCallsign(messages)) {//检查关注列表中的CQ消息，如果有新的目标，返回TRUE;
+            functionOrder = 6;
             if (toCallsign != null) {
-                startNoReplyCooldown(toCallsign.callsign);
-            }
-            //检查关注消息列表，如果没有新的CQ，就进入到CQ状态，如果有，就转入到呼叫新的目标。
-            if (!getNewTargetCallsign(messages)) {//检查关注列表中的CQ消息，如果有新的目标，返回TRUE;
-                functionOrder = 6;
                 toCallsign.callsign = "CQ";
             }
-            generateFun();
-            setCurrentFunctionOrder(functionOrder);//设置当前消息
-            mutableToCallsign.postValue(toCallsign);
-            mutableFunctionOrder.postValue(functionOrder);
-
         }
-
+        generateFun();
+        setCurrentFunctionOrder(functionOrder);//设置当前消息
+        mutableToCallsign.postValue(toCallsign);
+        mutableFunctionOrder.postValue(functionOrder);
+        return true;
     }
 
     /**

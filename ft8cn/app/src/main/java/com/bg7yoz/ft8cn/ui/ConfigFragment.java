@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -1751,7 +1752,11 @@ public class ConfigFragment extends Fragment {
 
                     @Override
                     public void syncFailed(IOException e) {
-                        ToastMessage.show(e.getMessage());
+                        //한국어판(0.93-kr5): 영어 예외 문장(Unable to resolve host ...)을 그대로 보여 주지 않고
+                        //  알아보기 쉬운 한국어 안내를 띄운다. 원문은 로그에만 남긴다.
+                        Log.e(TAG, "syncTime 실패: " + (e == null ? "알 수 없음" : e.getMessage()));
+                        ToastMessage.show(GeneralVariables
+                                .getStringFromResource(R.string.time_sync_failed_network));
                     }
                 });
 

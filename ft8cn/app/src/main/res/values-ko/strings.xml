@@ -431,6 +431,7 @@
     <string name="utc_time_sync_delay_slow">동기화되었습니다. 기기 시계가 %d밀리초 느립니다</string>
     <string name="utc_time_sync_delay_faster">동기화되었습니다. 기기 시계가 %d밀리초 빠릅니다</string>
     <string name="config_clock_is_accurate">기기 시계가 정확합니다!</string>
+    <string name="time_sync_failed_network">인터넷에 연결되어 있지 않아 시각 동기화에 실패했습니다. (무전기 Wi-Fi에 연결된 동안에는 동기화가 되지 않습니다)</string>
     <string name="html_start_date_swl_message">시작 날짜</string>
     <string name="html_end_date_swl_message">종료 날짜</string>
     <string name="html_query_qso_swl">SWL QSO 조회</string>

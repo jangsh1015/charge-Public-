@@ -150,6 +150,16 @@ public class FloatView extends ConstraintLayout {
     }
 
     /**
+     * 지금 떠 있는 버튼 수를 돌려준다.
+     * (한국어판(0.93-kr5): 버튼 묶음을 화면 어느 구석에 놓을지 계산할 때 쓴다)
+     *
+     * @return 버튼 수
+     */
+    public int getButtonCount() {
+        return buttons.size();
+    }
+
+    /**
      * 把dp值转换为像素点
      *
      * @param dp dp值

@@ -556,6 +556,17 @@ public class MainActivity extends AppCompatActivity {
         splitVerticalHandle.setOnTouchListener(new SplitHandleTouchListener(true));
         splitHorizontalHandle.setOnTouchListener(new SplitHandleTouchListener(false));
 
+        //한국어판(0.93-kr5): 경계선을 끌어 패널 폭이 바뀌면 도구 버튼도 왼쪽 패널 구석으로 따라간다
+        splitSpectrumContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View view, int left, int top, int right, int bottom
+                    , int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                if ((right - left) != (oldRight - oldLeft) || (bottom - top) != (oldBottom - oldTop)) {
+                    updateFloatViewPlacement();
+                }
+            }
+        });
+
         tabletSplitActive = true;
         //표시 여부는 현재 목적지에 따라 updateSplitVisibility 가 정한다.
         splitLayout.setVisibility(View.GONE);
@@ -600,6 +611,8 @@ public class MainActivity extends AppCompatActivity {
             //3분할 패널을 볼 때는 뒤의 전체 화면은 보이지 않게만 둔다(프래그먼트 생명주기는 그대로)
             navHostContainer.setVisibility(showSplit ? View.INVISIBLE : View.VISIBLE);
         }
+        //한국어판(0.93-kr5): 3분할일 때만 도구 버튼을 왼쪽 워터폴 쪽으로 옮긴다
+        updateFloatViewPlacement();
     }
 
     /**
@@ -813,6 +826,90 @@ public class MainActivity extends AppCompatActivity {
 //                });
 
         floatView.initLocation();
+        //한국어판(0.93-kr5): 태블릿 3분할에서는 도구 버튼을 왼쪽 워터폴 쪽으로 옮긴다.
+        updateFloatViewPlacement();
+    }
+
+    /**
+     * 한국어판(0.93-kr5): 오른쪽에 떠 있는 도구 버튼(전체화면·주파수·볼륨·지구본)을
+     * 태블릿 가로 3분할에서는 왼쪽 워터폴 쪽 구석으로 옮긴다.
+     * 오른쪽 교신/디코드 목록을 가리지 않게 하기 위해서다.
+     * 3분할이 아닐 때(폰 세로·로그·설정 화면 등)에는 예전처럼 오른쪽 가장자리에 둔다.
+     */
+    private void updateFloatViewPlacement() {
+        if (floatView == null) {
+            return;
+        }
+        boolean splitVisible = splitLayout != null
+                && splitSpectrumContainer != null
+                && splitLayout.getVisibility() == View.VISIBLE;
+        if (!splitVisible) {
+            floatView.setFloatBoard(FloatView.FLOAT_BOARD.RIGHT);
+            floatView.initLocation();
+            return;
+        }
+        //왼쪽 패널 안쪽에 두고, 끌어 옮겨도 왼쪽으로 붙게 한다
+        floatView.setFloatBoard(FloatView.FLOAT_BOARD.LEFT);
+        floatView.post(new Runnable() {
+            @Override
+            public void run() {
+                placeFloatViewInSplitCorner();
+            }
+        });
+    }
+
+    /**
+     * 왼쪽 워터폴 패널의 오른쪽 아래 구석에 도구 버튼을 세로로 쌓아 둔다.
+     * 워터폴 아래쪽에 있는 스위치(잡음 제거·메시지 표시)는 가리지 않게 조금 띄운다.
+     */
+    private void placeFloatViewInSplitCorner() {
+        if (floatView == null || splitLayout == null || splitSpectrumContainer == null
+                || splitLayout.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        View parent = (View) floatView.getParent();
+        if (parent == null) {
+            return;
+        }
+        int panelWidth = splitSpectrumContainer.getWidth();
+        int panelHeight = splitSpectrumContainer.getHeight();
+        if (panelWidth <= 0 || panelHeight <= 0) {
+            return;//아직 화면 크기가 정해지지 않았으면 다음 배치 때 다시 한다
+        }
+
+        int[] panelLocation = new int[2];
+        splitSpectrumContainer.getLocationInWindow(panelLocation);
+        int[] parentLocation = new int[2];
+        parent.getLocationInWindow(parentLocation);
+        int panelRight = panelLocation[0] - parentLocation[0] + panelWidth;
+        int panelBottom = panelLocation[1] - parentLocation[1] + panelHeight;
+
+        int buttonPx = floatView.getWidth() > 0 ? floatView.getWidth() : dpToPx(32);
+        int buttonCount = Math.max(1, floatView.getButtonCount());
+        int gapPx = dpToPx(4);
+        int stackHeight = buttonCount * buttonPx + (buttonCount - 1) * gapPx;
+
+        int rightMarginPx = dpToPx(8);
+        int bottomMarginPx = dpToPx(52);
+        int left = panelRight - buttonPx - rightMarginPx;
+        int top = panelBottom - stackHeight - bottomMarginPx;
+        if (left < 0) {
+            left = 0;
+        }
+        if (top < 0) {
+            top = 0;
+        }
+        floatView.setLayoutLeftTop(left, top);
+    }
+
+    /**
+     * dp 값을 화면 픽셀 값으로 바꾼다.
+     *
+     * @param dp dp 값
+     * @return 픽셀 값
+     */
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 
     /**

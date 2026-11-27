@@ -24,6 +24,23 @@ Credits
 
 Korean edition changes
 
+  0.93-kr5
+   1. No more endless repeats of the same message to the same station. After 'no reply for N'
+      (default 3) attempts of the same message, automatic calling stops and returns to CQ/idle
+      even while sending a signal report (R-11). Only an answer that moves the QSO forward
+      resets that counter. If the other station sends RR73/RRR, one final 73 is sent and the
+      QSO is closed (a 73/RR73/RRR message is never answered with a report).
+   2. Contact list colours now follow iPhone FT8-Improved / WSJT-X: CQ = dark green,
+      a reply addressed to me = dark pink, my own transmission (TX) = dark red,
+      everything else = dark navy. Dark rows with bright text replace the old bright blue.
+   3. The vertical bar graph above the waterfall is gone; the waterfall now fills the area
+      right below the ruler down to the bottom of the screen.
+   4. In the tablet landscape three-pane view the tool buttons (full screen, frequency,
+      volume, grid tracker) move to the bottom-right corner of the left waterfall pane
+      instead of covering the lists on the right.
+   5. A failed time sync now shows a short Korean message instead of the raw English
+      network error.
+
   0.93-kr4
    1. On a tablet held in landscape the screen is split into three panes:
       spectrum/waterfall on the left, the decode list at the top right, and the calling

@@ -188,54 +188,27 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         holder.callingListSequenceTextView.setText(holder.ft8Message.getSequence() == 0 ? "0" : "1");
         holder.isWeakSignalImageView.setVisibility(holder.ft8Message.isWeakSignal ? View.VISIBLE:View.INVISIBLE);
 
-        if (showMode==ShowMode.MY_CALLING) {//在呼叫界面
-            holder.callingListSequenceTextView.setTextColor(context.getColor(R.color.follow_call_text_color));
-        }
-
-        //根据1分钟内的4个时序区分颜色
-        switch (holder.ft8Message.getSequence4()) {
-            case 0:
-                holder.callListHolderConstraintLayout.setBackgroundResource(R.drawable.calling_list_cell_0_style);
-                break;
-            case 1:
-                holder.callListHolderConstraintLayout.setBackgroundResource(R.drawable.calling_list_cell_1_style);
-                break;
-            case 2:
-                holder.callListHolderConstraintLayout.setBackgroundResource(R.drawable.calling_list_cell_2_style);
-                break;
-            case 3:
-                holder.callListHolderConstraintLayout.setBackgroundResource(R.drawable.calling_list_cell_3_style);
-                break;
-        }
+        //한국어판(0.93-kr5): 행 색을 4개 시차가 아니라 뜻으로 나눈다.
+        //  내 송신(TX)=빨강, 나를 호출한 수신(RX)=핑크, CQ=초록, 그 밖의 교신=다크 네이비.
+        applyRowStyle(holder);
 
         holder.callingListIdBTextView.setText(holder.ft8Message.getdB());
-        //时间偏移，如果超过1.0秒，-0.05秒，红色提示
+        //时间偏移，如果超过1.0秒，-0.05秒，노란색으로 알린다
         holder.callListDtTextView.setText(holder.ft8Message.getDt());
         if (holder.ft8Message.time_sec > 1.0f || holder.ft8Message.time_sec < -0.05) {
-            holder.callListDtTextView.setTextColor(context.getResources().getColor(
-                    R.color.message_in_my_call_text_color));
-        } else {
-            holder.callListDtTextView.setTextColor(context.getResources().getColor(
-                    R.color.text_view_color));
+            holder.callListDtTextView.setTextColor(context.getColor(R.color.list_warning_text_color));
         }
-
 
         holder.callingListFreqTextView.setText(holder.ft8Message.getFreq_hz());
 
         //查是不是通联过的呼号，获取是否存在holder.otherBandIsQso中
         setQueryHolderQSL_Callsign(holder);
 
-        //是否有与我呼号有关的消息
-        if (holder.ft8Message.inMyCall()) {
-            holder.callListMessageTextView.setTextColor(context.getResources().getColor(
-                    R.color.message_in_my_call_text_color));
-        } else if (holder.otherBandIsQso) {
-            //设置在别的波段通联过的消息颜色
-            holder.callListMessageTextView.setTextColor(context.getResources().getColor(
-                    R.color.fromcall_is_qso_text_color));
-        } else {
-            holder.callListMessageTextView.setTextColor(context.getResources().getColor(
-                    R.color.message_text_color));
+        //在别的波段通联过的呼号，消息를 연하늘색으로 살짝 구분한다
+        if (!holder.ft8Message.inMyCall() && holder.otherBandIsQso
+                && holder.ft8Message.freq_hz > 0.01f) {
+            holder.callListMessageTextView.setTextColor(
+                    context.getColor(R.color.list_normal_accent_color));
         }
 
 
@@ -252,20 +225,13 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
 
         //消息类型
         holder.callingListCommandIInfoTextView.setText(holder.ft8Message.getCommandInfo());
-        if (holder.ft8Message.i3 == 1 || holder.ft8Message.i3 == 2) {
-            holder.callingListCommandIInfoTextView.setTextColor(context.getResources().getColor(
-                    R.color.text_view_color));
-        } else {
-            holder.callingListCommandIInfoTextView.setTextColor(context.getResources().getColor(
-                    R.color.message_in_my_call_text_color));
+        if (!(holder.ft8Message.i3 == 1 || holder.ft8Message.i3 == 2)) {
+            holder.callingListCommandIInfoTextView.setTextColor(holder.rowAccentColor);
         }
 
-        //设置是否CQ的颜色
+        //CQ 메시지 뒤에는 이제 따로 칠하지 않는다(행 색이 CQ를 알려 준다)
         if (holder.ft8Message.checkIsCQ()) {
-            holder.callListMessageTextView.setBackgroundResource(R.color.textview_cq_color);
             holder.ft8Message.toWhere = "";
-        } else {
-            holder.callListMessageTextView.setBackgroundResource(R.color.textview_none_color);
         }
 
 
@@ -326,6 +292,62 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
             holder.callingListCallsignToTextView.setVisibility(View.VISIBLE);
             holder.callingListCallsignFromTextView.setVisibility(View.VISIBLE);
         }
+    }
+
+    /**
+     * 한국어판(0.93-kr5): 행 하나의 배경과 글씨 색을 한 번에 정한다.
+     * 아이폰 FT8-Improved·WSJT-X와 같은 결로 CQ=초록, 나를 호출한 수신=핑크,
+     * 내 송신=빨강, 그 밖의 교신=다크 네이비를 쓴다.
+     *
+     * @param holder 목록 행
+     */
+    private void applyRowStyle(@NonNull CallingListItemHolder holder) {
+        //내가 보낸 메시지(송신 목록의 행이거나, 내 신호가 되돌아 들린 행)
+        boolean isMyOwnMessage = GeneralVariables.checkIsMyCallsign(holder.ft8Message.getCallsignFrom())
+                && !GeneralVariables.checkIsMyCallsign(holder.ft8Message.getCallsignTo());
+        boolean isTx = holder.ft8Message.freq_hz <= 0.01f || isMyOwnMessage;//내가 보낸 메시지
+        boolean isMine = !isTx && holder.ft8Message.inMyCall();//나를 부른 수신(RX)
+        boolean isCq = !isTx && !isMine && holder.ft8Message.checkIsCQ();
+
+        int backgroundResId;
+        if (isTx) {
+            backgroundResId = R.drawable.calling_list_cell_tx_style;
+            holder.rowPrimaryColor = context.getColor(R.color.list_tx_text_color);
+            holder.rowSecondaryColor = context.getColor(R.color.list_tx_muted_color);
+            holder.rowAccentColor = context.getColor(R.color.list_tx_accent_color);
+        } else if (isMine) {
+            backgroundResId = R.drawable.calling_list_cell_mine_style;
+            holder.rowPrimaryColor = context.getColor(R.color.list_mine_text_color);
+            holder.rowSecondaryColor = context.getColor(R.color.list_mine_muted_color);
+            holder.rowAccentColor = context.getColor(R.color.list_mine_accent_color);
+        } else if (isCq) {
+            backgroundResId = R.drawable.calling_list_cell_cq_style;
+            holder.rowPrimaryColor = context.getColor(R.color.list_cq_text_color);
+            holder.rowSecondaryColor = context.getColor(R.color.list_cq_muted_color);
+            holder.rowAccentColor = context.getColor(R.color.list_cq_accent_color);
+        } else {
+            backgroundResId = R.drawable.calling_list_cell_normal_style;
+            holder.rowPrimaryColor = context.getColor(R.color.list_normal_text_color);
+            holder.rowSecondaryColor = context.getColor(R.color.list_normal_muted_color);
+            holder.rowAccentColor = context.getColor(R.color.list_normal_accent_color);
+        }
+
+        holder.callListHolderConstraintLayout.setBackgroundResource(backgroundResId);
+
+        //본문은 밝게, 곁들인 숫자들은 한 단계 낮춰 눈이 덜 피로하게
+        holder.callListMessageTextView.setTextColor(holder.rowPrimaryColor);
+        holder.callingListSequenceTextView.setTextColor(holder.rowAccentColor);
+        holder.callingListCommandIInfoTextView.setTextColor(holder.rowSecondaryColor);
+        holder.callingListIdBTextView.setTextColor(holder.rowSecondaryColor);
+        holder.callListDtTextView.setTextColor(holder.rowSecondaryColor);
+        holder.callingListFreqTextView.setTextColor(holder.rowSecondaryColor);
+        holder.bandItemTextView.setTextColor(holder.rowSecondaryColor);
+        holder.callingListDistTextView.setTextColor(holder.rowSecondaryColor);
+        holder.callingUtcTextView.setTextColor(holder.rowSecondaryColor);
+        holder.callingListCallsignFromTextView.setTextColor(holder.rowSecondaryColor);
+        holder.callingListCallsignToTextView.setTextColor(holder.rowSecondaryColor);
+        //메시지 글씨 뒤의 예전 노란 칠은 지운다
+        holder.callListMessageTextView.setBackgroundResource(R.color.textview_none_color);
     }
 
     private void setFromDxcc(@NonNull CallingListItemHolder holder) {
@@ -406,6 +428,10 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         ShowMode showMode;
         boolean isSyncFreq;
         boolean otherBandIsQso = false;
+        //한국어판(0.93-kr5): 행 색에 맞춘 글씨 색
+        int rowPrimaryColor = 0;
+        int rowSecondaryColor = 0;
+        int rowAccentColor = 0;
 
 
         public CallingListItemHolder(@NonNull View itemView, View.OnClickListener listener

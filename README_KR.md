@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr4` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr5` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -94,6 +94,32 @@
   (`ic705Preset/version`=4 로 기록, 이후에는 사용자가 바꾼 값을 다시 덮지 않음).
   제어 방식(`ctrMode`)과 Icom LAN 주소·포트 설정은 건드리지 않습니다.
 
+### (6) 0.93-kr5에서 더한 것
+- **끝없는 재호출 방지**: `FT8TransmitSignal` 에 같은 콜사인·같은 단계의 메시지를 몇 번 보냈는지
+  세는 안전장치(`isSameMessageRepeatLimitReached()`)를 두었습니다. `무응답 N회 중단`(기본 3회)만큼
+  같은 메시지를 보내면 리포트(`R-11` 등) 단계에서도 자동 호출을 멈추고 CQ/대기로 돌아갑니다.
+  - 어떤 응답이든 무응답 횟수를 0으로 되돌리던 것을, **단계가 앞으로 나아갔을 때만** 되돌리도록
+    바꿨습니다. 같은 리포트를 되풀이하는 응답(제자리걸음)은 무응답으로 셉니다.
+  - 상대가 `RR73`/`RRR`을 보내면 그 자리에서 73을 한 번만 보내고 교신을 마친 뒤 CQ로 돌아갑니다.
+    `73`/`RR73`/`RRR` 메시지에는 리포트로 답하지 않습니다(그래서 상대의 RR73에 리포트를 다시 보내지 않음).
+  - 무응답 한도 처리는 `handleNoReplyLimitReached()` 하나로 모았습니다.
+- **교신 목록 색(아이폰 FT8-Improved/WSJT-X식)**: `CallingListAdapter.applyRowStyle()` 이 행마다
+  - 내 송신(TX) = 다크 레드 `#B91C1C`→`#991B1B` + 흰 글씨
+  - 나를 호출한 수신(RX) = 다크 핑크 `#9D174D`→`#831843` + 연핑크 `#FCE7F3`
+  - CQ = 다크 그린 `#166534`→`#14532D` + 연두 `#DCFCE7`
+  - 그 밖의 교신 = 다크 네이비 `#1E293B`→`#162238` + `#E2E8F0`
+  을 적용합니다(밝은 파란 바탕 제거). 제목 막대는 `#312E81`, 열 제목 줄은 `#1B2437` 로 맞췄습니다.
+- **워터폴 위 세로 막대그래프 제거**: `fragment_spectrum.xml` 에서 `ColumnarView` 를 없애고
+  `WaterfallView` 를 눈금선(`rulerFrequencyView`) 바로 아래부터 화면 아래까지 채웠습니다.
+  시간·대역 표시는 워터폴 위에 겹쳐 보이도록 순서와 제약을 바꿨습니다.
+- **도구 버튼 위치**: 태블릿 가로 3분할에서는 전체화면·주파수·볼륨·지구본 버튼이 오른쪽 목록을
+  가리지 않도록 왼쪽 워터폴 패널의 오른쪽 아래 구석으로 옮겨 갑니다
+  (`MainActivity.updateFloatViewPlacement()`/`placeFloatViewInSplitCorner()`). 경계선을 끌어
+  패널 폭이 바뀌면 따라가고, 3분할이 아닐 때는 예전처럼 오른쪽 가장자리에 있습니다.
+- **시각 동기화 실패 안내**: `ConfigFragment.syncFailed()` 가 `e.getMessage()`(영어 원문) 대신
+  `time_sync_failed_network` 문자열로 "인터넷에 연결되어 있지 않아 시각 동기화에 실패했습니다.
+  (무전기 Wi-Fi에 연결된 동안에는 동기화가 되지 않습니다)" 를 보여 줍니다.
+
 ---
 
 ## 2. 빌드 방법 (우분투 / 윈도우 WSL Ubuntu)
@@ -153,7 +179,7 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr4`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr5`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |

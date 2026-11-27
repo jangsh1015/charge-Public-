@@ -53,7 +53,7 @@ public class SpectrumFragment extends Fragment {
                              Bundle savedInstanceState) {
         mainViewModel = MainViewModel.getInstance(this);
         binding = FragmentSpectrumBinding.inflate(inflater, container, false);
-        binding.columnarView.setShowBlock(true);
+        //한국어판(0.93-kr5): 맨 위 세로 막대그래프(ColumnarView)를 없애 워터폴만 남겼다.
         binding.deNoiseSwitch.setChecked(mainViewModel.deNoise);//噪声抑制
         binding.waterfallView.setDrawMessage(false);
         setDeNoiseSwitchState();
@@ -128,7 +128,6 @@ public class SpectrumFragment extends Fragment {
                 frequencyLineTimeOut = 60;//显示频率线的时长：60*0.16
 
                 binding.waterfallView.setTouch_x(Math.round(motionEvent.getX()));
-                binding.columnarView.setTouch_x(Math.round(motionEvent.getX()));
 
 
 
@@ -158,7 +157,6 @@ public class SpectrumFragment extends Fragment {
         };
 
         binding.waterfallView.setOnTouchListener(touchListener);
-        binding.columnarView.setOnTouchListener(touchListener);
 
         return binding.getRoot();
     }
@@ -182,9 +180,7 @@ public class SpectrumFragment extends Fragment {
         //达到显示的时长，就取取消掉频率线
         if (frequencyLineTimeOut == 0) {
             binding.waterfallView.setTouch_x(-1);
-            binding.columnarView.setTouch_x(-1);
         }
-        binding.columnarView.setWaveData(fft);
         if (mainViewModel.markMessage) {//是否标记消息
             binding.waterfallView.setWaveData(fft, UtcTimer.getNowSequential(), mainViewModel.currentMessages);
         } else {
