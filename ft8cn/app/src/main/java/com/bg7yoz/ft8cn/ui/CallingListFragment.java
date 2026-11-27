@@ -109,6 +109,22 @@ public class CallingListFragment extends Fragment {
                 mainViewModel.mutable_Decoded_Counter.setValue(0);
             }
         });
+        //한국어판(0.93-kr11): [미교신만] 토글 — 켜면 아직 교신하지 않은 국의 줄만 남긴다
+        binding.unworkedOnlyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean on = !callingListAdapter.isUnworkedOnly();
+                callingListAdapter.setUnworkedOnly(on);
+                applyUnworkedOnlyChip(on);
+                if (callingListAdapter.getItemCount() > 0) {
+                    callListRecyclerView.scrollToPosition(callingListAdapter.getItemCount() - 1);
+                }
+                ToastMessage.show(GeneralVariables.getStringFromResource(
+                        on ? R.string.unworked_only_on : R.string.unworked_only_off));
+            }
+        });
+        applyUnworkedOnlyChip(callingListAdapter.isUnworkedOnly());
+
         //观察解码数量
         mainViewModel.mutable_Decoded_Counter.observe(getViewLifecycleOwner(), new Observer<Integer>() {
             @SuppressLint("DefaultLocale")
@@ -569,6 +585,20 @@ public class CallingListFragment extends Fragment {
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    /**
+     * 한국어판(0.93-kr11): [미교신만] 칩의 켜짐/꺼짐 모양을 맞춘다.
+     *
+     * @param on 켜져 있으면 true
+     */
+    private void applyUnworkedOnlyChip(boolean on) {
+        if (binding == null) {
+            return;
+        }
+        binding.unworkedOnlyButton.setSelected(on);
+        binding.unworkedOnlyButton.setTextColor(ContextCompat.getColor(requireContext()
+                , on ? R.color.decode_filter_chip_text_on : R.color.bar_text_view_color));
     }
 
     @Override

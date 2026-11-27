@@ -498,6 +498,9 @@
     <string name="qsl_query_log_menu">Log (%s)</string>
     <string name="message_list_simple_mode">Simple List Mode</string>
     <string name="message_list_standard_mode">Standard List Mode</string>
+    <string name="unworked_only">Unworked</string>
+    <string name="unworked_only_on">Showing unworked stations only</string>
+    <string name="unworked_only_off">Showing all decodes</string>
     <string name="config_msg_mode">Message mode</string>
     <string name="config_msg_std_mode">Standard</string>
     <string name="config_msg_simple_mode">Simple</string>

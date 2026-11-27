@@ -500,6 +500,9 @@
     <string name="qsl_query_log_menu">로그 (%s)</string>
     <string name="message_list_simple_mode">간단 목록 모드</string>
     <string name="message_list_standard_mode">표준 목록 모드</string>
+    <string name="unworked_only">미교신만</string>
+    <string name="unworked_only_on">미교신한 국만 봅니다</string>
+    <string name="unworked_only_off">전체 디코드를 봅니다</string>
     <string name="config_msg_mode">메시지 모드</string>
     <string name="config_msg_std_mode">표준</string>
     <string name="config_msg_simple_mode">간단</string>

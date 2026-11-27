@@ -41,6 +41,14 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
     private static final String TAG = "CallingListAdapter";
     private final MainViewModel mainViewModel;
     private final ArrayList<Ft8Message> ft8MessageArrayList;
+
+    //한국어판(0.93-kr11): [미교신만] 보기.
+    //  켜져 있으면 아직 교신하지 않은 국의 줄만 visibleMessages 에 담고, 목록 위치는 모두 이 목록을 기준으로 센다.
+    private boolean unworkedOnly;
+    private final ArrayList<Ft8Message> visibleMessages = new ArrayList<>();
+    // 보여 줄 줄을 다시 굴라야 하는지, 그리고 마지막으로 고를 때의 원래 목록 크기
+    private boolean visibleDirty = true;
+    private int visibleSourceSize = -1;
     private final Context context;
 
     private final ShowMode showMode;
@@ -63,8 +71,8 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
             //view.setTag(ft8Message);//把消息对象传递给上一级界面
             int postion= (int) view.getTag();
             if (postion==-1) return;
-            if (postion>ft8MessageArrayList.size()-1) return;
-            Ft8Message ft8Message=ft8MessageArrayList.get(postion);
+            Ft8Message ft8Message = messageAt(postion);
+            if (ft8Message == null) return;
 
             //添加菜单的参数i1:组，i2:id值，i3:显示顺序
             if (!ft8Message.getCallsignTo().contains("...")//目标不能是自己
@@ -144,6 +152,108 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         this.context = context;
         this.showMode=showMode;
         ft8MessageArrayList = messages;
+        this.unworkedOnly = GeneralVariables.unworkedOnlyMode;
+        rebuildVisibleMessages();
+    }
+
+    /**
+     * 한국어판(0.93-kr11): [미교신만] 보기를 켜고 끈다.
+     * 켜면 아직 교신하지 않은 국의 줄만 보이고, 끄면 전체 디코드 줄이 그대로 보인다.
+     *
+     * @param on 켤지(true) 끌지(false)
+     */
+    public void setUnworkedOnly(boolean on) {
+        GeneralVariables.unworkedOnlyMode = on;
+        this.unworkedOnly = on;
+        refreshVisibleMessages();
+    }
+
+    /**
+     * 한국어판(0.93-kr11): 보여 줄 줄을 다시 고르고 화면을 갱신한다.
+     */
+    public void refreshVisibleMessages() {
+        rebuildVisibleMessages();
+        notifyDataSetChanged();
+    }
+
+    /**
+     * 한국어판(0.93-kr11): [미교신만] 보기가 켜져 있는지 돌려준다.
+     *
+     * @return 켜져 있으면 true
+     */
+    public boolean isUnworkedOnly() {
+        return unworkedOnly;
+    }
+
+    /**
+     * 한국어판(0.93-kr11): 실제로 보여 줄 줄만 골라 둔다(디코드 목록에서만 적용한다).
+     */
+    private void rebuildVisibleMessages() {
+        visibleMessages.clear();
+        for (int i = 0; i < ft8MessageArrayList.size(); i++) {
+            Ft8Message message = ft8MessageArrayList.get(i);
+            if (message == null) {
+                continue;
+            }
+            if (isFiltering() && isWorkedMessage(message)) {
+                continue;
+            }
+            visibleMessages.add(message);
+        }
+        visibleDirty = false;
+        visibleSourceSize = ft8MessageArrayList.size();
+    }
+
+    /**
+     * 한국어판(0.93-kr11): [미교신만] 보기를 지금 적용할지(디코드 목록이고, 켜져 있을 때).
+     *
+     * @return 적용하면 true
+     */
+    private boolean isFiltering() {
+        return unworkedOnly && showMode == ShowMode.CALLING_LIST;
+    }
+
+    /**
+     * 한국어판(0.93-kr11): 이미 교신한 국인지 확인한다.
+     * 줄그음(setQueryHolderQSL_Callsign)과 같은 checkQSLCallsign 기준을 쓰고,
+     * 내가 보낸 줄은 받는 쪽 콜사인으로 본다.
+     *
+     * @param message 디코드 줄
+     * @return 교신한 적이 있으면 true
+     */
+    private boolean isWorkedMessage(Ft8Message message) {
+        String callsign = otherCallsign(message);
+        if (callsign == null || callsign.trim().isEmpty() || callsign.contains("...")) {
+            return false;
+        }
+        return GeneralVariables.checkQSLCallsign(callsign);
+    }
+
+    /**
+     * 한국어판(0.93-kr11): 이 줄이 가리키는 상대 콜사인(내 송신 줄이면 받는 쪽).
+     *
+     * @param message 디코드 줄
+     * @return 상대 콜사인
+     */
+    private String otherCallsign(Ft8Message message) {
+        String callsignFrom = message.getCallsignFrom();
+        if (callsignFrom != null && GeneralVariables.checkIsMyCallsign(callsignFrom)) {
+            return message.getCallsignTo();
+        }
+        return callsignFrom;
+    }
+
+    /**
+     * 한국어판(0.93-kr11): 목록 위치(어댑터 위치)에 있는 줄을 돌려준다.
+     *
+     * @param position 목록에서의 위치
+     * @return 디코드 줄(없으면 null)
+     */
+    private Ft8Message messageAt(int position) {
+        if (position < 0 || position >= visibleMessages.size()) {
+            return null;
+        }
+        return visibleMessages.get(position);
     }
 
     @NonNull
@@ -165,16 +275,37 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
      * @param position 在列表中的位置
      */
     public void deleteMessage(int position) {
-        if (position >= 0) {
-            ft8MessageArrayList.remove(position);
+        Ft8Message message = messageAt(position);
+        if (message == null) {
+            return;
         }
+        int sourceIndex = indexOfMessage(message);
+        if (sourceIndex >= 0) {
+            ft8MessageArrayList.remove(sourceIndex);
+        }
+        if (position < visibleMessages.size() && visibleMessages.get(position) == message) {
+            visibleMessages.remove(position);
+        }
+        visibleDirty = true;
+    }
+
+    /**
+     * 한국어판(0.93-kr11): 같은 줄(같은 객체)의 원래 목록 위치를 찾는다.
+     *
+     * @param message 찾을 줄
+     * @return 원래 목록에서의 위치(없으면 -1)
+     */
+    private int indexOfMessage(Ft8Message message) {
+        for (int i = 0; i < ft8MessageArrayList.size(); i++) {
+            if (ft8MessageArrayList.get(i) == message) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public Ft8Message getMessageByPosition(int position){
-        if (ft8MessageArrayList==null) return null;
-        if (position<0) return null;
-        if (position>ft8MessageArrayList.size()-1) return null;
-        return ft8MessageArrayList.get(position);
+        return messageAt(position);
     }
 
     /**
@@ -187,14 +318,18 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         if (holder.getAdapterPosition() == -1) {
             return null;
         }
-        return ft8MessageArrayList.get(holder.getAdapterPosition());
+        return messageAt(holder.getAdapterPosition());
     }
 
     @SuppressLint("ResourceAsColor")
     @Override
     public void onBindViewHolder(@NonNull CallingListItemHolder holder, int position) {
         holder.callListHolderConstraintLayout.setTag(position);//设置layout的tag，为了识别消息的定位
-        holder.ft8Message = ft8MessageArrayList.get(position);
+        Ft8Message message = messageAt(position);
+        if (message == null) {
+            return;
+        }
+        holder.ft8Message = message;
         holder.showMode = showMode;//确定是消息列表还是关注消息的列表
         holder.isSyncFreq = mainViewModel.ft8TransmitSignal.isSynFrequency();//如果同频发射，就不显示呼叫接收者
 
@@ -479,7 +614,11 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
 
     @Override
     public int getItemCount() {
-        return ft8MessageArrayList.size();
+        //한국어판(0.93-kr11): 새 디코드가 들어오거나 목록이 지워지면 이때 다시 고른다(2열·1열 모두 해당)
+        if (visibleDirty || visibleSourceSize != ft8MessageArrayList.size()) {
+            rebuildVisibleMessages();
+        }
+        return visibleMessages.size();
     }
 
     public void setOnItemClickListener(View.OnClickListener onItemClickListener) {

@@ -78,15 +78,26 @@
                 app:layout_constraintTop_toTopOf="parent"
                 tools:text="我的位置" />
 
+            <!-- 한국어판(0.93-kr11): 미교신한 국만 보기 토글(누르면 켜짐/꺼짐) -->
+            <TextView
+                android:id="@+id/unworkedOnlyButton"
+                style="@style/DecodeFilterChip"
+                android:text="@string/unworked_only"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/clearCallingListImageButton"
+                app:layout_constraintTop_toTopOf="parent" />
+
             <TextView
                 android:id="@+id/timeOffsetTextView"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textColor="@color/bar_text_view_color"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textSize="12sp"
                 app:layout_constraintBottom_toTopOf="@+id/isDecodingTextView"
                 app:layout_constraintEnd_toStartOf="@+id/guideline6"
-                app:layout_constraintStart_toEndOf="@+id/clearCallingListImageButton"
+                app:layout_constraintStart_toEndOf="@+id/unworkedOnlyButton"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="1.0"
                 tools:text="平均0.00秒，偏移1.40秒" />
@@ -100,13 +111,15 @@
 
             <TextView
                 android:id="@+id/isDecodingTextView"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textColor="@color/bar_text_view_color"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textSize="12sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/guideline6"
-                app:layout_constraintStart_toEndOf="@+id/clearCallingListImageButton"
+                app:layout_constraintStart_toEndOf="@+id/unworkedOnlyButton"
                 app:layout_constraintTop_toBottomOf="@+id/timeOffsetTextView"
                 tools:text="解码用时1.4秒" />
         </androidx.constraintlayout.widget.ConstraintLayout>

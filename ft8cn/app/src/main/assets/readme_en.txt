@@ -24,6 +24,26 @@ Credits
 
 Korean edition changes
 
+  0.93-kr11
+   1. Fixed the Display options dialog on the [Grid / PSK] screen.
+      - The dialog could be taller than the screen, so [Save and Close] at the bottom was cut off,
+        and the [X] at the top right did not close it. The dialog now always fits on the screen,
+        and a long list scrolls inside it.
+      - The [X] button at the top right is now 34x34, and a [Close] button was added beside it.
+        [X] and [Close] always close the dialog, and it opens normally again from
+        [Settings] then [Display options].
+      - The Display options dialog no longer appears by itself when the screen opens.
+   2. On the first run the map shows grids and SNR.
+      - 'Show grid', 'Show snr' and 'SNR in LogBook' are switched on and saved once.
+        (If you turn them off in Display options, the app leaves your choice alone.)
+   3. The default lookup is the 40m band and FT8 mode.
+      - Applied once; when you choose another band or mode in [Settings], your choice is kept.
+   4. A [Unworked] button was added to the top row of the decode screen.
+      - Press it to see only stations you have not worked yet (the same test as the struck-through
+        lines), and press it again to see every decode.
+      - It is off (show all) by default, and new decodes follow the filter at once on both the
+        one-column phone list and the two-column tablet list.
+
   0.93-kr10
    1. The [Grid / PSK] screen is now 'map first'.
       - The multi-line card and the big button row at the top are folded into a single

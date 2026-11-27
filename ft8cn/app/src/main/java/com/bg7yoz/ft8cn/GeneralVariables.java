@@ -175,6 +175,9 @@ public class GeneralVariables {
 
     public static boolean simpleCallItemMode = false;//紧凑型消息
 
+    //한국어판(0.93-kr11): 디코드 창의 [미교신만] 보기(켜면 아직 교신하지 않은 국의 줄만 보인다)
+    public static boolean unworkedOnlyMode = false;
+
     public static boolean swr_switch_on = true;//swr告警开关
     public static boolean alc_switch_on = true;//alc告警开关
 

@@ -45,6 +45,23 @@
         <item name="android:textSize">11sp</item>
     </style>
 
+    <!-- 한국어판(0.93-kr11): 디코드 창의 [미교신만] 토글 칩 -->
+    <style name="DecodeFilterChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">26dp</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:background">@drawable/decode_filter_chip</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:textColor">@color/bar_text_view_color</item>
+        <item name="android:textSize">11sp</item>
+    </style>
+
     <style name="ShareProgressDialog" parent="android:style/Theme.Material.Dialog">
         <!--背景颜色及和透明程度-->
         <item name="android:windowBackground">@android:color/transparent</item>

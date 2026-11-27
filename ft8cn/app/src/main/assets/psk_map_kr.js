@@ -1,4 +1,4 @@
-/* 한국어판(0.93-kr10): PSK Reporter 지도 화면을 '지도만 보이게' 접고 영어 라벨을 한국어로 바꾼다.
+/* 한국어판(0.93-kr11): PSK Reporter 지도 화면을 '지도만 보이게' 접고 영어 라벨을 한국어로 바꾼다.
  *
  * GridPskFragment 가 pskreporter.info/pskmap.html 을 다 읽은 뒤 이 파일을 그대로 넣어 준다.
  * 하는 일
@@ -8,6 +8,8 @@
  *   3) 폼·표시 옵션·지도 표시 정보의 영어 라벨을 한국어로 바꾼다
  *      (사이트가 나중에 다시 그리는 부분도 따라간다).
  *   4) 'Website problem? (0 null)' 같은 수신 실패 문구와 감시 상태를 한국어로 바꿔 지도 아래에 보여 준다.
+ *   5) 표시 옵션 창이 화면을 넘지 않게 하고, [X]·[닫기]로 확실히 닫히게 한다(0.93-kr11).
+ *   6) 처음 한 번만 '그리드 표시 · SNR 표시 · 로그북에 SNR'을 켜고, 조회를 40m·FT8 로 맞춘다(0.93-kr11).
  * 여러 번 넣어도 안전하도록(다시 읽힐 때) 스스로 한 번만 준비한다. 화면에 다시 적용만 하려면
  * window.__pskKrApply() 를 부르면 된다.
  */
@@ -45,12 +47,41 @@
         'body.psk-kr-open #container1 a{color:#0a58ca!important;text-decoration:none!important;',
         'margin-right:10px!important;font-size:13px!important}',
         'body.psk-kr-open #container1 select{max-width:46vw!important}',
-        /* 지도 표시 옵션 창: 설명 칸이 줄바꿈으로 길어지지 않게 하고, 작은 화면에서는 창 안에서 넘긴다 */
+        /* 표시 옵션 표: 설명 칸이 줄바꿈으로 길어지지 않게 하고, 체크 칸을 손가락으로 누르기 좋게 키운다 */
         '#optiontable td{white-space:nowrap!important}',
         '#optiontable{font-size:13px!important}',
-        '.ui-dialog{max-height:88vh!important;max-width:96vw!important;',
-        'display:flex!important;flex-direction:column!important}',
-        '.ui-dialog .ui-dialog-content{overflow:auto!important}',
+        '#optiontable input[type=checkbox]{width:22px!important;height:22px!important;margin:0!important}',
+        /* 표시 옵션 창(.ui-dialog): 창 전체가 화면 안에 들어오게 하고 넘치는 내용은 창 안에서 넘긴다.
+           display 는 절대 건드리지 않는다 — jQuery UI 가 닫을 때 넣는 display:none 을 덮어쓰면
+           [X] 를 눌러도 창이 그대로 남아 닫히지 않는다(0.93-kr10 문제).
+           위치도 fixed 로 잡아 두어, 사이트가 계산한 top 때문에 창 아래쪽이 화면 밖으로 잘리지 않게 한다. */
+        '.ui-dialog{position:fixed!important;top:6px!important;left:50%!important;',
+        'transform:translateX(-50%)!important;max-height:calc(100vh - 12px)!important;',
+        'max-width:calc(100vw - 12px)!important;box-sizing:border-box!important;',
+        'overflow:hidden!important;z-index:2147483560!important}',
+        '.ui-dialog .ui-dialog-titlebar{position:relative!important;box-sizing:border-box!important;',
+        'min-height:34px!important;padding:5px 96px 5px 10px!important}',
+        '.ui-dialog .ui-dialog-title{display:block!important;font:bold 14px/24px sans-serif!important;',
+        'white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}',
+        '.ui-dialog .ui-dialog-content{display:block!important;max-height:calc(100vh - 76px)!important;',
+        'overflow:auto!important;-webkit-overflow-scrolling:touch!important}',
+        /* 사이트가 #dddd 에 준 display:table-cell 은 max-height 를 무시하게 만든다(창이 화면보다 길어진다).
+           내용 칸을 block 으로 되돌려 창 안에서 스크롤되게 한다. */
+        '.ui-dialog #dddd{display:block!important}',
+        /* [X] 단추: 34x34 로 키우고 아이콘을 가운데에 둔다 */
+        '.ui-dialog .ui-dialog-titlebar-close{position:absolute!important;right:52px!important;top:5px!important;',
+        'width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;',
+        'margin:0!important;padding:0!important;background:#fff!important;border:1px solid #888!important;',
+        'border-radius:6px!important;overflow:hidden!important;z-index:2!important}',
+        '.ui-dialog .ui-dialog-titlebar-close .ui-button-icon{position:absolute!important;top:50%!important;',
+        'left:50%!important;right:auto!important;margin:-8px 0 0 -8px!important;',
+        'transform:scale(1.6)!important;transform-origin:center!important}',
+        /* 제목줄 한글 [닫기] 단추 */
+        '.psk-kr-dlg-close{position:absolute!important;right:6px!important;top:5px!important;',
+        'width:42px!important;height:34px!important;box-sizing:border-box!important;',
+        'border-radius:6px!important;background:#0d6efd!important;color:#fff!important;',
+        'border:1px solid #0a58ca!important;font:bold 14px/32px sans-serif!important;',
+        'text-align:center!important;cursor:pointer!important;z-index:2!important}',
         '#mapconreportmap{width:100%!important;margin:0!important;background:#000!important;',
         'border:0!important}',
         /* 지도 위 [설정] 단추 */
@@ -307,6 +338,206 @@
         } catch (e2) { /* 무시 */ }
     }
 
+    //------------------------------------------------------------------ 표시 옵션 창 닫기
+    // jQuery UI 가 그린 '표시 옵션' 창(.ui-dialog)을 확실히 닫는다.
+    // 사이트(dialog('close'))가 닫기를 처리하면 설정 저장까지 그대로 끝나고,
+    // 어떤 이유로든 닫히지 않으면 창을 직접 감춘다.
+    function closeDialog(dlg) {
+        if (!dlg) {
+            return;
+        }
+        try {
+            var content = dlg.querySelector('.ui-dialog-content');
+            var $ = window.jQuery;
+            if ($ && content && $.fn && $.fn.dialog) {
+                $(content).dialog('close');
+            }
+        } catch (e) { /* 아래에서 직접 감춘다 */ }
+        if (dlg.style.display !== 'none') {
+            dlg.style.display = 'none';
+        }
+        dlg.setAttribute('aria-hidden', 'true');
+        window.setTimeout(resizeMap, 80);
+    }
+
+    function isDialogShown(dlg) {
+        return !!dlg && dlg.style.display !== 'none'
+            && (typeof dlg.getClientRects !== 'function' || dlg.getClientRects().length > 0);
+    }
+
+    function closestMatch(el, selector) {
+        while (el && el.nodeType === 1) {
+            if ((el.matches && el.matches(selector))
+                || (el.msMatchesSelector && el.msMatchesSelector(selector))) {
+                return el;
+            }
+            el = el.parentNode;
+        }
+        return null;
+    }
+
+    // [X]·[닫기]는 어떤 경우에도 창을 닫는다(사이트 처리를 기다리지 않는다).
+    var CLOSE_SELECTOR = '.ui-dialog-titlebar-close,.psk-kr-dlg-close';
+
+    function onDialogPress(ev) {
+        var hit = ev.target ? closestMatch(ev.target, CLOSE_SELECTOR) : null;
+        if (!hit) {
+            return;
+        }
+        var dlg = closestMatch(hit, '.ui-dialog');
+        if (!dlg) {
+            return;
+        }
+        if (ev.cancelable) {
+            ev.preventDefault();
+        }
+        closeDialog(dlg);
+    }
+
+    function bindDialogHandlers() {
+        if (window.__pskKrDlgBound) {
+            return;
+        }
+        window.__pskKrDlgBound = true;
+        doc.addEventListener('click', onDialogPress, true);
+        doc.addEventListener('touchend', onDialogPress, true);
+    }
+
+    // 제목줄에 한글 [닫기] 단추를 붙인다([X] 아이콘만으로는 작아서 잘 안 눌린다).
+    function decorateDialogs() {
+        var dialogs = doc.querySelectorAll('.ui-dialog');
+        for (var i = 0; i < dialogs.length; i++) {
+            var bar = dialogs[i].querySelector('.ui-dialog-titlebar');
+            if (!bar || bar.querySelector('.psk-kr-dlg-close')) {
+                continue;
+            }
+            var btn = doc.createElement('div');
+            btn.className = 'psk-kr-dlg-close';
+            btn.setAttribute('role', 'button');
+            btn.setAttribute('aria-label', '표시 옵션 닫기');
+            btn.textContent = '닫기';
+            bar.appendChild(btn);
+        }
+    }
+
+    // 처음 화면이 뜰 때 표시 옵션 창이 저절로 열려 있으면 닫아 둔다.
+    // (손으로 연 창은 건드리지 않는다 — 화면을 누른 적이 있으면 곧바로 멈춘다)
+    var bootAt = Date.now();
+    var userActed = false;
+
+    function markUserActed() {
+        userActed = true;
+    }
+
+    function closeStrayDialog() {
+        if (userActed || Date.now() - bootAt > 4000) {
+            return;
+        }
+        var dialogs = doc.querySelectorAll('.ui-dialog');
+        for (var i = 0; i < dialogs.length; i++) {
+            if (isDialogShown(dialogs[i])) {
+                closeDialog(dialogs[i]);
+            }
+        }
+    }
+
+    //------------------------------------------------------------------ 표시 옵션 기본값
+    // 처음 한 번만 지도에 그리드·SNR 이 보이게 하고, 조회는 40m·FT8 로 맞춘다.
+    // (사용자가 [설정]이나 표시 옵션에서 직접 고르면 그 뒤로는 건드리지 않는다 — 한 번 했다는 표시를 남긴다)
+    var DEFAULT_ONCE_KEY = 'psk-kr-defaults-v1';
+    var DEFAULT_ON_NAMES = ['showgrid', 'showsnr', 'showsnrinlogbook'];
+    var DEFAULT_DROPDOWNS = [
+        ['#selectband', '40m', 'all bands'],
+        ['#selectmode', 'FT8', 'all modes']
+    ];
+
+    function readLocalFlag(key) {
+        try {
+            return window.localStorage ? window.localStorage.getItem(key) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeLocalFlag(key) {
+        try {
+            if (window.localStorage) {
+                window.localStorage.setItem(key, '1');
+            }
+        } catch (e) { /* 다음에 또 시도한다 */ }
+    }
+
+    // 밴드/모드 드롭다운: 아직 고른 적이 없(기본값 그대로)을 때만 원하는 값으로 맞춘다
+    function selectDefaultOption(selector, wanted, fallbackText) {
+        var sel = doc.querySelector(selector);
+        if (!sel || !sel.options || !sel.options.length) {
+            return false;
+        }
+        var current = sel.options[sel.selectedIndex];
+        var currentText = current ? norm(current.textContent) : '';
+        if (currentText.toLowerCase() !== fallbackText.toLowerCase()) {
+            return false; // 이미 사용자가 고른 값이면 그대로 둔다
+        }
+        for (var i = 0; i < sel.options.length; i++) {
+            if (norm(sel.options[i].textContent).toLowerCase() === wanted.toLowerCase()) {
+                sel.selectedIndex = i;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function applyDefaultOptions() {
+        if (readLocalFlag(DEFAULT_ONCE_KEY) === '1') {
+            return;
+        }
+        var form = doc.getElementById('optionform');
+        var top = doc.getElementById('topform');
+        var bandSelect = doc.getElementById('selectband');
+        if (!form || !top || !bandSelect || bandSelect.options.length < 2
+            || !window.currentParam || !form.querySelector('input[name="showgrid"]')) {
+            return; // 사이트가 아직 준비되지 않았다 — 다음 차례에 다시
+        }
+        try {
+            for (var i = 0; i < DEFAULT_ON_NAMES.length; i++) {
+                var box = form.querySelector('input[name="' + DEFAULT_ON_NAMES[i] + '"]');
+                if (!box || box.checked) {
+                    continue;
+                }
+                box.checked = true;
+                box.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            var changed = false;
+            for (var d = 0; d < DEFAULT_DROPDOWNS.length; d++) {
+                if (selectDefaultOption(DEFAULT_DROPDOWNS[d][0], DEFAULT_DROPDOWNS[d][1]
+                    , DEFAULT_DROPDOWNS[d][2])) {
+                    changed = true;
+                }
+            }
+            // 사이트가 [조회]·[저장하고 닫기]를 눌렀을 때와 같은 방식으로 값을 읽어 저장·적용한다
+            if (typeof window.getParamBlock === 'function'
+                && typeof window.savePreferences === 'function') {
+                var param = window.getParamBlock(top);
+                if (window.paramBoolean) {
+                    for (var name in window.paramBoolean) {
+                        window.currentParam[name] = param[name];
+                    }
+                }
+                if (typeof window.applyChanges === 'function') {
+                    window.applyChanges(param);
+                }
+                if (changed && typeof window.showInformationAndSave === 'function') {
+                    // 밴드·모드를 바꿨으면 그 값으로 지도를 다시 읽는다
+                    window.showInformationAndSave(top);
+                } else {
+                    window.savePreferences(param);
+                }
+            }
+            writeLocalFlag(DEFAULT_ONCE_KEY);
+        } catch (e) { /* 다음 차례에 다시 시도한다 */ }
+    }
+
     //------------------------------------------------------------------ 한국어로 바꾸기
     function translatePopupNode(node) {
         var raw = node.nodeValue;
@@ -421,8 +652,8 @@
         }
         var closes = doc.querySelectorAll('.ui-dialog-titlebar-close');
         for (var c = 0; c < closes.length; c++) {
-            if (closes[c].getAttribute('title') !== '닫기') {
-                closes[c].setAttribute('title', '닫기');
+            if (closes[c].getAttribute('title') !== '저장하고 닫기') {
+                closes[c].setAttribute('title', '저장하고 닫기');
             }
         }
     }
@@ -563,6 +794,10 @@
             ensureStyle();
             moveFormBack();
             buildUi();
+            bindDialogHandlers();
+            decorateDialogs();
+            applyDefaultOptions();
+            closeStrayDialog();
             translate();
             updateStatus();
             watch();
@@ -574,11 +809,23 @@
 
     // 문서가 다 만들어졌는지에 따라 바로 또는 기다렸다가 적용하고,
     // 사이트가 스스로 크기를 다시 잡는 때가 있어 몇 번 더 적용한다.
+    var USER_EVENT_NAMES = ['touchstart', 'mousedown', 'keydown', 'wheel'];
+
+    function watchUserActing() {
+        for (var i = 0; i < USER_EVENT_NAMES.length; i++) {
+            doc.addEventListener(USER_EVENT_NAMES[i], markUserActed, true);
+        }
+    }
+
     function boot() {
+        watchUserActing();
         apply();
         for (var i = 0; i < REAPPLY_MS.length; i++) {
             window.setTimeout(apply, REAPPLY_MS[i]);
         }
+        // 사이트가 늦게 표시 옵션 표를 만들 때도 기본값을 놓치지 않는다
+        window.setTimeout(applyDefaultOptions, 9000);
+        window.setTimeout(applyDefaultOptions, 15000);
         window.addEventListener('load', apply, false);
         window.addEventListener('resize', function () {
             window.setTimeout(apply, 150);

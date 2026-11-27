@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 한국어판(0.93-kr11): 디코드 창 [미교신만] 토글 칩 배경.
+     꺼져 있으면 툴바의 다른 칩처럼 반투명, 켜져 있으면(selected) 또렷하게 보인다. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="#FFC107" />
+            <stroke
+                android:width="1dp"
+                android:color="#FFFFD54F" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="#55FFFFFF" />
+            <stroke
+                android:width="1dp"
+                android:color="#80FFFFFF" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="#22FFFFFF" />
+            <stroke
+                android:width="1dp"
+                android:color="#55FFFFFF" />
+        </shape>
+    </item>
+</selector>
