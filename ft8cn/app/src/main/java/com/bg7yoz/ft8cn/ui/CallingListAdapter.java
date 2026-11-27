@@ -41,6 +41,16 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
     private final ShowMode showMode;
     private View.OnClickListener onItemClickListener;
 
+    /**
+     * 한국어판(0.93-kr7): 목록 줄을 한 번 톡 눌렀을 때의 동작(원터치 호출·응답).
+     * 롱프레스 컨텍스트 메뉴는 그대로 두고, 짧은 탭만 이쪽으로 받는다.
+     */
+    public interface OnItemTapHandler {
+        void onItemTap(int position);
+    }
+
+    private OnItemTapHandler onItemTapHandler;
+
     private final View.OnCreateContextMenuListener menuListener=new View.OnCreateContextMenuListener() {
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
@@ -184,6 +194,8 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         holder.isSyncFreq = mainViewModel.ft8TransmitSignal.isSynFrequency();//如果同频发射，就不显示呼叫接收者
 
         holder.callingUtcTextView.setText(UtcTimer.getTimeHHMMSS(holder.ft8Message.utcTime));
+        //한국어판(0.93-kr7): 한 번 톡 누르면 이 줄의 국을 바로 부르거나 응답한다
+        holder.onItemTapHandler = onItemTapHandler;
         //时序，包括颜色,
         holder.callingListSequenceTextView.setText(holder.ft8Message.getSequence() == 0 ? "0" : "1");
         holder.isWeakSignalImageView.setVisibility(holder.ft8Message.isWeakSignal ? View.VISIBLE:View.INVISIBLE);
@@ -416,6 +428,16 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         this.onItemClickListener = onItemClickListener;
     }
 
+    /**
+     * 한국어판(0.93-kr7): 목록 줄을 짧게 탭했을 때의 동작을 등록한다.
+     * (setOnItemClickListener 를 쓰는 화면은 예전처럼 그 리스너가 우선한다)
+     *
+     * @param onItemTapHandler 탭 처리기
+     */
+    public void setOnItemTapHandler(OnItemTapHandler onItemTapHandler) {
+        this.onItemTapHandler = onItemTapHandler;
+    }
+
     static class CallingListItemHolder extends RecyclerView.ViewHolder {
         private static final String TAG = "CallingListItemHolder";
         ConstraintLayout callListHolderConstraintLayout;
@@ -435,6 +457,8 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
         int rowPrimaryColor = 0;
         int rowSecondaryColor = 0;
         int rowAccentColor = 0;
+        //한국어판(0.93-kr7): 줄을 짧게 탭했을 때 부를 처리기(어댑터가 바인딩할 때 넣어 준다)
+        OnItemTapHandler onItemTapHandler;
 
 
         public CallingListItemHolder(@NonNull View itemView, View.OnClickListener listener
@@ -468,7 +492,25 @@ public class CallingListAdapter extends RecyclerView.Adapter<CallingListAdapter.
             ituFromImageView.setVisibility(View.GONE);
             cqFromImageView.setVisibility(View.GONE);
             itemView.setTag(-1);
-            itemView.setOnClickListener(listener);
+            if (listener != null) {
+                itemView.setOnClickListener(listener);
+            } else {
+                //한국어판(0.93-kr7): 짧은 탭 = 원터치 호출/응답. 롱프레스 메뉴는 그대로 동작한다.
+                itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        OnItemTapHandler handler = onItemTapHandler;
+                        if (handler == null) return;
+                        int position = getAdapterPosition();
+                        if (position == RecyclerView.NO_POSITION) return;
+                        try {
+                            handler.onItemTap(position);
+                        } catch (Exception e) {
+                            android.util.Log.e(TAG, "onItemTap: " + e.getMessage(), e);
+                        }
+                    }
+                });
+            }
             itemView.setOnCreateContextMenuListener(menuListener);
 
         }

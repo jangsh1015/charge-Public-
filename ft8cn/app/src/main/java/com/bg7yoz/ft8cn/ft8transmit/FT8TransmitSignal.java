@@ -830,11 +830,20 @@ public class FT8TransmitSignal {
             //  (그대로 두면 상대의 RR73을 받을 때마다 리포트를 다시 보내 끝없이 부르게 된다)
             if ((GeneralVariables.checkIsMyCallsign(msg.getCallsignTo())
                     && !GeneralVariables.checkFun4_5(msg.extraInfo))) {//cq我、73/RR73/RRR이 아닌 응답
+                //한국어판(0.93-kr7): CQ 대기 중에 나를 부른 국을 찾았으면,
+                //  이전 교신의 신호 기록을 먼저 비우고, 곧바로 그 국을 목표로 잡아
+                //  다음 기회에 응답이 나가게 한다(예전에는 기록이 남아 단계가 엇갈렸다).
+                resetTargetReport();
+                Log.d(TAG, String.format(Locale.US
+                        , "CQ 대기 중 호출 발견: %s (%s) -> 다음 슬롯에 응답합니다."
+                        , msg.getCallsignFrom(), msg.getMessageText(true)));
                 //设置发射之前，确定消息的序号，避免从头开始
                 setTransmit(new TransmitCallsign(msg.i3, msg.n3, msg.getCallsignFrom(), msg.freq_hz
                                 , msg.getSequence(), msg.snr)
                         , GeneralVariables.checkFunOrder(msg) + 1
                         , msg.extraInfo);
+                mutableToCallsign.postValue(toCallsign);
+                mutableFunctionOrder.postValue(functionOrder);
                 return true;
             }
         }
@@ -996,18 +1005,23 @@ public class FT8TransmitSignal {
         // 判断通联成功：对方回73（5）||我是73（5），且对方没回（-1）
         // 或者我是RR73(4),且已经达到无回应阈值，且有无回应限制
         // 或我是RR73(4),且对方开始呼叫别人了,解决RR73卡死的问题
-        if (newOrder == 5//消息中目标回复我RR73了
-                || (functionOrder == 5 && newOrder == -1)// 判断通联成功：对方回73（5）||我是73（5），且对方没回（-1）
-                || (functionOrder == 4 &&
-                (GeneralVariables.noReplyCount > GeneralVariables.noReplyLimit * 2)
-                && (GeneralVariables.noReplyLimit > 0)) // 或者我是RR73(4),且已经达到无回应阈值，且有无回应限制
-
-                || (functionOrder == 4 && checkTargetCallMe(messages) > 1)// 或我是RR73(4),且对方开始呼叫别人了（>1是目标呼号呼叫别人了）
-
-                || (functionOrder == 4 && (GeneralVariables.noReplyCount > 20)
-                && (GeneralVariables.noReplyLimit == 0))//当呼叫无回应为“忽略”，且我是RR73(4)，那么无回应次数大于10次，就复位，防止RR73卡死
-
-        ) {
+        //한국어판(0.93-kr7): '교신 완료'와 '대상을 포기함'을 나눠 본다.
+        //  - 교신 완료(73/RR73 응답): 그대로 CQ로 돌아간다.
+        //  - 포기: RR73 단계에서도 설정한 무응답 횟수에 이르면 멈추고, 그 국은 30분간 자동 재호출에서 뺀다.
+        //    예전에는 RR73 단계만 횟수를 2배로 기다려, '무응답 3회'로 맞춰 두어도 6~7번 더 부르는 일이 있었다.
+        boolean qsoFinished = (newOrder == 5//消息中目标回复我RR73了
+                || (functionOrder == 5 && newOrder == -1));// 判断通联成功：对方回73（5）||我是73（5），且对方没回（-1）
+        boolean targetGaveUp = (functionOrder == 4
+                && ((GeneralVariables.noReplyLimit > 0
+                && GeneralVariables.noReplyCount >= GeneralVariables.noReplyLimit)//설정한 무응답 횟수에 이름
+                || checkTargetCallMe(messages) > 1//상대가 다른 국을 부르기 시작함(>1)
+                || (GeneralVariables.noReplyLimit == 0
+                && GeneralVariables.noReplyCount > 20)));//한도 '무시'일 때의 안전 상한
+        if (qsoFinished || targetGaveUp) {
+            if (targetGaveUp && !qsoFinished && toCallsign != null
+                    && !"CQ".equals(toCallsign.callsign)) {
+                startNoReplyCooldown(toCallsign.callsign);//한국어판(0.93-kr7): 포기한 국은 30분간 자동 재호출 제외
+            }
             //进入到CQ状态
             resetToCQ();
 
@@ -1031,7 +1045,6 @@ public class FT8TransmitSignal {
                     GeneralVariables.noReplyCount = noReplyCountBackup;
                 }
             }
-
             functionOrder = newOrder + 1;//执行下一个序号的消息
             mutableFunctions.postValue(functionList);
             mutableFunctionOrder.postValue(functionOrder);
@@ -1056,7 +1069,17 @@ public class FT8TransmitSignal {
 
 
         //到此位置，说明没有回应，错误次数要加1,弱信号检测不记无回应
-        if (!messages.get(0).isWeakSignal) {
+        //한국어판(0.93-kr7): 이 슬롯에 보통 신호(1차 디코드)가 하나라도 있었으면 무응답으로 센다.
+        //  예전에는 목록의 첫 메시지 하나만 보고 약한 신호라고 건너뛰어, 무응답 횟수가 모자라
+        //  설정한 횟수(예: 3회)보다 더 부르는 일이 있었다.
+        boolean decodedStrongSignal = false;
+        for (Ft8Message message : messages) {
+            if (message != null && !message.isWeakSignal) {
+                decodedStrongSignal = true;
+                break;
+            }
+        }
+        if (decodedStrongSignal) {
             GeneralVariables.noReplyCount++;
         }
         //如果超出无反应限定值，复位到CQ状态
@@ -1081,12 +1104,14 @@ public class FT8TransmitSignal {
         if (toCallsign != null) {
             startNoReplyCooldown(toCallsign.callsign);
         }
-        //检查关注消息列表，如果没有新的CQ，就进入到CQ状态，如果有，就转入到呼叫新的目标。
+        //한국어판(0.93-kr7): 새 목표가 없으면 확실히 CQ(대기)로 돌아간다.
+        //  resetToCQ() 로 신호 기록과 간헐 CQ 상태까지 함께 정리하고, 화면에도 알린다.
         if (!getNewTargetCallsign(messages)) {//检查关注列表中的CQ消息，如果有新的目标，返回TRUE;
-            functionOrder = 6;
-            if (toCallsign != null) {
-                toCallsign.callsign = "CQ";
-            }
+            resetToCQ();
+            setCurrentFunctionOrder(functionOrder);//设置当前消息
+            mutableToCallsign.postValue(toCallsign);
+            mutableFunctionOrder.postValue(functionOrder);
+            return true;
         }
         generateFun();
         setCurrentFunctionOrder(functionOrder);//设置当前消息
@@ -1120,8 +1145,12 @@ public class FT8TransmitSignal {
             if ((!ft8Message.getCallsignFrom().equals(toCallsign.callsign)
                     && (!GeneralVariables.checkQSLCallsign(ft8Message.getCallsignFrom())))) //之前没有联通成功过
             {
-                functionOrder = 1;
-                toCallsign.callsign = ft8Message.getCallsignFrom();
+                //한국어판(0.93-kr7): 새 목표를 잡을 때는 예전 대상의 주파수·시퀀스가 남지 않도록
+                //  그 CQ 메시지의 값으로 목표를 다시 만든다(예전에는 콜사인만 바뀌어 송신 위치가 엇갈렸다).
+                setTransmit(new TransmitCallsign(ft8Message.i3, ft8Message.n3
+                                , ft8Message.getCallsignFrom(), ft8Message.freq_hz
+                                , ft8Message.getSequence(), ft8Message.snr)
+                        , 1, ft8Message.extraInfo);
                 return true;
             }
 
@@ -1430,6 +1459,16 @@ public class FT8TransmitSignal {
         setTransmit(new TransmitCallsign(i3, 0, "CQ", UtcTimer.getNowSequential())
                 , 6, "");
 
+    }
+
+    /**
+     * 한국어판(0.93-kr7): 현재 송신 단계를 읽는다. 6은 CQ를 내며 응답을 기다리는 상태다.
+     * (딥 디코드에서 풀린 '나를 부른 국'을 자동으로 물고 들어갈지 판단할 때 쓴다)
+     *
+     * @return 현재 송신 단계(1~6)
+     */
+    public int getFunctionOrder() {
+        return functionOrder;
     }
 
     /**

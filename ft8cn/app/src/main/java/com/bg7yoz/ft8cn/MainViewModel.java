@@ -131,6 +131,16 @@ public class MainViewModel extends ViewModel {
     public MutableLiveData<Boolean> mutableIsDecoding = new MutableLiveData<>();//会触发频谱图中的标记动作
     public ArrayList<Ft8Message> currentMessages = null;//本周期解码的消息（用于画到频谱上）
 
+    //한국어판(0.93-kr7): 자동 응답·CQ 추적이 '나를 부른 국'을 놓치지 않게 하는 시간 한계
+    //  - 예전에는 2초를 넘기면 자동 프로그램을 아예 태우지 않아, 태블릿에서 디코드가 조금만 늦어도
+    //    다음 슬롯에 또 CQ를 냈다. 1차 디코드는 3.5초까지 넉넉히 준다.
+    //  - 딥 디코드(2차 이하)는 최대 7초까지 걸리므로 더 넓게 준다. 어차피 그 슬롯의 송신 시각은
+    //    이미 지난 뒤이므로, 목표를 잡아 두고 다음 기회에 응답하는 편이 CQ를 또 내는 것보다 낫다.
+    private static final long AUTO_PARSE_LIMIT_MS = 3500;
+    private static final long DEEP_DECODE_PARSE_LIMIT_MS = 8000;
+    //자동 프로그램(parseMessageToFunction)을 마지막으로 태운 슬롯의 UTC. 같은 슬롯 중복 처리를 막는다.
+    private long lastAutoParsedUtc = -1;
+
     public MutableLiveData<Boolean> mutableIsFlexRadio = new MutableLiveData<>();//是不是flex电台
     public MutableLiveData<Boolean> mutableIsXieguRadio = new MutableLiveData<>();//是不是flex电台
 
@@ -241,6 +251,27 @@ public class MainViewModel extends ViewModel {
     }
 
     /**
+     * 한국어판(0.93-kr7): 지정한 슬롯(UTC)에서 이번에 디코드된 메시지를 모두 모은다.
+     * 딥 디코드는 새로 풀린 메시지만 주기 때문에, 같은 슬롯의 1차 디코드 결과와 합쳐야
+     * 자동 응답 판단(checkCQMeOrFollowCQMessage)이 '나를 부른 국'을 놓치지 않는다.
+     *
+     * @param utc 슬롯의 시작 UTC 시간(ms)
+     * @return 같은 슬롯·같은 밴드의 메시지 목록
+     */
+    private ArrayList<Ft8Message> collectSlotMessages(long utc) {
+        ArrayList<Ft8Message> slotMessages = new ArrayList<>();
+        synchronized (ft8Messages) {
+            for (Ft8Message message : ft8Messages) {
+                if (message == null) continue;
+                if (message.utcTime != utc) continue;
+                if (message.band != GeneralVariables.band) continue;
+                slotMessages.add(message);
+            }
+        }
+        return slotMessages;
+    }
+
+    /**
      * 获取消息列表中指定的消息
      *
      * @param position 在Mutable类型的列表中的位置
@@ -314,14 +345,39 @@ public class MainViewModel extends ViewModel {
                 findIncludedCallsigns(messages);//查找符合条件的消息，放到呼叫列表中
 
                 //检查发射程序。从消息列表中解析发射的程序
-                //超出周期2秒钟，就不应该解析了
-                if (!ft8TransmitSignal.isTransmitting()
-                        && !isDeep//屏蔽掉深度解码激活自动程序
-                        //深度解码的列表应该加到没有深度解码的新消息列表中
-                        && (ft8SignalListener.timeSec
+                //한국어판(0.93-kr7): 딥 디코드(isDeep)에서 풀린 메시지도 자동 프로그램에 태운다.
+                //  예전에는 isDeep 이면 무조건 건너뛰어, 약한 신호로 풀린 '나를 부른 국'을 놓치고
+                //  다음 슬롯에 또 CQ를 냈다. 이제는
+                //   1) CQ 대기(functionOrder == 6) 중이거나
+                //   2) 이 슬롯(utc)을 아직 자동 처리하지 않았으면
+                //  딥 디코드 결과도 처리한다. 딥 디코드는 새로 풀린 메시지만 주므로,
+                //  같은 슬롯에 이미 들어온 메시지와 합쳐서 넘긴다.
+                //  (1차 디코드에서 이미 이 슬롯을 처리했으면 딥 디코드로 또 처리하지 않는다)
+                long decodeWindowMs = ft8SignalListener.timeSec
                         + GeneralVariables.pttDelay
-                        + GeneralVariables.transmitDelay <= 2000)) {//考虑网络模式，发射时长是13秒
-                    ft8TransmitSignal.parseMessageToFunction(messages);//解析消息，并处理
+                        + GeneralVariables.transmitDelay;//考虑网络模式，发射时长是13秒
+                boolean sameSlotParsed = (utc == lastAutoParsedUtc);//이 슬롯을 이미 자동 처리했는지
+                boolean cqWaiting = (ft8TransmitSignal.getFunctionOrder() == 6);//CQ를 내며 응답을 기다리는 중인지
+                boolean allowParse;
+                if (isDeep) {
+                    allowParse = (cqWaiting || !sameSlotParsed)
+                            && decodeWindowMs <= DEEP_DECODE_PARSE_LIMIT_MS;
+                } else {
+                    allowParse = decodeWindowMs <= AUTO_PARSE_LIMIT_MS;
+                }
+                //한국어판(0.93-kr7): CQ를 내는 중에는 내 CQ가 나가는 중이어도 목표를 잡아 둔다.
+                //  이 슬롯의 송신은 이미 정해져 있으므로, 지금 프로그램을 바꿔도 지금 나가는
+                //  CQ는 그대로이고 다음 기회부터 응답이 나간다.
+                //  (이 검사 때문에 지연 디코드·딥 디코드에서 풀린 '나를 부른 국'을 지나쳐
+                //   다음 슬롯에 또 CQ를 내는 일이 있었다)
+                boolean canParseWhileTransmitting = cqWaiting;
+                if ((!ft8TransmitSignal.isTransmitting() || canParseWhileTransmitting) && allowParse) {
+                    ArrayList<Ft8Message> parseMessages = isDeep
+                            ? collectSlotMessages(utc) : messages;
+                    if (parseMessages != null && parseMessages.size() > 0) {
+                        lastAutoParsedUtc = utc;
+                        ft8TransmitSignal.parseMessageToFunction(parseMessages);//解析消息，并处理
+                    }
                 }
 
                 currentMessages = messages;

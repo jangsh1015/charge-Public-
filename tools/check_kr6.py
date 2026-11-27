@@ -182,11 +182,14 @@ if 'name="list_header_bar_color"' not in colors:
     err("values/colors.xml 에 list_header_bar_color 없음")
 
 # --- 6) 버전·문서 -----------------------------------------------------------
+# 0.93-kr7부터는 이 검사를 'kr6 이상'으로 본다(과거 버전 검사가 최신 빌드를 막지 않게).
 gradle = read(os.path.join(ROOT, "ft8cn", "app", "build.gradle"))
-if "versionCode 6" not in gradle:
-    err("build.gradle versionCode 가 6 이 아님")
-if "versionName '0.93-kr6'" not in gradle:
-    err("build.gradle versionName 이 0.93-kr6 이 아님")
+m = re.search(r"versionCode\s+(\d+)", gradle)
+if not m or int(m.group(1)) < 6:
+    err("build.gradle versionCode 가 6 이상이 아님 (%s)" % (m.group(1) if m else "없음"))
+m = re.search(r"versionName\s+'(0\.93-kr(\d+))'", gradle)
+if not m or int(m.group(2)) < 6:
+    err("build.gradle versionName 이 0.93-kr6 이상이 아님")
 
 for name, path in [("readme_ko.txt", os.path.join(APP, "assets", "readme_ko.txt")),
                    ("readme_en.txt", os.path.join(APP, "assets", "readme_en.txt")),
@@ -197,11 +200,11 @@ for name, path in [("readme_ko.txt", os.path.join(APP, "assets", "readme_ko.txt"
 # 정보 창의 변경 내역은 새 버전이 맨 위에 와야 한다
 for name in ["readme_ko.txt", "readme_en.txt"]:
     txt = read(os.path.join(APP, "assets", name))
-    versions = re.findall(r"^\s{2}(0\.93-kr\d)\s*$", txt, flags=re.M)
+    versions = re.findall(r"^\s{2}(0\.93-kr(\d))\s*$", txt, flags=re.M)
     if not versions:
         err("%s 에서 버전 목록을 찾지 못함" % name)
-    elif versions[0] != "0.93-kr6":
-        err("%s 의 첫 버전이 0.93-kr6 이 아님 (%s)" % (name, versions[0]))
+    elif int(versions[0][1]) < 6:
+        err("%s 의 첫 버전이 0.93-kr6 보다 낮음 (%s)" % (name, versions[0][0]))
 
 if errors:
     print("문제 %d건:" % len(errors))

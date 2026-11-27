@@ -71,6 +71,13 @@ public class CallingListFragment extends Fragment {
 
 
         requireActivity().registerForContextMenu(callListRecyclerView);//注册菜单
+        //한국어판(0.93-kr7): 줄을 한 번 톡 누르면 바로 호출·응답(롱프레스 메뉴는 그대로)
+        callingListAdapter.setOnItemTapHandler(new CallingListAdapter.OnItemTapHandler() {
+            @Override
+            public void onItemTap(int position) {
+                onMessageTapped(position);
+            }
+        });
 
         //当横屏时显示频谱图
         //한국어판(0.93-kr4): 태블릿 3분할용 레이아웃(layout-sw600dp-land)에는 스펙트럼이 따로 없으므로 null 검사를 한다
@@ -329,6 +336,75 @@ public class CallingListFragment extends Fragment {
     }
 
     /**
+     * 한국어판(0.93-kr7): 이 줄을 한 번 톡 누르면 불러도 되는 줄인지 확인한다.
+     * 내 송신(TX) 줄, 콜사인이 없는 줄, 텔레메트리·자유문은 부르지 않는다.
+     *
+     * @param message 목록의 줄
+     * @return 부를 수 있으면 true
+     */
+    private boolean canCallMessage(Ft8Message message) {
+        if (message == null) return false;
+        if (message.freq_hz <= 0.01f) return false;//내 송신(TX) 줄
+        String callsignFrom = message.getCallsignFrom();
+        if (callsignFrom == null || callsignFrom.length() < 3) return false;
+        if (callsignFrom.contains("...")) return false;//呼号が分からない行
+        if (GeneralVariables.checkIsMyCallsign(callsignFrom)) return false;//내가 보낸 줄
+        if (message.i3 == 0 && (message.n3 == 0 || message.n3 == 5)) return false;//텔레메트리·자유문
+        return true;
+    }
+
+    private boolean canReplyToMessage(Ft8Message message) {
+        String callsignTo = message.getCallsignTo();
+        if (callsignTo == null || callsignTo.length() < 3) return false;
+        if (!GeneralVariables.checkIsMyCallsign(callsignTo)) return false;
+        if (message.extraInfo == null) return false;
+        if (GeneralVariables.checkFun4_5(message.extraInfo)) return false;
+        return GeneralVariables.checkFunOrderByExtraInfo(message.extraInfo) >= 1;
+    }
+
+    /**
+     * 한국어판(0.93-kr7): 목록 줄을 한 번 톡 누르면 그 줄의 국을 바로 부르거나 응답한다.
+     * 핑크 줄(나를 부른 국)은 받은 단계에 맞춰 응답하고, 초록 줄(CQ)·다른 국은 바로 호출한다.
+     * 태블릿 3분할·2분할처럼 목록이 여러 개 떠 있어도 앱이 꺼지지 않게 예외를 막는다.
+     *
+     * @param position 목록에서의 위치
+     */
+    private void onMessageTapped(int position) {
+        Ft8Message message = callingListAdapter.getMessageByPosition(position);
+        if (!canCallMessage(message)) {
+            return;
+        }
+        try {
+            if (canReplyToMessage(message)) {
+                doReplyNow(message);
+            } else {
+                doCallNow(message);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "원터치 호출 실패: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr7): 나를 부른 국에 바로 응답한다(받은 단계에 맞춰 다음 메시지를 보낸다).
+     *
+     * @param message 나를 부른 줄
+     */
+    private void doReplyNow(Ft8Message message) {
+        mainViewModel.addFollowCallsign(message.getCallsignFrom());
+        if (!mainViewModel.ft8TransmitSignal.isActivated()) {
+            mainViewModel.ft8TransmitSignal.setActivated(true);
+            GeneralVariables.transmitMessages.add(message);//把消息添加到关注列表中
+        }
+        //呼叫发启者
+        mainViewModel.ft8TransmitSignal.setTransmit(message.getFromCallTransmitCallsign()
+                , -1, message.extraInfo);
+        mainViewModel.ft8TransmitSignal.transmitNow();
+        GeneralVariables.resetLaunchSupervision();//复位自动监管
+        navigateToMyCallFragment();//跳转到发射界面
+    }
+
+    /**
      * 马上对发起者呼叫
      *
      * @param message 消息
@@ -370,9 +446,18 @@ public class CallingListFragment extends Fragment {
         if (MainActivity.isSplitPanelVisible()) {
             return;
         }
-        NavController navController = Navigation.findNavController(requireActivity()
-                , R.id.fragmentContainerView);
-        navController.navigate(R.id.action_menu_nav_calling_list_to_menu_nav_mycalling);//跳转到发射界面
+        //한국어판(0.93-kr7): 태블릿 2열·3분할 등 구성에 따라 내비게이션 대상이 없을 수 있다.
+        //  그때는 화면만 그대로 두고, 목표 입력·호출은 이미 끝난 상태로 둔다(앱이 꺼지지 않게).
+        if (!isAdded() || getActivity() == null) {
+            return;
+        }
+        try {
+            NavController navController = Navigation.findNavController(requireActivity()
+                    , R.id.fragmentContainerView);
+            navController.navigate(R.id.action_menu_nav_calling_list_to_menu_nav_mycalling);//跳转到发射界面
+        } catch (Exception e) {
+            Log.w(TAG, "호출 화면으로 넘어가지 못했습니다: " + e.getMessage());
+        }
     }
 
     /**
@@ -444,17 +529,7 @@ public class CallingListFragment extends Fragment {
 
             case 4://回复
                 Log.d(TAG, "回复：" + ft8Message.getCallsignFrom());
-                mainViewModel.addFollowCallsign(ft8Message.getCallsignFrom());
-                if (!mainViewModel.ft8TransmitSignal.isActivated()) {
-                    mainViewModel.ft8TransmitSignal.setActivated(true);
-                    GeneralVariables.transmitMessages.add(ft8Message);//把消息添加到关注列表中
-                }
-                //呼叫发启者
-                mainViewModel.ft8TransmitSignal.setTransmit(ft8Message.getFromCallTransmitCallsign()
-                        , -1, ft8Message.extraInfo);
-                mainViewModel.ft8TransmitSignal.transmitNow();
-                GeneralVariables.resetLaunchSupervision();//复位自动监管
-                navigateToMyCallFragment();//跳转到发射界面
+                doReplyNow(ft8Message);
                 break;
             case 5://to 的QRZ
                 showQrzFragment(ft8Message.getCallsignTo());

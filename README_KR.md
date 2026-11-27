@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr6` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr7` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -152,6 +152,34 @@
   `LogFragment.onContextItemSelected()` 가 자기 목록 항목(`isMyListItemView`)에만 반응하게 했습니다
   (호출 목록에서 연 메뉴가 로그 항목을 지우거나 QSL 을 바꾸는 일을 막음).
 
+### (8) 0.93-kr7에서 더한 것
+- **목록 줄 원터치 호출·응답**: `CallingListAdapter` 에 `OnItemTapHandler` 를 더하고,
+  `MyCallingFragment`(호출 창)와 `CallingListFragment`(디코드 창)가 그것을 등록합니다.
+  줄을 한 번 짧게 탭하면 `onMessageTapped()` 가 그 줄의 콜사인을 `대상:` 에 넣고 바로 호출합니다.
+  - 나를 부른 줄(수신 핑크)은 `doReplyNow()` 로 받은 단계에 맞춰 응답하고,
+    CQ(초록)·다른 국은 `doCallNow()` 로 부릅니다.
+  - 내 송신(TX) 줄, 콜사인 없는 줄(`<...>`), 텔레메트리·자유문 줄은 탭해도 반응하지 않습니다
+    (`canCallMessage()`).
+  - 길게 누르면 예전과 같은 컨텍스트 메뉴가 그대로 뜨고, `GridTrackerMainActivity` 처럼
+    `setOnItemClickListener` 를 쓰는 화면은 그 리스너가 우선합니다.
+  - 태블릿 2열·3분할처럼 옮겨 갈 화면이 없는 구성에서는 `navigateToMyCallFragment()` 가
+    `try-catch` 와 `isAdded()` 확인으로 막혀 앱이 꺼지지 않습니다(`MainActivity.isSplitPanelVisible()` 이면 이동하지 않음).
+- **자동 응답·CQ 추적이 '나를 부른 국'을 놓치지 않게**: `MainViewModel.afterDecode()`
+  - 예전에는 `isDeep`(딥 디코드)이면 자동 프로그램을 통째로 건너뜀 → 이제 CQ 대기(`functionOrder == 6`) 중이거나
+    그 슬롯을 아직 처리하지 않았으면 딥 디코드 결과도 `parseMessageToFunction()` 에 태웁니다.
+    딥 디코드는 새로 풀린 메시지만 주므로 `collectSlotMessages(utc)` 로 같은 슬롯 메시지와 합쳐 넘깁니다.
+  - 시간 한계를 `<= 2000ms` → `AUTO_PARSE_LIMIT_MS 3500ms`(1차) / `DEEP_DECODE_PARSE_LIMIT_MS 8000ms`(딥)로 넓혔습니다.
+  - 같은 슬롯을 두 번 처리하지 않도록 `lastAutoParsedUtc` 로 막습니다.
+  - CQ를 내는 중에는 내 CQ가 나가는 중이어도 목표를 잡습니다(`canParseWhileTransmitting`).
+    이 슬롯의 송신은 이미 정해졌으므로 다음 기회부터 응답이 나가고, 같은 슬롯에 CQ를 또 내지 않습니다.
+  - `FT8TransmitSignal.checkCQMeOrFollowCQMessage()` 는 나를 부른 국을 찾으면 `resetTargetReport()` 로
+    신호 기록을 비우고 목표·단계를 화면에 알립니다.
+- **'무응답 N회 중단'을 설정값대로**:
+  - RR73 단계도 설정한 횟수(`noReplyCount >= noReplyLimit`)에서 멈춥니다(예전에는 이 단계만 2배까지 기다려 정해 둔 횟수보다 늦게 멈췄음).
+  - 포기한 국은 30분 쿨다운에 넣고(`startNoReplyCooldown`), `resetToCQ()` 로 신호 기록·간헐 CQ 상태를 함께 정리해 CQ(대기)로 돌아갑니다.
+  - 약한 신호 판정을 목록 첫 메시지 하나가 아니라 이 슬롯 전체(`decodedStrongSignal`)로 보아, 무응답 횟수가 덜 세어지던 문제를 고쳤습니다.
+  - 무응답 후 새 CQ 국으로 넘어갈 때는 그 CQ 메시지의 주파수·시퀀스로 목표를 다시 만들어(`getNewTargetCallsign()`) 송신 위치가 엇갈리지 않습니다.
+
 ---
 
 ## 2. 빌드 방법 (우분투 / 윈도우 WSL Ubuntu)
@@ -208,12 +236,13 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `tools/check_source.py` | 빌드 전 정적 검사(Java 문법·XML·리소스 참조) |
 | `tools/check_kr4.py` | (kr4) 리소스 참조·데이터바인딩 필드·3분할 id 검사 |
 | `tools/check_kr6.py` | (kr6) 호출+로그 2분할 배선·디코드 2열 조건·버전·문서 표기 검사 |
+| `tools/check_kr7.py` | (kr7) 원터치 탭 배선·딥 디코드 즉시 응답·무응답 횟수 준수·버전 표기 검사 |
 
 고친 파일
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr6`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr7`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |
@@ -230,6 +259,11 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `ft8cn/app/src/main/res/layout/fragment_log.xml` | (kr6) 제목 막대 색을 `list_header_bar_color`(어두운 인디고)로 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListFragment.java` | (kr6) 태블릿 가로 단독 화면에서 `GridLayoutManager(2)` 2열 보기 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/LogFragment.java` | (kr6) 컨텍스트 메뉴가 자기 목록에만 반응하게 (`isMyListItemView`) |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListAdapter.java` | (kr7) `OnItemTapHandler` — 줄을 한 번 탭하면 호출·응답(롱프레스 메뉴는 유지) |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/MyCallingFragment.java` | (kr7) 원터치 호출·응답, 응답 함수 `doReplyNow()` 분리 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListFragment.java` | (kr7) 원터치 호출·응답, 화면 전환 예외 보호 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/MainViewModel.java` | (kr7) 딥 디코드도 자동 응답 판단에 포함, 시간 한계 3500/8000ms, 같은 슬롯 중복 방지 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ft8transmit/FT8TransmitSignal.java` | (kr7) 나를 부른 국 즉시 목표 설정, RR73 단계도 설정한 무응답 횟수에서 중단·30분 쿨다운 |
 
 ## 4. 정적 검사
 
@@ -239,6 +273,7 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 python3 tools/check_source.py     # XML·Java 문법·리소스 참조·문자열
 python3 tools/check_kr4.py        # 3분할 패널·데이터바인딩 필드
 python3 tools/check_kr6.py        # 호출+로그 2분할·디코드 2열·버전 표기
+python3 tools/check_kr7.py        # 원터치 호출·딥 디코드 즉시 응답·무응답 횟수·버전 표기
 ```
 
 검사 항목: 모든 XML well-formed, 모든 Java 파일 문법 파싱, `R.string`/`@string`/`R.id`/`@id`/`R.layout`

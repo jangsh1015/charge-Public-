@@ -24,6 +24,25 @@ Credits
 
 Korean edition changes
 
+  0.93-kr7
+   1. Tap a row once to call or answer that station right away. A pink row (a station
+      calling you) answers at the right step of the QSO, while a green CQ or any other
+      station is called at once, with the callsign filled into the Target box of the
+      Calling window. Long-press still opens the same menu as before.
+      (Your own TX rows and free-text/telemetry rows do not react to a tap.)
+   2. While you are sending CQ or auto-following CQs, a station calling you that only
+      appears in the deep decode is no longer missed, so the next slot does not send CQ
+      again. A slightly late decode is tolerated as well.
+   3. Tapping a row in the two-column or three-pane tablet view no longer crashes the app
+      when the screen has no calling page to switch to.
+   4. "Stop after N unanswered calls" now follows the configured count exactly.
+      - Slots that decoded late or only in the deep decode are counted as unanswered,
+        so the app no longer calls a station more times than the setting.
+      - The RR73 step also stops at the same count, and that station is excluded from
+        automatic re-calls for 30 minutes.
+      - When it gives up, the report record and interval CQ state are reset together and
+        the app returns to CQ (waiting).
+
   0.93-kr6
    1. On a tablet in landscape, the Decode tab now shows the decode list in two columns
       (left and right), so twice as many stations fit on one screen. The narrow list inside

@@ -98,6 +98,78 @@ public class MyCallingFragment extends Fragment {
         GeneralVariables.resetLaunchSupervision();//复位自动监管
     }
 
+    /**
+     * 한국어판(0.93-kr7): 나를 부른 국에 바로 응답한다(받은 단계에 맞춰 다음 메시지를 보낸다).
+     *
+     * @param message 나를 부른 줄
+     */
+    private void doReplyNow(Ft8Message message) {
+        mainViewModel.addFollowCallsign(message.getCallsignFrom());
+        if (!mainViewModel.ft8TransmitSignal.isActivated()) {
+            mainViewModel.ft8TransmitSignal.setActivated(true);
+            GeneralVariables.transmitMessages.add(message);//把消息添加到关注列表中
+        }
+        //呼叫发启者
+        mainViewModel.ft8TransmitSignal.setTransmit(message.getFromCallTransmitCallsign()
+                , -1, message.extraInfo);
+        mainViewModel.ft8TransmitSignal.transmitNow();
+        GeneralVariables.resetLaunchSupervision();//复位自动监管
+    }
+
+    /**
+     * 한국어판(0.93-kr7): 이 줄을 한 번 톡 누르면 불러도 되는 줄인지 확인한다.
+     * 내 송신(TX) 줄, 콜사인이 없는 줄, 텔레메트리·자유문은 부르지 않는다.
+     *
+     * @param message 목록의 줄
+     * @return 부를 수 있으면 true
+     */
+    private boolean canCallMessage(Ft8Message message) {
+        if (message == null) return false;
+        if (message.freq_hz <= 0.01f) return false;//내 송신(TX) 줄
+        String callsignFrom = message.getCallsignFrom();
+        if (callsignFrom == null || callsignFrom.length() < 3) return false;
+        if (callsignFrom.contains("...")) return false;//呼号が分からない行
+        if (GeneralVariables.checkIsMyCallsign(callsignFrom)) return false;//내가 보낸 줄
+        if (message.i3 == 0 && (message.n3 == 0 || message.n3 == 5)) return false;//텔레메트리·자유문
+        return true;
+    }
+
+    /**
+     * 한국어판(0.93-kr7): 이 줄이 나를 부른 줄이고, 받은 단계를 알아볼 수 있으면 응답할 수 있다.
+     * (끝내는 73/RR73/RRR은 응답하지 않고, 단계를 모르는 줄은 그냥 호출로 처리한다)
+     */
+    private boolean canReplyToMessage(Ft8Message message) {
+        String callsignTo = message.getCallsignTo();
+        if (callsignTo == null || callsignTo.length() < 3) return false;
+        if (!GeneralVariables.checkIsMyCallsign(callsignTo)) return false;
+        if (message.extraInfo == null) return false;
+        if (GeneralVariables.checkFun4_5(message.extraInfo)) return false;
+        return GeneralVariables.checkFunOrderByExtraInfo(message.extraInfo) >= 1;
+    }
+
+    /**
+     * 한국어판(0.93-kr7): 목록 줄을 한 번 톡 누르면 그 줄의 국을 바로 부르거나 응답한다.
+     * 핑크 줄(나를 부른 국)은 받은 단계에 맞춰 응답하고, 초록 줄(CQ)·다른 국은 바로 호출한다.
+     *
+     * @param position 목록에서의 위치
+     */
+    private void onMessageTapped(int position) {
+        Ft8Message message = transmitCallListAdapter.getMessageByPosition(position);
+        if (!canCallMessage(message)) {
+            return;
+        }
+        try {
+            if (canReplyToMessage(message)) {
+                doReplyNow(message);
+            } else {
+                doCallNow(message);
+            }
+        } catch (Exception e) {
+            //한국어판(0.93-kr7): 태블릿 분할 화면 등 어떤 구성에서도 앱이 꺼지지 않게 한다
+            Log.e(TAG, "원터치 호출 실패: " + e.getMessage(), e);
+        }
+    }
+
 
     /**
      * 한국어판(0.93-kr4): 태블릿 3분할에서는 목록이 둘 이상 살아 있을 수 있으므로,
@@ -160,15 +232,7 @@ public class MyCallingFragment extends Fragment {
 
             case 4://回复
                 Log.d(TAG, "回复：" + ft8Message.getCallsignFrom());
-                mainViewModel.addFollowCallsign(ft8Message.getCallsignFrom());
-                if (!mainViewModel.ft8TransmitSignal.isActivated()) {
-                    mainViewModel.ft8TransmitSignal.setActivated(true);
-                    GeneralVariables.transmitMessages.add(ft8Message);//把消息添加到关注列表中
-                }
-                //呼叫发启者
-                mainViewModel.ft8TransmitSignal.setTransmit(ft8Message.getFromCallTransmitCallsign()
-                        , -1, ft8Message.extraInfo);
-                mainViewModel.ft8TransmitSignal.transmitNow();
+                doReplyNow(ft8Message);
                 break;
 
             case 5://to 的QRZ
@@ -246,6 +310,13 @@ public class MyCallingFragment extends Fragment {
 
         //设置消息列表滑动，用于快速呼叫
         initRecyclerViewAction();
+        //한국어판(0.93-kr7): 줄을 한 번 톡 누르면 바로 호출·응답(롱프레스 메뉴는 그대로)
+        transmitCallListAdapter.setOnItemTapHandler(new CallingListAdapter.OnItemTapHandler() {
+            @Override
+            public void onItemTap(int position) {
+                onMessageTapped(position);
+            }
+        });
         //菜单
         requireActivity().registerForContextMenu(transmitRecycleView);
 
