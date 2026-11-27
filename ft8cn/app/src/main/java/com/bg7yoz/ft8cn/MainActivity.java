@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREF_TABLET_SPLIT = "tabletSplit";
     private static final String KEY_SPLIT_WIDTH_RATIO = "splitWidthRatio";
     private static final String KEY_SPLIT_HEIGHT_RATIO = "splitHeightRatio";
+    private static final String KEY_SPLIT_PREFERRED = "splitPreferred";
     private static final String FRAGMENT_TAG_SPLIT_SPECTRUM = "splitSpectrum";
     private static final String FRAGMENT_TAG_SPLIT_DECODE = "splitDecode";
     private static final String FRAGMENT_TAG_SPLIT_CALLING = "splitCalling";
@@ -129,7 +130,11 @@ public class MainActivity extends AppCompatActivity {
     private View navHostContainer;
     private float splitWidthRatio = DEFAULT_SPLIT_WIDTH_RATIO;
     private float splitHeightRatio = DEFAULT_SPLIT_HEIGHT_RATIO;
+    //한국어판(0.93-kr5): 3분할을 접고 스펙트럼만 전체로 보고 있는지
+    private boolean splitSpectrumOnly = false;
     private static boolean tabletSplitActive = false;
+    //한국어판(0.93-kr5): 지금 3분할 패널이 화면에 떠 있는지(단독 화면으로 볼 때는 false)
+    private static boolean splitPanelVisible = false;
 
 
     String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO
@@ -259,18 +264,23 @@ public class MainActivity extends AppCompatActivity {
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 //Log.e(TAG, "onNavigationItemSelected: "+item.toString() );
                 int itemId = item.getItemId();
-                //한국어판(0.93-kr4): 태블릿 3분할에서는 세 패널(스펙트럼·디코드·호출)이 늘 함께 떠 있다.
-                //  그래서 이 세 탭은 화면만 3분할로 되돌리고, QSO 로그·설정에서 왔으면 시작 화면으로 돌아온다.
+                //한국어판(0.93-kr5): 태블릿 가로에서도 디코드·호출 탭은 그 화면만 전체로 연다.
+                //  스펙트럼 탭이 3분할을 열고, 3분할 상태에서 스펙트럼 탭을 한 번 더 누르면 접힌다.
                 if (splitLayout != null && isSplitPanelTab(itemId)) {
                     NavDestination currentDestination = navController.getCurrentDestination();
-                    if (currentDestination != null
-                            && currentDestination.getId() != R.id.menu_nav_calling_list) {
-                        navController.popBackStack(R.id.menu_nav_calling_list, false);
+                    if (itemId == R.id.menu_nav_spectrum && currentDestination != null
+                            && currentDestination.getId() == R.id.menu_nav_spectrum) {
+                        splitSpectrumOnly = !splitSpectrumOnly;//3분할 ↕ 스펙트럼 단독
+                        updateSplitVisibility(itemId);
+                        return true;
                     }
-                    updateSplitVisibility(R.id.menu_nav_calling_list);
+                    splitSpectrumOnly = false;
+                    navigateToBottomTab(itemId);
+                    updateSplitVisibility(itemId);
                     return true;
                 }
-                navController.navigate(itemId);
+                splitSpectrumOnly = false;
+                navigateToBottomTab(itemId);
                 //binding.navView.setLabelFor(item.getItemId());
                 return true;
             }
@@ -278,6 +288,10 @@ public class MainActivity extends AppCompatActivity {
 
         //한국어판(0.93-kr4): 태블릿 가로 3분할 패널을 준비하고, 화면(목적지)에 따라 표시를 바꾼다.
         initTabletSplitLayout();
+        //한국어판(0.93-kr5): 지난번에 쓰던 화면(3분할/단독)을 먼저 읽어 둔다.
+        //  아래 목적지 리스너가 첫 콜백에서 이 값을 다시 쓰기 때문이다.
+        final boolean splitPreferredOnLaunch = getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE)
+                .getBoolean(KEY_SPLIT_PREFERRED, true);
         navController.addOnDestinationChangedListener(new NavController.OnDestinationChangedListener() {
             @Override
             public void onDestinationChanged(@NonNull NavController controller
@@ -285,6 +299,13 @@ public class MainActivity extends AppCompatActivity {
                 updateSplitVisibility(destination.getId());
             }
         });
+
+        //한국어판(0.93-kr5): 지난번에 3분할로 보던 중이었다면, 다음에 켜도 3분할로 시작한다.
+        if (splitLayout != null && savedInstanceState == null && splitPreferredOnLaunch) {
+            splitSpectrumOnly = false;
+            navigateToBottomTab(R.id.menu_nav_spectrum);
+            updateSplitVisibility(R.id.menu_nav_spectrum);
+        }
 
         //FT8CN Ver %s\nBG7YOZ\n%s
         binding.welcomTextView.setText(String.format(getString(R.string.version_info)
@@ -487,6 +508,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * 한국어판(0.93-kr5): 3분할 패널이 지금 화면에 떠 있는지 돌려준다.
+     * 디코드·호출 화면을 단독으로 볼 때는 false 이므로, 그때는 평소처럼 화면을 옮긴다.
+     *
+     * @return 3분할 패널이 보이면 true
+     */
+    public static boolean isSplitPanelVisible() {
+        return splitPanelVisible;
+    }
+
+    /**
      * 태블릿 가로 3분할 패널을 준비한다.
      * 3분할을 쓰지 않는 구성(스마트폰 등)에서는 이전 구성에서 넘어온 패널 프래그먼트만 정리한다.
      */
@@ -495,6 +526,7 @@ public class MainActivity extends AppCompatActivity {
         View split = findViewById(R.id.splitLayout);
         if (!isTabletSplitConfiguration() || !(split instanceof LinearLayout)) {
             tabletSplitActive = false;
+            splitPanelVisible = false;
             removeSplitFragments();
             return;
         }
@@ -510,6 +542,7 @@ public class MainActivity extends AppCompatActivity {
                 || splitVerticalHandle == null || splitHorizontalHandle == null) {
             splitLayout = null;
             tabletSplitActive = false;
+            splitPanelVisible = false;
             return;
         }
 
@@ -600,19 +633,50 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 현재 목적지에 따라 3분할 패널과 전체 화면(NavHost) 중 하나를 보여 준다.
+     * 한국어판(0.93-kr5): 3분할은 스펙트럼 탭에서만 열고,
+     *  디코드·호출 탭은 그 화면만 전체로 연다(스펙트럼 탭을 한 번 더 누르면 스펙트럼 단독으로 접힌다).
      */
     private void updateSplitVisibility(int destinationId) {
         if (splitLayout == null) {
+            splitPanelVisible = false;
             return;
         }
-        boolean showSplit = isSplitPanelTab(destinationId);
+        if (destinationId != R.id.menu_nav_spectrum) {
+            splitSpectrumOnly = false;
+        }
+        boolean showSplit = (destinationId == R.id.menu_nav_spectrum) && !splitSpectrumOnly;
+        splitPanelVisible = showSplit;
         splitLayout.setVisibility(showSplit ? View.VISIBLE : View.GONE);
         if (navHostContainer != null) {
             //3분할 패널을 볼 때는 뒤의 전체 화면은 보이지 않게만 둔다(프래그먼트 생명주기는 그대로)
             navHostContainer.setVisibility(showSplit ? View.INVISIBLE : View.VISIBLE);
         }
+        //다음에 앱을 켰을 때도 같은 화면(3분할/단독)으로 시작한다
+        //  (설정·로그처럼 잠깐 들른 화면은 기록하지 않는다)
+        if (isSplitPanelTab(destinationId)) {
+            getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE).edit()
+                    .putBoolean(KEY_SPLIT_PREFERRED, showSplit).apply();
+        }
         //한국어판(0.93-kr5): 3분할일 때만 도구 버튼을 왼쪽 워터폴 쪽으로 옮긴다
         updateFloatViewPlacement();
+    }
+
+    /**
+     * 하단 탭으로 화면을 바꿀 때, 뒤로가기 기록이 쌓이지 않도록 시작 화면(디코드)을 거쳐 이동한다.
+     *
+     * @param itemId 이동할 목적지
+     */
+    private void navigateToBottomTab(int itemId) {
+        NavDestination current = navController.getCurrentDestination();
+        if (current != null && current.getId() == itemId) {
+            return;//이미 그 화면
+        }
+        navController.popBackStack(R.id.menu_nav_calling_list, false);
+        NavDestination afterPop = navController.getCurrentDestination();
+        if (afterPop != null && afterPop.getId() == itemId) {
+            return;
+        }
+        navController.navigate(itemId);
     }
 
     /**

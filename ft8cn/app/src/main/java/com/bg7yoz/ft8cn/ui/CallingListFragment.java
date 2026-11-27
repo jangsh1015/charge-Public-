@@ -344,8 +344,9 @@ public class CallingListFragment extends Fragment {
      * 跳转到发射界面
      */
     private void navigateToMyCallFragment() {
-        //한국어판(0.93-kr4): 태블릿 3분할에서는 호출 패널이 이미 오른쪽 아래에 떠 있으므로 화면을 옮기지 않는다
-        if (MainActivity.isTabletSplitActive()) {
+        //한국어판(0.93-kr5): 3분할 패널이 떠 있을 때만 호출 패널이 이미 보이므로 화면을 옮기지 않는다.
+        //  디코드 화면만 단독으로 볼 때는 평소처럼 호출 화면으로 넘어간다.
+        if (MainActivity.isSplitPanelVisible()) {
             return;
         }
         NavController navController = Navigation.findNavController(requireActivity()

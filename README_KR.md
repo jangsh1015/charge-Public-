@@ -116,6 +116,11 @@
   가리지 않도록 왼쪽 워터폴 패널의 오른쪽 아래 구석으로 옮겨 갑니다
   (`MainActivity.updateFloatViewPlacement()`/`placeFloatViewInSplitCorner()`). 경계선을 끌어
   패널 폭이 바뀌면 따라가고, 3분할이 아닐 때는 예전처럼 오른쪽 가장자리에 있습니다.
+- **태블릿 하단 탭 화면 고르기**: 3분할이 늘 떠 있던 것을, 탭으로 고르게 바꿨습니다.
+  `스펙트럼` 탭은 3분할(스펙트럼+디코드+호출)을 열고, 한 번 더 누르면 `splitSpectrumOnly` 로
+  스펙트럼 단독으로 접힙니다. `디코드` 탭은 디코드 목록만, `호출` 탭은 호출 화면만 전체로 엽니다
+  (`updateSplitVisibility()` 는 목적지가 `menu_nav_spectrum` 일 때만 3분할을 보여 줌).
+  마지막 화면(3분할/단독)은 `tabletSplit/splitPreferred` 에 저장해 재시작해도 유지됩니다.
 - **시각 동기화 실패 안내**: `ConfigFragment.syncFailed()` 가 `e.getMessage()`(영어 원문) 대신
   `time_sync_failed_network` 문자열로 "인터넷에 연결되어 있지 않아 시각 동기화에 실패했습니다.
   (무전기 Wi-Fi에 연결된 동안에는 동기화가 되지 않습니다)" 를 보여 줍니다.

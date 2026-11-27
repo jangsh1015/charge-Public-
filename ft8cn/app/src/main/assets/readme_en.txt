@@ -38,7 +38,11 @@ Korean edition changes
    4. In the tablet landscape three-pane view the tool buttons (full screen, frequency,
       volume, grid tracker) move to the bottom-right corner of the left waterfall pane
       instead of covering the lists on the right.
-   5. A failed time sync now shows a short Korean message instead of the raw English
+   5. In tablet landscape the bottom tabs choose the layout: [Spectrum] opens the three-pane
+      view (and pressing it again collapses to the spectrum alone), [Decode] opens only the
+      decode list, and [Calling] opens only the calling window. The last layout is remembered
+      after a restart.
+   6. A failed time sync now shows a short Korean message instead of the raw English
       network error.
 
   0.93-kr4
