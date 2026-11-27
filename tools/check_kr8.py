@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""0.93-kr8 변경(QSO 로그 실시간 갱신 · 로그 패널 바탕색 · 송신 감시 기본 무시)에 대한 추가 정적 검증.
+"""0.93-kr8 변경(QSO 로그 실시간 갱신 · 로그 패널 바탕색 · 송신 감시 기본 무시 ·
+[PSK] 버튼 · 스펙트럼 3분할의 [호출·송신]/[QSO 로그] 전환 탭)에 대한 추가 정적 검증.
 
 check_source.py · check_kr4.py · check_kr6.py · check_kr7.py 가 보지 않는 것들을 확인한다.
   1) 버전 표기가 0.93-kr8 (versionCode 8)이고 문서·readme 에 내역이 맨 위에 있는지
@@ -8,12 +9,17 @@ check_source.py · check_kr4.py · check_kr6.py · check_kr7.py 가 보지 않�
      + 호출 탭 2분할이 보일 때의 재조회(MainActivity)
   3) 로그 목록 바탕색: fragment_log.xml 루트·splitLogContainer·values/values-night 색 정의
   4) 송신 감시(Tx watchdog) 기본값 0(무시) — GeneralVariables·DatabaseOpr·ConfigFragment
-  5) 피클·AI 언급이 사용자 문서에 들어가지 않았는지
+  5) [PSK] 버튼: fragment_log.xml 의 pskGridButton, LogFragment 의 다이얼로그·PSK Reporter 주소·
+     예외 보호·인터넷 확인, 내 콜사인·그리드를 설정값에서 그때그때 읽는지
+  6) 스펙트럼 3분할 [호출·송신]/[QSO 로그] 전환 탭: 레이아웃 세 변형의 탭·겹친 컨테이너,
+     MainActivity 의 전환·기억·재읽기, 프래그먼트를 지우지 않고 보이기만 바꾸는지
+  7) 피클·AI 언급이 사용자 문서에 들어가지 않았는지
 """
 import io
 import os
 import re
 import sys
+import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP = os.path.join(ROOT, "ft8cn", "app", "src", "main")
@@ -178,7 +184,139 @@ signal = strip_comments(read(os.path.join(JAVA, "ft8transmit", "FT8TransmitSigna
 if "GeneralVariables.launchSupervision <= 0" not in signal:
     err("FT8TransmitSignal: 송신 감시 0(무시) 처리 고리가 없음")
 
-# --- 5) 피클·AI 언급 금지 ----------------------------------------------------
+
+# --- 5) [PSK] 버튼(내 콜사인·그리드·PSK Reporter) ------------------------------
+log_layout = read(os.path.join(RES, "layout", "fragment_log.xml"))
+if 'android:id="@+id/pskGridButton"' not in log_layout:
+    err("fragment_log.xml 에 pskGridButton 이 없음")
+if "locationInMapImageButton" in log_layout:
+    err("fragment_log.xml 에 예전 지도 버튼(locationInMapImageButton)이 남아 있음")
+if "@string/psk_button_label" not in log_layout:
+    err("fragment_log.xml: [PSK] 버튼 글자가 psk_button_label 이 아님")
+
+if "binding.locationInMapImageButton" in logf:
+    err("LogFragment: 예전 지도 버튼(locationInMapImageButton) 참조가 남아 있음")
+if "binding.pskGridButton.setOnClickListener" not in logf:
+    err("LogFragment: [PSK] 버튼 클릭 처리기가 없음")
+for need, why in [
+    ("private void showPskGridDialog()", "[PSK] 다이얼로그 함수가 없음"),
+    ("GeneralVariables.myCallsign", "내 콜사인을 설정값에서 읽지 않음"),
+    ("GeneralVariables.getMyMaidenheadGrid()", "내 그리드를 읽지 않음"),
+    ("GeneralVariables.getMyMaidenhead4Grid()", "내 그리드(4자리)를 읽지 않음"),
+    ("Intent.ACTION_VIEW", "PSK Reporter 를 브라우저(ACTION_VIEW)로 열지 않음"),
+    ("GridTrackerMainActivity", "내 교신 지도로 가는 길이 사라짐"),
+    ("private boolean hasInternet()", "인터넷 확인 함수가 없음"),
+    ("psk_grid_no_internet", "인터넷이 없을 때의 안내 문구를 쓰지 않음"),
+]:
+    if need not in logf:
+        err("LogFragment: " + why)
+
+# 주석 지우기는 'https://' 의 // 까지 지우므로, 주소는 원본 파일에서 읽는다
+raw_logf = read(os.path.join(JAVA, "ui", "LogFragment.java"))
+m = re.search(r"PSK_REPORTER_MAP_URL\s*(?:\n\s*)?=\s*\"([^\"]+)\"", raw_logf)
+if not m:
+    err("LogFragment: PSK_REPORTER_MAP_URL 상수를 찾지 못함")
+else:
+    url = m.group(1)
+    for part in ["pskreporter.info/pskmap.html", "callsign=%1$s", "txrx=tx", "timerange=86400"]:
+        if part not in url:
+            err("LogFragment: PSK Reporter 주소에 %s 가 없음 (%s)" % (part, url))
+
+# 브라우저·지도 화면 열기는 예외를 잡아 둔다(인터넷이 없는 IC-705 와이파이에서도 앱이 꺼지지 않게)
+for fname, label in [("openUrl", "브라우저 열기"), ("openQsoMap", "내 교신 지도 열기")]:
+    m = re.search(r"private void " + fname + r"\([\s\S]{0,1200}?\n    \}", logf)
+    if not m:
+        err("LogFragment: %s 함수를 찾지 못함" % fname)
+    elif "catch (Exception e)" not in m.group(0):
+        err("LogFragment: %s 에 예외 보호(catch)가 없음" % label)
+
+base_strings = read(os.path.join(RES, "values", "strings.xml"))
+ko_strings = read(os.path.join(RES, "values-ko", "strings.xml"))
+for name in ["psk_button_label", "psk_grid_title", "psk_grid_info", "psk_grid_no_callsign",
+             "psk_grid_no_internet", "psk_reporter_open", "psk_grid_qso_map",
+             "psk_grid_open_failed", "split_tab_calling", "split_tab_qso_log"]:
+    if 'name="%s"' % name not in base_strings:
+        err("values/strings.xml 에 %s 가 없음" % name)
+    if 'name="%s"' % name not in ko_strings:
+        err("values-ko/strings.xml 에 %s 가 없음" % name)
+
+# --- 6) 스펙트럼 3분할 [호출·송신] / [QSO 로그] 전환 탭 -----------------------
+A = "{http://schemas.android.com/apk/res/android}"
+for variant in ["layout", "layout-land", "layout-sw600dp-land"]:
+    p = os.path.join(RES, variant, "main_activity.xml")
+    if not os.path.exists(p):
+        err("%s/main_activity.xml 없음" % variant)
+        continue
+    txt = read(p)
+    for need in ["splitCallingToggleBar", "splitCallingBody", "splitCallingTabCall",
+                 "splitCallingTabLog", "splitCallingLogContainer"]:
+        if ("@+id/" + need) not in txt:
+            err("%s/main_activity.xml 에 @+id/%s 없음" % (variant, need))
+    try:
+        root = ET.fromstring(txt)
+    except Exception as e:  # noqa: BLE001
+        err("%s/main_activity.xml XML 오류: %s" % (variant, e))
+        continue
+    elements = {}
+    for el in root.iter():
+        elements.setdefault(el.get(A + "id"), el)
+    right = elements.get("@+id/splitRightColumn")
+    body = elements.get("@+id/splitCallingBody")
+    toggle = elements.get("@+id/splitCallingToggleBar")
+    if right is None or body is None or toggle is None:
+        err("%s: splitRightColumn/splitCallingBody/splitCallingToggleBar 를 찾지 못함" % variant)
+        continue
+    right_kids = [k.get(A + "id") for k in list(right)]
+    for need in ["@+id/splitCallingToggleBar", "@+id/splitCallingBody"]:
+        if need not in right_kids:
+            err("%s: 오른쪽 열의 자식에 %s 없음 (실제: %s)" % (variant, need, right_kids))
+    body_kids = [k.get(A + "id") for k in list(body)]
+    for need in ["@+id/splitCallingContainer", "@+id/splitCallingLogContainer"]:
+        if need not in body_kids:
+            err("%s: splitCallingBody 의 자식에 %s 없음 (실제: %s)" % (variant, need, body_kids))
+    log_el = None
+    for k in list(body):
+        if k.get(A + "id") == "@+id/splitCallingLogContainer":
+            log_el = k
+    if log_el is not None and log_el.get(A + "visibility") != "gone":
+        err("%s: splitCallingLogContainer 는 기본 gone 이어야 함" % variant)
+    toggle_kids = [k.get(A + "id") for k in list(toggle)]
+    for need in ["@+id/splitCallingTabCall", "@+id/splitCallingTabLog"]:
+        if need not in toggle_kids:
+            err("%s: splitCallingToggleBar 의 자식에 %s 없음 (실제: %s)"
+                % (variant, need, toggle_kids))
+
+for need, why in [
+    ("private void initSplitCallingLogLayout()", "3분할 로그 칸을 준비하는 함수가 없음"),
+    ("FRAGMENT_TAG_SPLIT_CALLING_LOG", "3분할 로그 칸 프래그먼트 태그가 없음"),
+    ("new LogFragment()", "3분할 로그 칸에 LogFragment 를 붙이지 않음"),
+    ("private void showSplitCallingTab(boolean showLog)", "호출·로그 전환 함수가 없음"),
+    ("private void applySplitCallingTab()", "전환 상태를 화면에 반영하는 함수가 없음"),
+    ("private void refreshSplitCallingLogPanel()", "3분할 로그 칸을 다시 읽는 함수가 없음"),
+    ("KEY_SPLIT_CALL_TAB", "마지막으로 보던 탭을 기억하지 않음"),
+]:
+    if need not in main_code:
+        err("MainActivity: " + why)
+
+m = re.search(r"private void applySplitCallingTab\(\)\s*\{([\s\S]{0,900}?)\n    \}", main_code)
+if not m:
+    err("MainActivity.applySplitCallingTab 본문을 찾지 못함")
+else:
+    body_code = m.group(1)
+    for need, why in [
+        ("splitCallingContainer.setVisibility", "호출 창을 숨기지/보이지 않음"),
+        ("splitCallingLogContainer.setVisibility", "QSO 로그 칸을 숨기지/보이지 않음"),
+    ]:
+        if need not in body_code:
+            err("MainActivity.applySplitCallingTab: " + why)
+    # 송신이 끊기지 않게 프래그먼트를 지우거나 갈아 끼우지 않는다
+    if ".remove(" in body_code or ".replace(" in body_code:
+        err("MainActivity.applySplitCallingTab: 프래그먼트를 지우거나 갈아 끼움(송신이 끊길 수 있음)")
+
+if "if (showSplit && splitCallingLogShown)" not in main_code:
+    err("MainActivity.updateSplitVisibility: 3분할이 다시 보일 때 로그 칸을 맞추지 않음")
+
+# --- 7) 피클·AI 언급 금지 ----------------------------------------------------
 for path in [os.path.join(APP, "assets", "readme_ko.txt"),
              os.path.join(APP, "assets", "readme_en.txt"),
              os.path.join(ROOT, "README_KR.md")]:
@@ -192,4 +330,5 @@ if errors:
     for e in errors:
         print("  [오류] " + e)
     sys.exit(1)
-print("0.93-kr8 추가 검증 통과 (QSO 로그 실시간 갱신, 로그 패널 바탕색, 송신 감시 기본 무시)")
+print("0.93-kr8 추가 검증 통과 (QSO 로그 실시간 갱신, 로그 패널 바탕색, 송신 감시 기본 무시, "
+      "[PSK] 버튼, 3분할 [호출·송신]/[QSO 로그] 전환 탭)")

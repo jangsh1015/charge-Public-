@@ -212,4 +212,8 @@
          검은 바탕에 어두운 글씨가 묻히지 않고 목록이 선명하게 보이게 한다. -->
     <color name="log_panel_background">#FFFFFFFF</color>
 
+    <!-- 한국어판(0.93-kr8): 태블릿 3분할 [호출·송신] / [QSO 로그] 탭 글자색 -->
+    <color name="split_tab_text_selected">#FFFFFFFF</color>
+    <color name="split_tab_text_normal">#B3FFFFFF</color>
+
 </resources>

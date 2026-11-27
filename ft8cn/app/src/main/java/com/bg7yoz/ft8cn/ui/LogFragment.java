@@ -17,6 +17,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
@@ -24,6 +28,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -57,6 +62,7 @@ import com.bg7yoz.ft8cn.log.OnShareLogEvents;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Locale;
 
 
 public class LogFragment extends Fragment {
@@ -83,6 +89,10 @@ public class LogFragment extends Fragment {
         }
     };
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
+
+    //한국어판(0.93-kr8): PSK Reporter 실시간 지도 주소(내 콜사인으로 내 신호를 받은 곳을 본다)
+    private static final String PSK_REPORTER_MAP_URL
+            = "https://pskreporter.info/pskmap.html?preset&callsign=%1$s&txrx=tx&timerange=86400";
 
 
     public LogFragment() {
@@ -209,14 +219,14 @@ public class LogFragment extends Fragment {
             }
         });
 
-        //定位按钮的动作
-        binding.locationInMapImageButton.setOnClickListener(new View.OnClickListener() {
+        //한국어판(0.93-kr8): 예전 '지도(핀)' 버튼 자리는 [PSK] 버튼이다.
+        //  내 콜사인·그리드를 보여 주고, PSK Reporter 지도와 내 교신 지도로 이어진다.
+        //  콜사인은 누르는 순간 GeneralVariables.myCallsign 을 읽으므로,
+        //  설정에서 콜사인을 바꾸면 버튼도 바뀐 콜사인을 그대로 따라간다.
+        binding.pskGridButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(requireContext(), GridTrackerMainActivity.class);
-                intent.putExtra("qslAll", mainViewModel.queryKey);
-                intent.putExtra("queryFilter", mainViewModel.queryFilter);
-                startActivity(intent);
+                showPskGridDialog();
             }
         });
 
@@ -602,12 +612,11 @@ public class LogFragment extends Fragment {
             binding.logViewStyleimageButton.setImageResource(R.drawable.ic_baseline_assignment_ind_24);
             binding.logRecyclerView.setAdapter(logCallsignAdapter);
             logCallsignAdapter.notifyDataSetChanged();
-            binding.locationInMapImageButton.setVisibility(View.GONE);//隐藏定位按钮
+            //한국어판(0.93-kr8): [PSK] 버튼은 두 보기 모두에서 쓴다(예전 지도 버튼과 달리 숨기지 않는다)
         } else {
             binding.logViewStyleimageButton.setImageResource(R.drawable.ic_baseline_assignment_24);
             binding.logRecyclerView.setAdapter(logQSLAdapter);
             logQSLAdapter.notifyDataSetChanged();
-            binding.locationInMapImageButton.setVisibility(View.VISIBLE);//显示定位按钮
         }
 
     }
@@ -660,6 +669,184 @@ public class LogFragment extends Fragment {
         }
     }
 
+
+    /**
+     * 한국어판(0.93-kr8): [PSK] 버튼 - 내 콜사인·그리드를 보여 주고,
+     * PSK Reporter 지도(내 신호를 받은 곳)와 내 교신 지도로 이어 준다.
+     * 인터넷이 없는 IC-705 와이파이에 물려 있어도 안내만 하고 앱이 꺼지지 않는다.
+     */
+    private void showPskGridDialog() {
+        if (binding == null || !isAdded()) {
+            return;
+        }
+        final String callsign = getMyCallsignForPsk();
+        String grid6 = safeString(GeneralVariables.getMyMaidenheadGrid());
+        String grid4 = safeString(GeneralVariables.getMyMaidenhead4Grid());
+        String gridText = grid6;
+        if (!grid4.isEmpty() && !grid4.equalsIgnoreCase(grid6)) {
+            gridText = grid6.isEmpty() ? grid4 : String.format(Locale.US, "%s (%s)", grid6, grid4);
+        }
+        if (gridText.isEmpty()) {
+            gridText = "-";
+        }
+
+        StringBuilder message = new StringBuilder();
+        if (callsign.isEmpty()) {
+            message.append(getStringFromRes(R.string.psk_grid_no_callsign));
+        } else {
+            message.append(String.format(getStringFromRes(R.string.psk_grid_info)
+                    , callsign, gridText));
+        }
+        if (!hasInternet()) {
+            //인터넷이 없어도 여기서 막지 않고, 왜 지도가 안 열리는지 먼저 알려 준다
+            message.append("\n\n").append(getStringFromRes(R.string.psk_grid_no_internet));
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle(getStringFromRes(R.string.psk_grid_title));
+        builder.setMessage(message.toString());
+        builder.setPositiveButton(getStringFromRes(R.string.psk_reporter_open)
+                , new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        openPskReporter(callsign);
+                    }
+                });
+        builder.setNeutralButton(getStringFromRes(R.string.psk_grid_qso_map)
+                , new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        openQsoMap();
+                    }
+                });
+        builder.setNegativeButton(getStringFromRes(R.string.close), null);
+        builder.show();
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 지금 설정된 내 콜사인. 설정에서 바꾸면 그 값을 그대로 쓴다.
+     *
+     * @return 대문자 콜사인(없으면 빈 문자열)
+     */
+    private String getMyCallsignForPsk() {
+        String callsign = safeString(GeneralVariables.myCallsign).trim();
+        return callsign.toUpperCase(Locale.US);
+    }
+
+    /**
+     * 한국어판(0.93-kr8): PSK Reporter 지도를 브라우저로 연다.
+     * 브라우저가 없거나 열지 못해도 앱이 꺼지지 않게 예외를 잡는다.
+     *
+     * @param callsign 내 콜사인
+     */
+    private void openPskReporter(String callsign) {
+        if (callsign == null || callsign.isEmpty()) {
+            showHelpMessage(getStringFromRes(R.string.psk_grid_no_callsign));
+            return;
+        }
+        String url = String.format(PSK_REPORTER_MAP_URL, Uri.encode(callsign));
+        openUrl(url, getStringFromRes(R.string.psk_grid_open_failed)
+                + "\n\n" + getStringFromRes(R.string.psk_grid_no_internet));
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 내 교신 지도(GridTracker)를 연다. 예전 지도 버튼과 같은 화면이다.
+     */
+    private void openQsoMap() {
+        try {
+            Intent intent = new Intent(requireContext(), GridTrackerMainActivity.class);
+            intent.putExtra("qslAll", mainViewModel.queryKey);
+            intent.putExtra("queryFilter", mainViewModel.queryFilter);
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "openQsoMap: 지도 화면을 열지 못했습니다. " + e.getMessage());
+            showHelpMessage(getStringFromRes(R.string.psk_grid_open_failed));
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 웹 주소를 브라우저로 연다. 실패하면 안내 창을 띄운다.
+     *
+     * @param url        열 주소
+     * @param failMessage 열지 못했을 때 보여 줄 문구
+     */
+    private void openUrl(String url, String failMessage) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "openUrl: 브라우저를 열지 못했습니다. " + e.getMessage());
+            showHelpMessage(failMessage);
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 지금 인터넷이 잡히는지 본다. (IC-705 와이파이는 인터넷이 없다)
+     * 권한이 없거나 확인할 수 없으면 '있다'로 보아 열기를 막지 않는다.
+     *
+     * @return 인터넷이 잡히면 true
+     */
+    private boolean hasInternet() {
+        try {
+            ConnectivityManager manager = (ConnectivityManager) requireContext()
+                    .getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (manager == null) {
+                return true;
+            }
+            Network network = manager.getActiveNetwork();
+            if (network == null) {
+                return false;
+            }
+            NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
+            return capabilities != null
+                    && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } catch (Exception e) {
+            Log.e(TAG, "hasInternet: 인터넷 상태를 확인하지 못했습니다. " + e.getMessage());
+            return true;
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 긴 안내 문구를 도움말 창으로 보여 준다(브라우저를 열지 못했을 때 등).
+     *
+     * @param message 보여 줄 문구
+     */
+    private void showHelpMessage(String message) {
+        if (!isAdded() || getActivity() == null) {
+            return;
+        }
+        try {
+            new HelpDialog(requireContext(), requireActivity(), message, false).show();
+        } catch (Exception e) {
+            Log.e(TAG, "showHelpMessage: 안내 창을 띄우지 못했습니다. " + e.getMessage());
+            ToastMessage.show(message);
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 문자열 리소스를 안전하게 읽는다.
+     *
+     * @param resId 문자열 리소스
+     * @return 문자열(없으면 빈 문자열)
+     */
+    private String getStringFromRes(int resId) {
+        try {
+            return GeneralVariables.getStringFromResource(resId);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr8): null 을 빈 문자열로 바꾼다.
+     *
+     * @param value 값
+     * @return 빈 문자열이거나 원래 문자열
+     */
+    private String safeString(String value) {
+        return value == null ? "" : value;
+    }
 
     /**
      * 显示统计页面

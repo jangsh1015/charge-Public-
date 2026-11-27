@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> <!-- 用于访问GPS定位 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- 한국어판(0.93-kr8): [PSK] 버튼이 지금 인터넷이 잡히는지 확인할 때 쓴다(허가 창은 뜨지 않는 권한) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30" />

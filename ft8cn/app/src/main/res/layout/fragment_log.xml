@@ -50,18 +50,29 @@
                 tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
 
-            <ImageButton
-                android:id="@+id/locationInMapImageButton"
+            <!-- 한국어판(0.93-kr8): 예전 지도(핀) 버튼 자리를 [PSK] 버튼으로 바꿨다.
+                 누르면 내 콜사인·그리드를 보여 주고, PSK Reporter 지도와 내 교신 지도로 이어진다. -->
+            <TextView
+                android:id="@+id/pskGridButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/imagebutton_style"
-                android:contentDescription="@string/map_location_image"
+                android:contentDescription="@string/psk_grid_title"
+                android:gravity="center"
+                android:minWidth="46dp"
+                android:minHeight="32dp"
+                android:paddingStart="6dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="4dp"
+                android:text="@string/psk_button_label"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="13sp"
+                android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/shareLogImageButton"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/baseline_location_on_24"
-                tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+                app:layout_constraintTop_toTopOf="parent" />
 
             <EditText
                 android:id="@+id/inputMycallEdit"
@@ -83,7 +94,7 @@
                 android:textSize="14sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/logViewStyleimageButton"
-                app:layout_constraintStart_toEndOf="@+id/locationInMapImageButton"
+                app:layout_constraintStart_toEndOf="@+id/pskGridButton"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:ignore="TextContrastCheck,TouchTargetSizeCheck" />
 

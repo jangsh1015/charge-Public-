@@ -568,4 +568,18 @@
     <string name="interval_cq_status_burst">%1$d분 CQ %2$d/%3$d</string>
     <string name="interval_cq_status_wait">간헐 %1$d분 %2$s</string>
     <string name="interval_cq_watchdog_warning">송신 감시(%1$d분)가 간헐 CQ 주기보다 짧아 곧 자동 송신이 멈춥니다. 설정에서 송신 감시를 늘리거나 (무시)로 바꾸세요.</string>
+
+    <!-- ============================================================
+         PSK Reporter · 그리드 로케이터 (0.93-kr8) · 스펙트럼 3분할 로그 탭
+         ============================================================ -->
+    <string name="psk_button_label" translatable="false">PSK</string>
+    <string name="psk_grid_title">PSK · 그리드 로케이터</string>
+    <string name="psk_grid_info">내 콜사인: %1$s\n내 그리드: %2$s\n\nPSK Reporter 지도에는 최근 24시간 동안 내 신호를 받았다고 보고한 곳이 나옵니다.</string>
+    <string name="psk_grid_no_callsign">먼저 설정에서 내 콜사인을 넣어 주세요. (설정 &gt; 내 정보)</string>
+    <string name="psk_grid_no_internet">지금 인터넷이 잡히지 않습니다. IC-705 와이파이에 연결된 상태라면 휴대전화 데이터로 바꾸거나 와이파이를 끈 뒤 다시 눌러 주세요.</string>
+    <string name="psk_reporter_open">PSK Reporter 열기</string>
+    <string name="psk_grid_qso_map">내 교신 지도</string>
+    <string name="psk_grid_open_failed">브라우저를 열지 못했습니다. 잠시 뒤 다시 시도해 주세요.</string>
+    <string name="split_tab_calling">📡 호출·송신</string>
+    <string name="split_tab_qso_log">📋 QSO 로그</string>
 </resources>

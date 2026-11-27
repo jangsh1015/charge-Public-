@@ -128,6 +128,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String MODE_SPECTRUM_SPLIT = "spectrumSplit";
     private static final String MODE_SPECTRUM_ONLY = "spectrumOnly";
 
+    //한국어판(0.93-kr8): 스펙트럼 3분할의 오른쪽 아래 칸을 [호출·송신] ↔ [QSO 로그]로 바꾸는 탭
+    private static final String KEY_SPLIT_CALL_TAB = "splitCallTab";
+    private static final String FRAGMENT_TAG_SPLIT_CALLING_LOG = "splitCallingLog";
+
     //한국어판(0.93-kr4): IC-705 기준 초기 설정
     private static final String PREF_IC705_PRESET = "ic705Preset";
     private static final String KEY_IC705_PRESET_VERSION = "version";
@@ -148,6 +152,13 @@ public class MainActivity extends AppCompatActivity {
     private View splitCallingOnlyContainer;
     private View splitLogContainer;
     private View splitCallLogHandle;
+    //한국어판(0.93-kr8): 3분할 오른쪽 아래 칸의 [호출·송신] ↔ [QSO 로그] 전환
+    private View splitCallingToggleBar;
+    private View splitCallingBody;
+    private View splitCallingLogContainer;
+    private TextView splitCallingTabCall;
+    private TextView splitCallingTabLog;
+    private boolean splitCallingLogShown = false;
     private float splitWidthRatio = DEFAULT_SPLIT_WIDTH_RATIO;
     private float splitHeightRatio = DEFAULT_SPLIT_HEIGHT_RATIO;
     private float callLogRatio = DEFAULT_CALL_LOG_RATIO;
@@ -567,6 +578,7 @@ public class MainActivity extends AppCompatActivity {
                 || FRAGMENT_TAG_SPLIT_CALLING.equals(fragmentTag)
                 || FRAGMENT_TAG_SPLIT_SPECTRUM.equals(fragmentTag)
                 || FRAGMENT_TAG_SPLIT_CALL_ONLY.equals(fragmentTag)
+                || FRAGMENT_TAG_SPLIT_CALLING_LOG.equals(fragmentTag)
                 || FRAGMENT_TAG_SPLIT_LOG.equals(fragmentTag);
     }
 
@@ -663,6 +675,124 @@ public class MainActivity extends AppCompatActivity {
         splitLayout.setVisibility(View.GONE);
         //한국어판(0.93-kr6): 호출 탭 2분할(호출 창 | QSO 로그) 패널도 함께 준비한다.
         initTabletCallLogLayout();
+        //한국어판(0.93-kr8): 3분할 오른쪽 아래 칸의 [호출·송신] ↔ [QSO 로그] 전환 탭도 준비한다.
+        initSplitCallingLogLayout();
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 태블릿 가로 3분할의 오른쪽 아래 칸을 [호출·송신] ↔ [QSO 로그]로 바꾼다.
+     * 두 프래그먼트(MyCallingFragment·LogFragment)를 같은 칸에 겹쳐 두고 보이는 하나만 켜므로,
+     * QSO 로그를 보는 동안에도 송신 상태와 호출 대상이 끊기지 않는다.
+     */
+    private void initSplitCallingLogLayout() {
+        splitCallingToggleBar = findViewById(R.id.splitCallingToggleBar);
+        splitCallingBody = findViewById(R.id.splitCallingBody);
+        splitCallingLogContainer = findViewById(R.id.splitCallingLogContainer);
+        splitCallingTabCall = findViewById(R.id.splitCallingTabCall);
+        splitCallingTabLog = findViewById(R.id.splitCallingTabLog);
+        if (splitCallingContainer == null || splitCallingBody == null
+                || splitCallingLogContainer == null
+                || splitCallingTabCall == null || splitCallingTabLog == null) {
+            //전환 탭이 없는 레이아웃에서는 예전처럼 호출 창만 쓴다
+            splitCallingBody = null;
+            splitCallingLogContainer = null;
+            return;
+        }
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment logFragment = fragmentManager.findFragmentById(R.id.splitCallingLogContainer);
+        if (logFragment == null) {
+            try {
+                fragmentManager.beginTransaction()
+                        .add(R.id.splitCallingLogContainer, new LogFragment()
+                                , FRAGMENT_TAG_SPLIT_CALLING_LOG)
+                        .commitNowAllowingStateLoss();
+            } catch (Exception e) {
+                //로그 패널을 붙이지 못하면 전환 탭 없이 호출 창만 쓴다
+                Log.e(TAG, "initSplitCallingLogLayout: QSO 로그 패널을 붙이지 못했습니다. " + e.getMessage());
+                splitCallingBody = null;
+                splitCallingLogContainer = null;
+                return;
+            }
+        }
+
+        splitCallingLogShown = getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE)
+                .getBoolean(KEY_SPLIT_CALL_TAB, false);
+        splitCallingTabCall.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSplitCallingTab(false);
+            }
+        });
+        splitCallingTabLog.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSplitCallingTab(true);
+            }
+        });
+        applySplitCallingTab();
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 3분할 오른쪽 아래 칸에 QSO 로그를 보여 줄지(아니면 호출 창) 고른다.
+     *
+     * @param showLog QSO 로그를 보여 주려면 true
+     */
+    private void showSplitCallingTab(boolean showLog) {
+        if (splitCallingContainer == null || splitCallingLogContainer == null) {
+            return;
+        }
+        splitCallingLogShown = showLog;
+        applySplitCallingTab();
+        getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE).edit()
+                .putBoolean(KEY_SPLIT_CALL_TAB, showLog)
+                .apply();
+        if (showLog) {
+            //새 교신이 저장되는 대로 목록을 다시 읽으므로, 열자마자 지금 기록을 한 번 맞춘다
+            refreshSplitCallingLogPanel();
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 기억해 둔 전환 상태를 화면에 반영하고, 고른 탭을 밝게 표시한다.
+     */
+    private void applySplitCallingTab() {
+        if (splitCallingContainer == null || splitCallingLogContainer == null) {
+            return;
+        }
+        boolean showLog = splitCallingLogShown;
+        splitCallingContainer.setVisibility(showLog ? View.GONE : View.VISIBLE);
+        splitCallingLogContainer.setVisibility(showLog ? View.VISIBLE : View.GONE);
+        styleSplitCallingTab(splitCallingTabCall, !showLog);
+        styleSplitCallingTab(splitCallingTabLog, showLog);
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 전환 탭 하나의 모양(배경·글자색)을 고른 상태에 맞춘다.
+     *
+     * @param tab      탭(TextView)
+     * @param selected 지금 고른 탭이면 true
+     */
+    private void styleSplitCallingTab(TextView tab, boolean selected) {
+        if (tab == null) {
+            return;
+        }
+        tab.setBackgroundResource(selected
+                ? R.drawable.split_tab_selected : R.drawable.split_tab_normal);
+        tab.setTextColor(ContextCompat.getColor(this, selected
+                ? R.color.split_tab_text_selected : R.color.split_tab_text_normal));
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 3분할의 QSO 로그 칸을 지금 검색 조건으로 다시 읽는다.
+     * 패널 프래그먼트가 아직 없거나 다른 종류면 아무것도 하지 않는다.
+     */
+    private void refreshSplitCallingLogPanel() {
+        Fragment fragment = getSupportFragmentManager()
+                .findFragmentByTag(FRAGMENT_TAG_SPLIT_CALLING_LOG);
+        if (fragment instanceof LogFragment) {
+            ((LogFragment) fragment).refreshLogPanel();
+        }
     }
 
     /**
@@ -729,7 +859,8 @@ public class MainActivity extends AppCompatActivity {
     private void removeSplitFragments() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         String[] tags = {FRAGMENT_TAG_SPLIT_SPECTRUM, FRAGMENT_TAG_SPLIT_DECODE
-                , FRAGMENT_TAG_SPLIT_CALLING, FRAGMENT_TAG_SPLIT_CALL_ONLY, FRAGMENT_TAG_SPLIT_LOG};
+                , FRAGMENT_TAG_SPLIT_CALLING, FRAGMENT_TAG_SPLIT_CALLING_LOG
+                , FRAGMENT_TAG_SPLIT_CALL_ONLY, FRAGMENT_TAG_SPLIT_LOG};
         FragmentTransaction transaction = null;
         for (String tag : tags) {
             Fragment fragment = fragmentManager.findFragmentByTag(tag);
@@ -783,6 +914,10 @@ public class MainActivity extends AppCompatActivity {
         }
         splitPanelVisible = showSplit;
         splitCallLogVisible = showCallLog;
+        //한국어판(0.93-kr8): 3분할에서 QSO 로그 칸을 보고 있으면, 다시 보일 때 목록을 맞춘다
+        if (showSplit && splitCallingLogShown) {
+            refreshSplitCallingLogPanel();
+        }
         if (navHostContainer != null) {
             //3분할·2분할 패널을 볼 때는 뒤의 전체 화면은 보이지 않게만 둔다(프래그먼트 생명주기는 그대로)
             navHostContainer.setVisibility(showSplit || showCallLog ? View.INVISIBLE : View.VISIBLE);
@@ -883,7 +1018,9 @@ public class MainActivity extends AppCompatActivity {
             setSplitWeight(splitSpectrumContainer, splitWidthRatio);
             setSplitWeight(splitRightColumn, 1f - splitWidthRatio);
             setSplitWeight(splitDecodeContainer, splitHeightRatio);
-            setSplitWeight(splitCallingContainer, 1f - splitHeightRatio);
+            //한국어판(0.93-kr8): 오른쪽 아래 칸은 전환 탭을 포함한 묶음(splitCallingBody)의 높이 비율이다
+            setSplitWeight(splitCallingBody != null ? splitCallingBody : splitCallingContainer
+                    , 1f - splitHeightRatio);
         }
         //한국어판(0.93-kr6): 호출+로그 2분할의 좌우 비율
         if (splitCallLogLayout != null) {
@@ -908,6 +1045,15 @@ public class MainActivity extends AppCompatActivity {
             return min;
         }
         return Math.max(min, Math.min(max, ratio));
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 3분할 오른쪽 아래 칸의 전환 탭 높이(px). 탭이 없으면 0.
+     *
+     * @return 전환 탭 높이
+     */
+    private int splitCallingToggleBarHeight() {
+        return splitCallingToggleBar == null ? 0 : splitCallingToggleBar.getHeight();
     }
 
     /**
@@ -944,7 +1090,9 @@ public class MainActivity extends AppCompatActivity {
                         startSizePx = splitSpectrumContainer.getWidth();
                         startTouchPx = event.getRawX();
                     } else {
-                        availablePx = splitRightColumn.getHeight() - splitHorizontalHandle.getHeight();
+                        //한국어판(0.93-kr8): 오른쪽 아래 칸의 전환 탭 높이는 비율 계산에서 뺀다
+                        availablePx = splitRightColumn.getHeight() - splitHorizontalHandle.getHeight()
+                                - splitCallingToggleBarHeight();
                         startSizePx = splitDecodeContainer.getHeight();
                         startTouchPx = event.getRawY();
                     }

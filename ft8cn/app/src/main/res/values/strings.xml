@@ -569,4 +569,16 @@
     <string name="interval_cq_status_wait">Every %1$d min %2$s</string>
     <string name="interval_cq_watchdog_warning">TX watchdog (%1$d min) is shorter than the interval CQ period, so automatic TX will stop soon. Raise the TX watchdog or set it to (Ignore).</string>
 
+    <!--  PSK Reporter / grid button (QSO log screen) and split calling-log tab  -->
+    <string name="psk_button_label" translatable="false">PSK</string>
+    <string name="psk_grid_title">PSK / Grid locator</string>
+    <string name="psk_grid_info">My call: %1$s\nMy grid: %2$s\n\nThe PSK Reporter map shows the stations that reported receiving my signal in the last 24 hours.</string>
+    <string name="psk_grid_no_callsign">Put your own call sign in Settings first. (Settings &gt; my information)</string>
+    <string name="psk_grid_no_internet">No internet right now. If you are connected to the IC-705 Wi-Fi (which has no internet), switch to mobile data or turn Wi-Fi off and press again.</string>
+    <string name="psk_reporter_open">Open PSK Reporter</string>
+    <string name="psk_grid_qso_map">My QSO map</string>
+    <string name="psk_grid_open_failed">Could not open the browser. Please try again in a moment.</string>
+    <string name="split_tab_calling">Call</string>
+    <string name="split_tab_qso_log">QSO log</string>
+
 </resources>

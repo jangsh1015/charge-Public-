@@ -38,6 +38,16 @@ Korean edition changes
       With auto answer or CQ left on, the app keeps transmitting until you stop it, with nothing
       to set up. A time chosen in Settings is still used as it is, and a value left by the old
       default (10 minutes) is read as Ignore as well.
+   5. The map (pin) button at the top of the QSO log screen is now a [PSK] button.
+      Tapping it shows my call sign and my grid locator (for example PM37uu).
+      [Open PSK Reporter] brings up a live map of the stations that reported receiving my signal
+      in the last 24 hours, and [My QSO map] opens the same map screen as before.
+      The call sign is read from Settings every time, so changing it there changes the button too.
+      On the IC-705 Wi-Fi (which has no internet) it only shows a note and the app does not close.
+   6. On a tablet in landscape, the spectrum three-pane view now has [Call] and [QSO log] tabs
+      above the bottom-right pane. One tap turns that pane into the QSO log, and the transmit
+      state and call target keep running while the log is shown. The log refreshes by itself
+      when a contact completes, and the tab you used last is remembered.
 
   0.93-kr7
    1. Tap a row once to call or answer that station right away. A pink row (a station

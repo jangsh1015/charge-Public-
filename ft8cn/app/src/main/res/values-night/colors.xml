@@ -72,4 +72,8 @@
     <!-- 한국어판(0.93-kr8): 밤(다크) 모드의 QSO 로그 목록 바탕색 — 앱 창 바탕과 같은 톤 -->
     <color name="log_panel_background">#FF121212</color>
 
+    <!-- 한국어판(0.93-kr8): 태블릿 3분할 [호출·송신] / [QSO 로그] 탭 글자색 -->
+    <color name="split_tab_text_selected">#FFFFFFFF</color>
+    <color name="split_tab_text_normal">#B3FFFFFF</color>
+
 </resources>

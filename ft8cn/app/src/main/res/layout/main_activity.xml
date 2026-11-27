@@ -87,11 +87,69 @@
                     android:clickable="true"
                     android:focusable="false" />
 
-                <androidx.fragment.app.FragmentContainerView
-                    android:id="@+id/splitCallingContainer"
+                <!-- 한국어판(0.93-kr8): 오른쪽 아래 칸을 [호출·송신] ↔ [QSO 로그]로 바꾸는 탭 -->
+                <LinearLayout
+                    android:id="@+id/splitCallingToggleBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/list_header_bar_color"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal"
+                    android:paddingStart="4dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="4dp"
+                    android:paddingBottom="2dp">
+
+                    <TextView
+                        android:id="@+id/splitCallingTabCall"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/split_tab_selected"
+                        android:gravity="center"
+                        android:minHeight="30dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:text="@string/split_tab_calling"
+                        android:textColor="@color/split_tab_text_selected"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/splitCallingTabLog"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/split_tab_normal"
+                        android:gravity="center"
+                        android:minHeight="30dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:text="@string/split_tab_qso_log"
+                        android:textColor="@color/split_tab_text_normal"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- 한국어판(0.93-kr8): 호출 창과 QSO 로그를 같은 칸에 겹쳐 두고 보이는 하나만 켠다
+                     (두 프래그먼트가 모두 살아 있어 로그를 보는 동안에도 송신이 끊기지 않는다) -->
+                <FrameLayout
+                    android:id="@+id/splitCallingBody"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_weight="50" />
+                    android:layout_weight="50">
+
+                    <androidx.fragment.app.FragmentContainerView
+                        android:id="@+id/splitCallingContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <androidx.fragment.app.FragmentContainerView
+                        android:id="@+id/splitCallingLogContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/log_panel_background"
+                        android:visibility="gone" />
+                </FrameLayout>
             </LinearLayout>
         </LinearLayout>
 
