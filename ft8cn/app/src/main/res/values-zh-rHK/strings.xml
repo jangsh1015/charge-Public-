@@ -456,6 +456,8 @@
     <string name="swlMode_help">swlMode.txt</string>
     <string name="audio_output_help">audio_output_help.txt</string>
     <string name="clear_cache_data_help">clear_cache_data.txt</string>
+    <string name="readme_help">readme.txt</string>
+    <string name="rig_address_file">rigaddress.txt</string>
     <string name="html_query_logs">查詢日誌</string>
     <string name="html_qso_all">全部</string>
     <string name="html_qso_source">數據來源</string>

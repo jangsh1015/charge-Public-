@@ -270,6 +270,7 @@
     <string name="html_please_select">Please select</string>
     <string name="html_adi_format">Log file in ADI format</string>
     <string name="html_file_in_other_format">and files in other formats may not be parsed and imported normally.</string>
+    <string name="html_upload">Upload</string>
     <string name="html_time">Time</string>
     <string name="html_total">Total</string>
     <string name="html_all_logs">All logs</string>
@@ -465,6 +466,8 @@
     <string name="audio_output_help">audio_output_help_en.txt</string>
     <string name="deep_mode_help">decode_help_en.txt</string>
     <string name="clear_cache_data_help">clear_cache_data_en.txt</string>
+    <string name="readme_help">readme_en.txt</string>
+    <string name="rig_address_file">rigaddress_en.txt</string>
     <string name="html_query_logs">Query the logs</string>
     <string name="html_qso_all">All</string>
     <string name="html_qso_source">Data sources</string>
@@ -511,6 +514,7 @@
     <string name="serial_connect_no_access">Unable to connect to the serial port, please confirm if you have access to the USB device!</string>
     <string name="serial_connect_failed">Serial port opening failed !</string>
     <string name="serial_no_driver">Unable to connect to serial port, serial port not found!</string>
+    <string name="serial_connection_lost">Lost connection to the serial port: %s</string>
     <string name="serial_data_bits">Data bit</string>
     <string name="serial_parity">Parity bit</string>
     <string name="serial_parity_none">None</string>

@@ -1495,7 +1495,9 @@ public class ConfigFragment extends Fragment {
         binding.aboutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new HelpDialog(requireContext(), requireActivity(), "readme.txt", true).show();
+                new HelpDialog(requireContext(), requireActivity()
+                        , GeneralVariables.getStringFromResource(R.string.readme_help)
+                        , true).show();
             }
         });
         //设置操作频段

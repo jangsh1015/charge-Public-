@@ -3,6 +3,8 @@ package com.bg7yoz.ft8cn.connector;
 import android.content.Context;
 import android.util.Log;
 
+import com.bg7yoz.ft8cn.GeneralVariables;
+import com.bg7yoz.ft8cn.R;
 import com.bg7yoz.ft8cn.database.ControlMode;
 import com.bg7yoz.ft8cn.rigs.BaseRig;
 import com.bg7yoz.ft8cn.serialport.util.SerialInputOutputManager;
@@ -43,7 +45,9 @@ public class CableConnector extends BaseRigConnector {
             @Override
             public void onRunError(Exception e) {
                 Log.e(TAG, "CableConnector error: " + e.getMessage());
-                getOnConnectorStateChanged().onRunError("与串口失去连接：" + e.getMessage());
+                getOnConnectorStateChanged().onRunError(String.format(
+                        GeneralVariables.getStringFromResource(R.string.serial_connection_lost)
+                        , e.getMessage()));
             }
         };
         //connect();

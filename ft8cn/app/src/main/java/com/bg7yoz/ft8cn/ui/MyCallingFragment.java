@@ -6,6 +6,7 @@ package com.bg7yoz.ft8cn.ui;
  */
 
 import android.annotation.SuppressLint;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -249,13 +250,18 @@ public class MyCallingFragment extends Fragment {
             public void onChanged(Boolean aBoolean) {
                 if (mainViewModel.ft8TransmitSignal.isTransmitting()) {
                     binding.setTransmitImageButton.setImageResource(R.drawable.ic_baseline_send_red_48);
+                    binding.setTransmitImageButton.setImageTintList(null);//빨간 아이콘은 원래 색 그대로
                     binding.setTransmitImageButton.setAnimation(AnimationUtils.loadAnimation(getContext(), R.anim.view_blink));
                 } else {
                     //录音对象也要处于启动状态才可以有发射的状态
                     if (mainViewModel.ft8TransmitSignal.isActivated() && mainViewModel.hamRecorder.isRunning()) {
                         binding.setTransmitImageButton.setImageResource(R.drawable.ic_baseline_send_white_48);
+                        //한국어판: 송신 중은 아니지만 자동 송신이 살아서 대기 중임을 주황색으로 표시한다
+                        binding.setTransmitImageButton.setImageTintList(
+                                ColorStateList.valueOf(Color.parseColor("#FFB300")));
                     } else {
                         binding.setTransmitImageButton.setImageResource(R.drawable.ic_baseline_cancel_schedule_send_off);
+                        binding.setTransmitImageButton.setImageTintList(null);
                     }
                     binding.setTransmitImageButton.setAnimation(null);
                 }

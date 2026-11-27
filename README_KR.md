@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr1` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr2` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -15,8 +15,11 @@
 - `ft8cn/app/src/main/res/values-ko/strings.xml` — 원본 `values/strings.xml`(영어)의 모든 번역 대상
   문자열(502개)을 한국어 아마추어무선 용어로 옮겼습니다. (CQ 호출, 송신/수신, 워터폴, SWR, 호출부호,
   그리드, 자동 응답, QSO 로그 등)
-- `ft8cn/app/src/main/assets/*_ko.txt` — 앱 안의 도움말 24개를 한국어로 새로 썼습니다.
-  설정 화면의 ⓘ 버튼이 이 파일들을 엽니다.
+- `ft8cn/app/src/main/assets/*_ko.txt` — 앱 안의 도움말과 안내문 26개를 한국어로 새로 썼습니다.
+  설정 화면의 ⓘ 버튼과 `정보` 창이 이 파일들을 엽니다.
+  `readme_ko.txt`(정보 창)에는 원작(BG7YOZ / N0BOY)과 한국어 번역·간헐 CQ 수정(DS2YTO) 크레딧이 들어 있습니다.
+  중국어 원문만 있던 `readme.txt`·`rigaddress.txt` 는 영어(`_en`)와 한국어(`_ko`) 판을 따로 두어,
+  한국어·영어 사용자에게 중국어가 보이지 않게 했습니다.
 - 언어는 휴대폰의 시스템 언어를 따릅니다. 휴대폰이 한국어이면 자동으로 한국어 화면이 됩니다.
   (안드로이드 13 이상에서는 설정 > 앱 > FT8CN KR > 언어에서 앱 언어만 따로 고를 수도 있습니다.)
 
@@ -40,10 +43,18 @@
 | 교신 종료 | 다시 간헐 CQ로 돌아가 CQ 묶음을 한 번 내고 대기합니다. |
 
 - 화면 위쪽 대상 표시줄에 `간헐 10분 4:32` 처럼 남은 시간이 표시됩니다.
-- 송신 감시(Tx watchdog)가 주기보다 짧으면 자동 송신이 도중에 멈추므로, 그때는 설정에서
-  송신 감시를 주기보다 길게 하거나 `무시`로 두세요. (조건이 맞으면 앱이 한 번 경고합니다.)
+- 송신 감시(Tx watchdog)가 주기보다 짧으면 대기 중에 자동 송신이 멈출 수 있어 경고를 한 번 보여 줍니다.
+  `0.93-kr2`부터는 **간헐 CQ로 대기하는 동안은 송신 감시 시간을 세지 않으므로**, 감시를 짧게 두어도
+  대기 중에 꺼지지 않습니다. 그래도 묶음 송신이 긴 경우를 대비해 주기보다 길게 두거나 `무시`로 두면 안전합니다.
 - `CQ 자동 추적`/`추적 자동 호출`이 켜져 있으면 대기 중에도 새 국을 먼저 부를 수 있습니다.
   무전기를 조용히 두고 싶으면 두 기능을 끄세요.
+
+### (3) 0.93-kr2에서 더한 것
+- `정보` 창을 `readme_ko.txt` 로 연결했습니다. 면책·사용 안내와 함께 원작(BG7YOZ / N0BOY),
+  한국어 번역·간헐 CQ 수정(DS2YTO), FT8/FT4 프로토콜(K9AN·G4WJS·K1JT) 크레딧이 들어 있습니다.
+- 무전기 모델 목록(`rigaddress_ko.txt`)과 시리얼 연결 끊김 안내, 웹 UI 업로드 버튼 문구를 한국어로 바꿨습니다.
+- 간헐 CQ 대기 중에는 송신 감시 시간을 세지 않아, 대기 중에 자동 송신이 꺼지지 않습니다.
+- 호출 탭의 확성기 아이콘: 송신 중은 빨간색 깜빡임, **자동 송신이 켜진 대기 중은 주황색**, 꺼짐은 X 아이콘입니다.
 
 ---
 
@@ -93,7 +104,8 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | 파일 | 내용 |
 |---|---|
 | `ft8cn/app/src/main/res/values-ko/strings.xml` | 한국어 문자열 전체 |
-| `ft8cn/app/src/main/assets/*_ko.txt` (24개) | 한국어 도움말 |
+| `ft8cn/app/src/main/assets/*_ko.txt` (26개) | 한국어 도움말·정보 창 (원작/수정자 크레딧 포함) |
+| `ft8cn/app/src/main/assets/readme_en.txt`, `rigaddress_en.txt` | 정보 창·무전기 목록의 영어판 (중국어 제거) |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/IntervalCqSpinnerAdapter.java` | 간헐 CQ 주기 목록 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/IntervalCqCountSpinnerAdapter.java` | 1회 CQ 횟수 목록 |
 | `build_apk.sh` | 우분투/WSL 원클릭 빌드 스크립트 |
@@ -103,7 +115,7 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr1`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr2`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |
@@ -111,6 +123,11 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ft8transmit/FT8TransmitSignal.java` | 간헐 CQ 판단 로직, 상태 표시, 송신 감시 경고 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/ConfigFragment.java` | 설정 화면 두 항목 연결, 도움말 버튼 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/MyCallingFragment.java` | 대상 표시줄에 간헐 CQ 남은 시간 표시 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/ConfigFragment.java` | (kr2) 정보 창을 로캘별 `readme_help` 리소스로 연결 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/database/RigNameList.java` | (kr2) 무전기 목록을 로캘별 `rig_address_file`(rigaddress_ko/en)로 읽기 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/connector/CableConnector.java` | (kr2) 시리얼 연결 끊김 안내를 리소스 문자열로 변경 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/html/LogHttpServer.java` | (kr2) 웹 UI 업로드 버튼 문구를 리소스 문자열로 변경 |
+| `ft8cn/app/src/main/res/values*/strings.xml` | (kr2) `readme_help`, `rig_address_file`, `html_upload`, `serial_connection_lost` 추가 (zh 계열은 중국어 원문 파일 유지) |
 
 ## 4. 정적 검사
 

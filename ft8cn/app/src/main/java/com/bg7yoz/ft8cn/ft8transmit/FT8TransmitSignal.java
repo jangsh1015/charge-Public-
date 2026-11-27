@@ -139,6 +139,11 @@ public class FT8TransmitSignal {
             //@RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void doOnSecTimer(long utc) {
+                //한국어판: 간헐 CQ로 다음 주기를 기다리는 동안에는 송신 감시(Tx watchdog) 시간을 세지 않는다.
+                //  대기 중에 감시가 만료되어 자동 송신이 꺼지고 빨간 확성기가 사라지는 것을 막는다.
+                if (isIntervalCQWaitingIdle()) {
+                    GeneralVariables.resetLaunchSupervision();
+                }
                 //超过自动监管时间，就停止
                 if (GeneralVariables.isLaunchSupervisionTimeout()) {
                     setActivated(false);
@@ -1013,6 +1018,17 @@ public class FT8TransmitSignal {
     private boolean isInCQState() {
         return functionOrder == 6 && toCallsign != null
                 && "CQ".equals(toCallsign.callsign);
+    }
+
+    /**
+     * 간헐 CQ로 다음 주기를 정상 대기(수신만)하고 있는지 확인한다.
+     * 이때는 송신 감시 시간을 세지 않아야 자동 송신이 꺼지지 않는다.
+     *
+     * @return 대기 중이면 true
+     */
+    private synchronized boolean isIntervalCQWaitingIdle() {
+        return activated && intervalCQWaiting
+                && GeneralVariables.intervalCQMinutes > 0 && isInCQState();
     }
 
     /**

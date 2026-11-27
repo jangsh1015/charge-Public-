@@ -52,12 +52,17 @@ public class RigNameList {
     }
 
     /**
-     * rigaddress.txt文件中读出各电台参数列表。
+     * rigaddress(_en/_ko).txt 파일에서 각 전마 파라미터 목록을 읽습니다.
+     * 어떤 파일을 읽을지는 로캘에 따른 R.string.rig_address_file 이 정합니다.
      */
     public void getRigNamesFromFile(){
         AssetManager assetManager = context.getAssets();
+        String fileName = context.getString(R.string.rig_address_file);
+        if (fileName == null || fileName.isEmpty()) {
+            fileName = "rigaddress.txt";
+        }
         try {
-            InputStream inputStream= assetManager.open("rigaddress.txt");
+            InputStream inputStream= assetManager.open(fileName);
             String[] st=getLinesFromInputStream(inputStream,"\n");
             rigList.add(new RigName("",0xA4,19200,0));
             for (int i = 0; i <st.length ; i++) {

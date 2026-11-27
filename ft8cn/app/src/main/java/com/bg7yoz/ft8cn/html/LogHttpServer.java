@@ -1748,7 +1748,7 @@ public class LogHttpServer extends NanoHTTPD {
         result.append("<td class=\"default\"><br><form action=\"importLogData\" method=\"post\"\n" +
                 "            enctype=\"multipart/form-data\">\n" +
                 "            <input type=\"file\" name=\"file1\" id=\"file1\" title=\"select ADI file\" accept=\".adi,.txt\" />\n" +
-                "            <input type=\"submit\" value=\"上传\" />\n" +
+                "            <input type=\"submit\" value=\"" + GeneralVariables.getStringFromResource(R.string.html_upload) + "\" />\n" +
                 "        </form></td>");
         HtmlContext.tableRowEnd(result).append("\n");
         HtmlContext.tableEnd(result).append("\n");
