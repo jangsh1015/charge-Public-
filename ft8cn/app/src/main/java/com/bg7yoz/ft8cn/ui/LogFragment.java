@@ -20,6 +20,8 @@ import android.graphics.drawable.Drawable;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -66,8 +68,20 @@ public class LogFragment extends Fragment {
     private LogQSLAdapter logQSLAdapter;
     private boolean loading = false;//防止滑动触发多次查询
     private int lastItemPosition;
-    //한국어판(0.93-kr6): 호출 탭 2분할의 로그 패널이 다시 보일 때 검색 조건이 바뀌었는지 비교하려고 둔다
-    private String lastQueriedCallsign = null;
+    //한국어판(0.93-kr8): 목록을 마지막으로 읽은 때(밀리초). 화면을 연 직후 onResume 이 또 읽는 것을 막는다
+    private long lastQueryTimeMs = 0;
+    //한국어판(0.93-kr8): 새 교신이 저장됐다는 알림을 받으면 목록을 다시 읽는다(실시간 QSO 로그).
+    //  여러 건이 잇따라 저장될 때는 마지막 한 번만 읽도록 조금 미룬다.
+    private static final long LIVE_REFRESH_DELAY_MS = 250;
+    //화면을 연 직후 onResume 이 목록을 또 읽지 않게 하는 여유 시간(ms)
+    private static final long JUST_OPENED_GRACE_MS = 1500;
+    private final Handler liveRefreshHandler = new Handler(Looper.getMainLooper());
+    private final Runnable liveRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            refreshLogList();
+        }
+    };
     private ShareLogsProgressDialog dialog = null;//生成共享log的对话框
 
 
@@ -112,6 +126,19 @@ public class LogFragment extends Fragment {
 
         binding.inputMycallEdit.setText(mainViewModel.queryKey);
         queryByCallsign(mainViewModel.queryKey, 0);
+
+        //한국어판(0.93-kr8): 새 교신이 저장될 때마다(DB 저장 알림) 목록을 바로 새로 고친다.
+        //  태블릿 가로 '호출' 탭의 오른쪽 QSO 로그 패널은 앱을 켜 둔 동안 계속 살아 있으므로,
+        //  이 관찰이 없으면 새 교신이 저장돼도 예전 목록이 그대로 남는다.
+        mainViewModel.mutableQsoLogUpdated.observe(getViewLifecycleOwner(), new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer updated) {
+                if (updated == null || updated <= 0) {
+                    return;//처음 등록될 때 오는 현재 값
+                }
+                onQsoLogUpdated();
+            }
+        });
 
         mainViewModel.mutableQueryFilter.observe(getViewLifecycleOwner(), new Observer<Integer>() {
             @Override
@@ -515,18 +542,54 @@ public class LogFragment extends Fragment {
     }
 
     /**
-     * 한국어판(0.93-kr6): 호출 탭 2분할의 QSO 로그 패널이 다시 보일 때 부른다.
-     * 다른 화면에서 검색어(호출부호)가 바뀌었을 때만 목록을 다시 읽는다.
+     * 한국어판(0.93-kr8): 호출 탭 2분할의 QSO 로그 패널이 다시 보일 때 부른다.
+     * 다른 화면에서 검색어(호출부호)가 바뀌었을 수 있고, 숨어 있는 동안 새 교신이나 지운 기록이
+     * 생겼을 수 있으므로 보일 때마다 지금 조건으로 목록을 한 번 다시 읽는다.
      */
-    public void refreshIfQueryChanged() {
-        if (binding == null) {
+    public void refreshLogPanel() {
+        liveRefreshHandler.removeCallbacks(liveRefreshRunnable);
+        refreshLogList();
+    }
+
+    /**
+     * 한국어판(0.93-kr8): DB에 새 교신이 저장됐을 때(자동 교신 완료·웹 UI 업로드·공유 로그 가져오기)
+     * 목록을 바로 다시 읽어 화면에 나타낸다. 화면에 보이지 않을 때는 읽지 않고,
+     * 다시 보일 때 refreshLogPanel() 이 맞춘다.
+     */
+    private void onQsoLogUpdated() {
+        if (binding == null || !isAdded()) {
             return;
         }
-        if (lastQueriedCallsign != null && lastQueriedCallsign.equals(mainViewModel.queryKey)) {
+        View view = getView();
+        if (view == null || !view.isShown() || !isResumed()) {
+            return;
+        }
+        liveRefreshHandler.removeCallbacks(liveRefreshRunnable);
+        liveRefreshHandler.postDelayed(liveRefreshRunnable, LIVE_REFRESH_DELAY_MS);
+    }
+
+    /**
+     * 한국어판(0.93-kr8): 지금 검색 조건으로 목록을 처음(offset 0)부터 다시 읽는다.
+     * 로그 탭과 호출 탭 패널은 보기 방식(연락처/기록)을 함께 쓰므로 보기 방식도 맞춘다.
+     */
+    private void refreshLogList() {
+        if (binding == null || !isAdded()) {
             return;
         }
         setShowStyle();
         queryByCallsign(mainViewModel.queryKey, 0);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        //한국어판(0.93-kr8): 앱을 다시 열거나 다른 화면에서 돌아오면 보고 있는 목록을 최신으로 맞춘다.
+        //  화면을 처음 만들면서(onCreateView) 방금 읽었으면 건너뛴다.
+        if (binding != null && !loading
+                && System.currentTimeMillis() - lastQueryTimeMs > JUST_OPENED_GRACE_MS) {
+            liveRefreshHandler.removeCallbacks(liveRefreshRunnable);
+            liveRefreshHandler.postDelayed(liveRefreshRunnable, LIVE_REFRESH_DELAY_MS);
+        }
     }
 
     /**
@@ -556,7 +619,7 @@ public class LogFragment extends Fragment {
      */
     private void queryByCallsign(String callsign, int offset) {
         loading = true;//开始读数据
-        lastQueriedCallsign = callsign;
+        lastQueryTimeMs = System.currentTimeMillis();
         //分两种查询
         if (mainViewModel.logListShowCallsign) {
             if (offset == 0) {//说明是新增记录
@@ -644,6 +707,8 @@ public class LogFragment extends Fragment {
 
     @Override
     public void onDestroy() {
+        //한국어판(0.93-kr8): 미뤄 둔 목록 새로 고침이 화면이 사라진 뒤에 돌지 않게 지운다
+        liveRefreshHandler.removeCallbacks(liveRefreshRunnable);
         //判断生成共享log线程是否还在工作，如果还在工作，要销毁对话框，防止出现not attached to window manager错误
         if (Boolean.TRUE.equals(mainViewModel.mutableShareRunning.getValue())) {
             if (dialog != null) {

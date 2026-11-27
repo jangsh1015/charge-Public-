@@ -4,7 +4,7 @@
 **한국어 UI + 간헐 CQ(주기적 Auto CQ)** 개조판 소스입니다.
 개인 사용 목적으로 만든 빌드이며, 원본의 라이선스와 저작권 표시(`LICENSE`)를 그대로 유지합니다.
 
-앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr7` 입니다.
+앱 패키지 이름은 `com.bg7yoz.ft8cn.kr`, 앱 이름은 `FT8CN KR`, 버전은 `0.93-kr8` 입니다.
 패키지 이름이 원본과 달라서 **원본 FT8CN 과 나란히 설치**할 수 있습니다.
 
 ---
@@ -180,6 +180,33 @@
   - 약한 신호 판정을 목록 첫 메시지 하나가 아니라 이 슬롯 전체(`decodedStrongSignal`)로 보아, 무응답 횟수가 덜 세어지던 문제를 고쳤습니다.
   - 무응답 후 새 CQ 국으로 넘어갈 때는 그 CQ 메시지의 주파수·시퀀스로 목표를 다시 만들어(`getNewTargetCallsign()`) 송신 위치가 엇갈리지 않습니다.
 
+### (9) 0.93-kr8에서 더한 것
+- **QSO 로그 실시간 자동 새로 고침**: `DatabaseOpr` 에 `OnQsoLogChanged` 리스너를 두고, QSO 기록이
+  DB에 저장되는 한 곳(`doInsertQSLData()`)에서 저장이 끝나면 리스너를 부릅니다
+  (자동 교신 완료 `addQSL_Callsign()` · 웹 UI 업로드 `LogHttpServer` · 공유 로그 가져오기 `ImportSharedLogs` 가
+  모두 이 함수를 지나갑니다).
+  `MainViewModel` 은 리스너를 등록해 `mutableQsoLogUpdated`(정수 카운터 LiveData) 값을 하나씩 올리고,
+  `LogFragment` 는 `observe(getViewLifecycleOwner(), ...)` 로 그 값을 지켜보다가
+  `queryByCallsign(mainViewModel.queryKey, 0)` 를 다시 실행해 목록을 그 자리에서 갱신합니다.
+  여러 건이 잇따라 저장될 때(공유 로그 가져오기 등)는 250ms 로 미뤄 마지막 한 번만 읽습니다.
+  화면에 보이지 않는 동안(패널이 `GONE`, 앱이 백그라운드)에는 읽지 않고, 다시 보일 때 맞춥니다.
+- **호출 탭 2분할 로그 패널의 바탕색**: `fragment_log.xml` 루트(`logFrameLayout`)와
+  `splitLogContainer` 에 `log_panel_background`(`values` `#FFFFFFFF`, `values-night` `#FF121212` — 앱 창 바탕과 같은 톤)를
+  지정했습니다. 예전에는 `splitCallLogLayout` 의 검은 바탕 위에 로그 항목의 반투명 바탕과 어두운 글씨가
+  겹쳐, 상단 검색 바 아래가 까맣게 비어 보였습니다.
+- **패널을 다시 보일 때 한 번 더 읽기**: `MainActivity.updateSplitVisibility()` 가 호출 탭으로 전환해
+  `splitCallLogLayout` 이 `VISIBLE` 이 될 때 `LogFragment.refreshLogPanel()` 을 부릅니다. 예전의
+  `refreshIfQueryChanged()` 처럼 검색어가 같을 때 건너뛰지 않고, 보일 때마다 지금 조건으로 다시 읽습니다
+  (숨은 동안 새 교신이 저장되거나 지운 기록도 반영). 앱으로 돌아왔을 때(`onResume()`)도 같은 방식으로 한 번 맞춥니다.
+- **송신 감시 기본값을 '무시'(제한 없음)로**: `GeneralVariables.DEFAULT_LAUNCH_SUPERVISION` 을 `0` 으로 바꿔,
+  `launchSupervision` 의 처음 값과 DB에 값이 없을 때(`DatabaseOpr` 의 설정 읽기) 모두 0이 되게 했습니다.
+  자동 송신을 켜 두면 따로 설정하지 않아도 사용자가 직접 끌 때까지 계속 돌아갑니다.
+  설정 화면에서 5·15·25분… 을 직접 고르면 그 값이 DB에 저장돼 그대로 쓰입니다.
+  예전 기본값(10분 = `600000`)은 설정 목록에 없는 값이라 사용자가 고를 수 없으므로,
+  `LEGACY_DEFAULT_LAUNCH_SUPERVISION` 으로 두고 읽을 때 '무시'로 보아 예전 설치도 같게 동작합니다.
+  또 `ConfigFragment` 의 스피너가 화면을 열 때 처음 한 번 알리는 것을 '고른 것'으로 보지 않도록
+  값이 같으면 DB에 쓰지 않게 했습니다(설정을 열기만 해도 값이 저장되는 일을 막음).
+
 ---
 
 ## 2. 빌드 방법 (우분투 / 윈도우 WSL Ubuntu)
@@ -237,12 +264,13 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `tools/check_kr4.py` | (kr4) 리소스 참조·데이터바인딩 필드·3분할 id 검사 |
 | `tools/check_kr6.py` | (kr6) 호출+로그 2분할 배선·디코드 2열 조건·버전·문서 표기 검사 |
 | `tools/check_kr7.py` | (kr7) 원터치 탭 배선·딥 디코드 즉시 응답·무응답 횟수 준수·버전 표기 검사 |
+| `tools/check_kr8.py` | (kr8) QSO 로그 실시간 갱신 배선(DB 알림→LiveData→observe)·로그 패널 바탕색·버전 표기 검사 |
 
 고친 파일
 
 | 파일 | 내용 |
 |---|---|
-| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr7`, `buildToolsVersion 33.0.2` |
+| `ft8cn/app/build.gradle` | `applicationId` → `com.bg7yoz.ft8cn.kr`, `versionName` → `0.93-kr8`, `buildToolsVersion 33.0.2` |
 | `ft8cn/app/src/main/res/values/strings.xml` | 앱 이름 `FT8CN KR`, 간헐 CQ 문자열 9개 추가 |
 | `ft8cn/app/src/main/res/layout/fragment_config.xml` | 설정 화면에 `간헐 CQ`, `1회 CQ 송신` 두 줄 추가 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | `intervalCQMinutes`, `intervalCQCount` 추가 |
@@ -255,14 +283,19 @@ APK 를 휴대폰으로 옮겨 눌러 설치하거나, USB 디버깅을 켠 경�
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/connector/CableConnector.java` | (kr2) 시리얼 연결 끊김 안내를 리소스 문자열로 변경 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/html/LogHttpServer.java` | (kr2) 웹 UI 업로드 버튼 문구를 리소스 문자열로 변경 |
 | `ft8cn/app/src/main/res/values*/strings.xml` | (kr2) `readme_help`, `rig_address_file`, `html_upload`, `serial_connection_lost` 추가 (zh 계열은 중국어 원문 파일 유지) |
-| `ft8cn/app/src/main/res/layout*/main_activity.xml` | (kr6) `splitCallLogLayout`(호출 창 / QSO 로그 2분할) 추가 — 폰·가로·태블릿 3개 변형 모두 `visibility="gone"` |
-| `ft8cn/app/src/main/res/layout/fragment_log.xml` | (kr6) 제목 막대 색을 `list_header_bar_color`(어두운 인디고)로 |
+| `ft8cn/app/src/main/res/layout*/main_activity.xml` | (kr6) `splitCallLogLayout`(호출 창 / QSO 로그 2분할) 추가 — 폰·가로·태블릿 3개 변형 모두 `visibility="gone"`. (kr8) `splitLogContainer` 에 `log_panel_background` 바탕색 |
+| `ft8cn/app/src/main/res/layout/fragment_log.xml` | (kr6) 제목 막대 색을 `list_header_bar_color`(어두운 인디고)로. (kr8) 목록 바탕을 `log_panel_background` 로 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/database/DatabaseOpr.java` | (kr8) `OnQsoLogChanged` 리스너 — `doInsertQSLData()` 가 QSO 기록을 저장하면 알림 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/LogFragment.java` | (kr8) `mutableQsoLogUpdated` 관찰로 새 교신 저장 시 목록 자동 갱신, `refreshLogPanel()`·`onResume()` 재읽기 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/MainActivity.java` | (kr8) 호출 탭 2분할이 보일 때 `refreshLogPanel()` 호출 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/GeneralVariables.java` | (kr8) 송신 감시 기본값 `DEFAULT_LAUNCH_SUPERVISION` → `0`(무시), 예전 기본값(10분) 상수 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/ConfigFragment.java` | (kr8) 송신 감시 스피너 — 값이 같으면 DB에 쓰지 않음(설정을 열기만 해도 저장되던 것 방지) |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListFragment.java` | (kr6) 태블릿 가로 단독 화면에서 `GridLayoutManager(2)` 2열 보기 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/LogFragment.java` | (kr6) 컨텍스트 메뉴가 자기 목록에만 반응하게 (`isMyListItemView`) |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListAdapter.java` | (kr7) `OnItemTapHandler` — 줄을 한 번 탭하면 호출·응답(롱프레스 메뉴는 유지) |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/MyCallingFragment.java` | (kr7) 원터치 호출·응답, 응답 함수 `doReplyNow()` 분리 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ui/CallingListFragment.java` | (kr7) 원터치 호출·응답, 화면 전환 예외 보호 |
-| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/MainViewModel.java` | (kr7) 딥 디코드도 자동 응답 판단에 포함, 시간 한계 3500/8000ms, 같은 슬롯 중복 방지 |
+| `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/MainViewModel.java` | (kr7) 딥 디코드도 자동 응답 판단에 포함, 시간 한계 3500/8000ms, 같은 슬롯 중복 방지. (kr8) `mutableQsoLogUpdated` — DB 저장 알림을 LiveData 로 |
 | `ft8cn/app/src/main/java/com/bg7yoz/ft8cn/ft8transmit/FT8TransmitSignal.java` | (kr7) 나를 부른 국 즉시 목표 설정, RR73 단계도 설정한 무응답 횟수에서 중단·30분 쿨다운 |
 
 ## 4. 정적 검사
@@ -274,6 +307,7 @@ python3 tools/check_source.py     # XML·Java 문법·리소스 참조·문자�
 python3 tools/check_kr4.py        # 3분할 패널·데이터바인딩 필드
 python3 tools/check_kr6.py        # 호출+로그 2분할·디코드 2열·버전 표기
 python3 tools/check_kr7.py        # 원터치 호출·딥 디코드 즉시 응답·무응답 횟수·버전 표기
+python3 tools/check_kr8.py        # QSO 로그 실시간 갱신 배선·로그 패널 바탕색·버전 표기
 ```
 
 검사 항목: 모든 XML well-formed, 모든 Java 파일 문법 파싱, `R.string`/`@string`/`R.id`/`@id`/`R.layout`

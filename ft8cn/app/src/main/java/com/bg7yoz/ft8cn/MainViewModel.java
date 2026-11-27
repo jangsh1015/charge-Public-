@@ -227,6 +227,9 @@ public class MainViewModel extends ViewModel {
     public String queryKey = "";//查询的关键字
     public int queryFilter = 0;//过滤，0全部，1，确认，2，未确认
     public MutableLiveData<Integer> mutableQueryFilter = new MutableLiveData<>();
+    //한국어판(0.93-kr8): QSO 기록이 하나 저장될 때마다 값을 하나씩 올린다.
+    //  열려 있는 QSO 로그 화면(로그 탭·호출 탭 오른쪽 패널)이 이 값을 지켜보다가 목록을 바로 다시 읽는다.
+    public MutableLiveData<Integer> mutableQsoLogUpdated = new MutableLiveData<>(0);
     public ArrayList<QSLCallsignRecord> callsignRecords = new ArrayList<>();
     //public ArrayList<QSLRecordStr> qslRecords=new ArrayList<>();
     //********************************************
@@ -292,6 +295,15 @@ public class MainViewModel extends ViewModel {
         //获取配置信息。
         databaseOpr = DatabaseOpr.getInstance(GeneralVariables.getMainContext()
                 , "data.db");
+        //한국어판(0.93-kr8): 새 교신이 DB에 저장되면(자동 교신 완료·웹 UI 업로드·공유 로그 가져오기)
+        //  QSO 로그 화면이 실시간으로 목록을 다시 읽도록 알린다.
+        databaseOpr.setOnQsoLogChanged(new DatabaseOpr.OnQsoLogChanged() {
+            @Override
+            public void onQsoLogChanged() {
+                Integer updated = mutableQsoLogUpdated.getValue();
+                mutableQsoLogUpdated.postValue(updated == null ? 1 : updated + 1);
+            }
+        });
         mutableIsDecoding.postValue(false);//解码状态
         //创录音对象
         hamRecorder = new HamRecorder(null);

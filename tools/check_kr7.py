@@ -3,7 +3,7 @@
 """0.93-kr7 변경(원터치 호출·즉시 응답, 무응답 횟수 준수)에 대한 추가 정적 검증.
 
 check_source.py · check_kr4.py · check_kr6.py 가 보지 않는 것들을 확인한다.
-  1) 버전 표기가 0.93-kr7 (versionCode 7)이고 문서·readme 에 내역이 맨 위에 있는지
+  1) 버전 표기가 0.93-kr7 이상(versionCode 7 이상)이고 문서·readme 에 내역이 맨 위에 있는지
   2) 목록 줄 원터치(짧은 탭) 배선: 어댑터의 탭 처리기 + 두 화면의 탭 처리 함수
   3) 자동 응답 놓침 방지: 딥 디코드도 파싱, 시간 한계 3500/8000ms, 같은 슬롯 중복 방지,
      CQ 대기 중에는 송신 중이어도 목표를 잡는지
@@ -37,11 +37,14 @@ def strip_comments(txt):
 
 
 # --- 1) 버전·문서 -----------------------------------------------------------
+# 0.93-kr8부터는 이 검사를 'kr7 이상'으로 본다(과거 버전 검사가 최신 빌드를 막지 않게).
 gradle = read(os.path.join(ROOT, "ft8cn", "app", "build.gradle"))
-if "versionCode 7" not in gradle:
-    err("build.gradle versionCode 가 7 이 아님")
-if "versionName '0.93-kr7'" not in gradle:
-    err("build.gradle versionName 이 0.93-kr7 이 아님")
+m = re.search(r"versionCode\s+(\d+)", gradle)
+if not m or int(m.group(1)) < 7:
+    err("build.gradle versionCode 가 7 이상이 아님 (%s)" % (m.group(1) if m else "없음"))
+m = re.search(r"versionName\s+'(0\.93-kr(\d+))'", gradle)
+if not m or int(m.group(2)) < 7:
+    err("build.gradle versionName 이 0.93-kr7 이상이 아님")
 
 DOCS = [("readme_ko.txt", os.path.join(APP, "assets", "readme_ko.txt")),
         ("readme_en.txt", os.path.join(APP, "assets", "readme_en.txt")),
@@ -52,11 +55,11 @@ for name, path in DOCS:
 
 for name in ["readme_ko.txt", "readme_en.txt"]:
     txt = read(os.path.join(APP, "assets", name))
-    versions = re.findall(r"^\s{2}(0\.93-kr\d)\s*$", txt, flags=re.M)
+    versions = re.findall(r"^\s{2}(0\.93-kr(\d))\s*$", txt, flags=re.M)
     if not versions:
         err("%s 에서 버전 목록을 찾지 못함" % name)
-    elif versions[0] != "0.93-kr7":
-        err("%s 의 첫 버전이 0.93-kr7 이 아님 (%s)" % (name, versions[0]))
+    elif int(versions[0][1]) < 7:
+        err("%s 의 첫 버전이 0.93-kr7 보다 낮음 (%s)" % (name, versions[0][0]))
 
 # --- 2) 목록 줄 원터치(짧은 탭) ---------------------------------------------
 adapter = strip_comments(read(os.path.join(JAVA, "ui", "CallingListAdapter.java")))

@@ -50,6 +50,33 @@ public class DatabaseOpr extends SQLiteOpenHelper {
     private final Context context;
     private SQLiteDatabase db;
 
+    //한국어판(0.93-kr8): QSO 로그에 새 기록이 저장되면 열려 있는 화면(QSO 로그)이 바로 다시 읽을 수 있게 알린다.
+    //  저장은 AsyncTask(작업 스레드) 안에서 이뤄지므로, 받는 쪽은 LiveData.postValue 로 화면 스레드에 넘긴다.
+    public interface OnQsoLogChanged {
+        void onQsoLogChanged();
+    }
+
+    private volatile OnQsoLogChanged onQsoLogChanged;
+
+    /**
+     * QSO 기록이 저장될 때 부를 리스너를 등록한다.
+     *
+     * @param listener 리스너 (그만 받으려면 null)
+     */
+    public void setOnQsoLogChanged(OnQsoLogChanged listener) {
+        onQsoLogChanged = listener;
+    }
+
+    /**
+     * QSO 기록이 저장됐음을 알린다. 리스너가 없으면 아무것도 하지 않는다.
+     */
+    private void notifyQsoLogChanged() {
+        OnQsoLogChanged listener = onQsoLogChanged;
+        if (listener != null) {
+            listener.onQsoLogChanged();
+        }
+    }
+
 
     public static DatabaseOpr getInstance(@Nullable Context context, @Nullable String databaseName) {
         if (instance == null) {
@@ -1288,6 +1315,8 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                 afterInsertQSLData.doAfterInsert(false,false);//说明已经存在，需要更新的QSL
             }
         }
+        //한국어판(0.93-kr8): 새 교신(또는 고친 기록)이 저장됐으니 QSO 로그 화면에 알린다
+        notifyQsoLogChanged();
         return true;
     }
 
@@ -2148,8 +2177,15 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.instructionSet = result.equals("") ? 0 : Integer.parseInt(result);
                 }
                 if (name.equalsIgnoreCase("launchSupervision")) {//发射监管
-                    GeneralVariables.launchSupervision = result.equals("") ?
+                    //한국어판(0.93-kr8): DB에 값이 없을 때는 '무시'(0, 제한 없음)로 둔다.
+                    //  자동 송신을 켜 두면 설정을 건드리지 않아도 끌 때까지 계속 돌아가게 하기 위해서다.
+                    //  사용자가 '설정'에서 직접 고른 시간(5·15·25분…)은 그대로 쓴다.
+                    //  예전 기본값(10분)은 설정 목록에 없는 값이라 사용자가 고를 수 없으므로 '무시'로 읽는다.
+                    int storedSupervision = result.equals("") ?
                             GeneralVariables.DEFAULT_LAUNCH_SUPERVISION : Integer.parseInt(result);
+                    GeneralVariables.launchSupervision =
+                            storedSupervision == GeneralVariables.LEGACY_DEFAULT_LAUNCH_SUPERVISION
+                                    ? GeneralVariables.DEFAULT_LAUNCH_SUPERVISION : storedSupervision;
                 }
                 if (name.equalsIgnoreCase("noReplyLimit")) {//
                     //한국어판(0.93-kr4): 기본은 3회 무응답이면 중단(0이면 무시)

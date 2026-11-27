@@ -785,7 +785,14 @@ public class ConfigFragment extends Fragment {
                 binding.launchSupervisionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                        GeneralVariables.launchSupervision = LaunchSupervisionSpinnerAdapter.getTimeOut(i);
+                        //한국어판(0.93-kr8): 설정 화면을 열 때 스피너가 처음 한 번 알리는 것은 '고른 것'이 아니다.
+                        //  지금 값과 같으면 DB에 쓰지 않아, 설정을 열기만 해도 값이 저장되는 일이 없다.
+                        //  (예전 기본값 10분처럼 목록에 없는 값이 남아 있으면 목록의 값으로 한 번 맞춘다)
+                        int timeOut = LaunchSupervisionSpinnerAdapter.getTimeOut(i);
+                        if (timeOut == GeneralVariables.launchSupervision) {
+                            return;
+                        }
+                        GeneralVariables.launchSupervision = timeOut;
                         writeConfig("launchSupervision", String.valueOf(GeneralVariables.launchSupervision));
                     }
 

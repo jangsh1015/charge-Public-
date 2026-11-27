@@ -207,5 +207,9 @@
     <color name="char_bar_15">#770A8F</color>
     <color name="char_bar_16">#61024D</color>
 
+    <!-- 한국어판(0.93-kr8): QSO 로그 목록의 바탕색.
+         QSO 로그 탭(창 바탕)과 같게 두어, 태블릿 호출 탭 2분할의 오른쪽 로그 패널에서도
+         검은 바탕에 어두운 글씨가 묻히지 않고 목록이 선명하게 보이게 한다. -->
+    <color name="log_panel_background">#FFFFFFFF</color>
 
 </resources>

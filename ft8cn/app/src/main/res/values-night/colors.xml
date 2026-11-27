@@ -69,4 +69,7 @@
     <color name="tracker_sample_cq_bar_start_color">#000105</color>
     <color name="tracker_sample_cq_bar_end_color">#C100076A</color>
 
+    <!-- 한국어판(0.93-kr8): 밤(다크) 모드의 QSO 로그 목록 바탕색 — 앱 창 바탕과 같은 톤 -->
+    <color name="log_panel_background">#FF121212</color>
+
 </resources>

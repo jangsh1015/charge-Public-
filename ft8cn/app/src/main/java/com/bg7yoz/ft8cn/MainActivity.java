@@ -776,7 +776,8 @@ public class MainActivity extends AppCompatActivity {
         if (splitCallLogLayout != null) {
             splitCallLogLayout.setVisibility(showCallLog ? View.VISIBLE : View.GONE);
             if (showCallLog && !splitCallLogVisible) {
-                //한국어판(0.93-kr6): 다른 화면에서 검색어가 바뀌었으면 오른쪽 로그도 따라 바꾼다
+                //한국어판(0.93-kr8): 다른 화면에서 검색어가 바뀌었거나, 숨은 동안 새 교신이 저장됐을 수 있으니
+                //  보일 때마다 오른쪽 QSO 로그를 지금 조건으로 다시 읽는다.
                 refreshCallLogPanel();
             }
         }
@@ -796,13 +797,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 한국어판(0.93-kr6): 호출 탭 2분할의 오른쪽 QSO 로그 패널을 새로 보일 때 호출한다.
+     * 한국어판(0.93-kr8): 호출 탭 2분할의 오른쪽 QSO 로그 패널을 새로 보일 때 호출한다.
      * 패널 프래그먼트가 아직 없거나 다른 종류면 아무것도 하지 않는다.
      */
     private void refreshCallLogPanel() {
         Fragment fragment = getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_SPLIT_LOG);
         if (fragment instanceof LogFragment) {
-            ((LogFragment) fragment).refreshIfQueryChanged();
+            ((LogFragment) fragment).refreshLogPanel();
         }
     }
 

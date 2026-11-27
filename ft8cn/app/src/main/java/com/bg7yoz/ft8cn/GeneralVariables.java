@@ -147,7 +147,13 @@ public class GeneralVariables {
     public static int QUERY_FREQ_TIMEOUT = 2000;//轮询频率变化的时间间隔。2秒
     public static int START_QUERY_FREQ_DELAY = 2000;//开始轮询频率的时间延迟
 
-    public static final int DEFAULT_LAUNCH_SUPERVISION = 10 * 60 * 1000;//发射监管默认值,10分钟
+    //한국어판(0.93-kr8): 송신 감시(자동 송신 제한 시간)의 기본값은 '무시'(0, 제한 없음)다.
+    //  자동 송신(자동 응답·CQ·간헐 CQ)을 켜 두면 따로 설정하지 않아도 사용자가 직접 끌 때까지 계속 돌아간다.
+    //  '설정' 화면에서 5·15·25분… 중 하나를 직접 고른 경우에는 그 값이 그대로 쓰인다(DB에 저장됨).
+    public static final int DEFAULT_LAUNCH_SUPERVISION = 0;//发射监管默认值, 0=무시(제한 없음)
+    //한국어판(0.93-kr8): 예전(0.93-kr7 이전) 기본값 '10분'. 설정 목록(무시·5·15·25…분)에는 없는 값이라
+    //  사용자가 고를 수 없고, 예전 앱이 기본값으로 남긴 값이다. 읽을 때 '무시'로 보아 예전 설치도 그대로 이어지게 한다.
+    public static final int LEGACY_DEFAULT_LAUNCH_SUPERVISION = 10 * 60 * 1000;
     private static String myMaidenheadGrid = "";
     public static MutableLiveData<String> mutableMyMaidenheadGrid = new MutableLiveData<>();
 
@@ -192,7 +198,7 @@ public class GeneralVariables {
     public static MutableLiveData<Integer> mutableBandChange = new MutableLiveData<>();//波段索引值变化
     public static int controlMode = ControlMode.VOX;
     public static int modelNo = 2;//한국어판(0.93-kr4): 기본 무전기는 IC-705(무전기 목록 두 번째 항목)
-    public static int launchSupervision = DEFAULT_LAUNCH_SUPERVISION;//发射监管
+    public static int launchSupervision = DEFAULT_LAUNCH_SUPERVISION;//发射监管(한국어판 0.93-kr8: 기본 무시)
     public static long launchSupervisionStart = UtcTimer.getSystemTime();//自动发射的起始时间
     public static int noReplyLimit = 3;//呼叫无回应次数0==忽略 (한국어판 0.93-kr4: 기본 3회)
 

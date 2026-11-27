@@ -24,6 +24,21 @@ Credits
 
 Korean edition changes
 
+  0.93-kr8
+   1. On a tablet in landscape, the QSO log on the right of the Call tab now updates by itself
+      each time a contact completes (once 73 has been exchanged). Before, the list was read
+      only once when the app started, so later contacts never appeared.
+      Records uploaded through the web UI or imported from a shared log show up right away too.
+   2. The background of the QSO log panel on the Call tab now matches the QSO log tab.
+      Before, dark text sat on a dark background, so the area under the search bar looked black
+      and empty.
+   3. Coming back to the Call tab or reopening the app reads the right-hand QSO log once more,
+      so changes made while it was off screen (new or deleted records) are reflected as well.
+   4. The TX watchdog (the time limit on automatic transmission) now defaults to Ignore (no limit).
+      With auto answer or CQ left on, the app keeps transmitting until you stop it, with nothing
+      to set up. A time chosen in Settings is still used as it is, and a value left by the old
+      default (10 minutes) is read as Ignore as well.
+
   0.93-kr7
    1. Tap a row once to call or answer that station right away. A pink row (a station
       calling you) answers at the right step of the QSO, while a green CQ or any other
