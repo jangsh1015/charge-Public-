@@ -519,23 +519,31 @@ public class MainActivity extends AppCompatActivity {
         Fragment callingFragment = fragmentManager.findFragmentById(R.id.splitCallingContainer);
         if (spectrumFragment == null || decodeFragment == null || callingFragment == null) {
             //일부만 남아 있는 경우를 대비해 남은 패널은 지우고 세 패널을 새로 붙인다
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            if (spectrumFragment != null) {
-                transaction.remove(spectrumFragment);
+            try {
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+                if (spectrumFragment != null) {
+                    transaction.remove(spectrumFragment);
+                }
+                if (decodeFragment != null) {
+                    transaction.remove(decodeFragment);
+                }
+                if (callingFragment != null) {
+                    transaction.remove(callingFragment);
+                }
+                transaction.add(R.id.splitSpectrumContainer, new SpectrumFragment()
+                        , FRAGMENT_TAG_SPLIT_SPECTRUM);
+                transaction.add(R.id.splitDecodeContainer, new CallingListFragment()
+                        , FRAGMENT_TAG_SPLIT_DECODE);
+                transaction.add(R.id.splitCallingContainer, new MyCallingFragment()
+                        , FRAGMENT_TAG_SPLIT_CALLING);
+                transaction.commitNowAllowingStateLoss();
+            } catch (Exception e) {
+                //패널을 붙이지 못하면 예전처럼 전체 화면으로 동작하게 둔다
+                Log.e(TAG, "initTabletSplitLayout: 3분할 패널을 붙이지 못했습니다. " + e.getMessage());
+                splitLayout = null;
+                tabletSplitActive = false;
+                return;
             }
-            if (decodeFragment != null) {
-                transaction.remove(decodeFragment);
-            }
-            if (callingFragment != null) {
-                transaction.remove(callingFragment);
-            }
-            transaction.add(R.id.splitSpectrumContainer, new SpectrumFragment()
-                    , FRAGMENT_TAG_SPLIT_SPECTRUM);
-            transaction.add(R.id.splitDecodeContainer, new CallingListFragment()
-                    , FRAGMENT_TAG_SPLIT_DECODE);
-            transaction.add(R.id.splitCallingContainer, new MyCallingFragment()
-                    , FRAGMENT_TAG_SPLIT_CALLING);
-            transaction.commitNowAllowingStateLoss();
         }
 
         SharedPreferences splitPreference = getSharedPreferences(PREF_TABLET_SPLIT, MODE_PRIVATE);
@@ -571,7 +579,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if (transaction != null) {
-            transaction.commitNowAllowingStateLoss();
+            try {
+                transaction.commitNowAllowingStateLoss();
+            } catch (Exception e) {
+                Log.e(TAG, "removeSplitFragments: 패널 프래그먼트를 지우지 못했습니다. " + e.getMessage());
+            }
         }
     }
 
@@ -604,7 +616,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setSplitWeight(View view, float weight) {
-        if (view == null) {
+        if (view == null || !(view.getLayoutParams() instanceof LinearLayout.LayoutParams)) {
             return;
         }
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) view.getLayoutParams();
