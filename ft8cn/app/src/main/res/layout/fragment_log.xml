@@ -143,10 +143,58 @@
             android:id="@+id/logRecyclerView"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/adifImportLayout"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/log_fragment_bar" />
+
+        <!-- 한국어판(0.93-kr16): QRZ·LotW 에서 받은 교신 기록(.adi)을 이 목록으로 넣는 줄.
+             위쪽 단추 줄이 이미 빼빼해 목록 아래에 한 줄로 두었다. -->
+        <LinearLayout
+            android:id="@+id/adifImportLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@color/list_header_bar_color"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="6dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:includeFontPadding="false"
+                android:maxLines="2"
+                android:text="@string/log_adif_import_hint"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/adifImportButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/imagebutton_style"
+                android:gravity="center"
+                android:minHeight="30dp"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
+                android:text="@string/log_adif_import"
+                android:textColor="@color/bar_text_view_color"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:ignore="TouchTargetSizeCheck" />
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

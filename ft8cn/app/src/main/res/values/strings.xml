@@ -605,4 +605,20 @@
     <string name="grid_psk_refresh">Refresh</string>
     <string name="grid_psk_browser_short">Browser</string>
 
+    <!-- ============================================================
+         한국어판(0.93-kr16) · 교신 성공 음성·알림 / ADIF 불러오기
+         ============================================================ -->
+    <string name="qso_announce_label">QSO completion alert</string>
+    <string name="qso_announce_switch_on" translatable="false">Voice On</string>
+    <string name="qso_announce_switch_off" translatable="false">Voice Off</string>
+    <string name="qso_announce_notify_title">QSO completed</string>
+    <string name="qso_announce_channel">QSO completion alert</string>
+    <string name="qso_announce_channel_desc">Speaks and shows a notice when a QSO is completed.</string>
+    <string name="log_adif_import">Import ADIF</string>
+    <string name="log_adif_import_hint">Add QRZ / LotW log (.adi) to this list</string>
+    <string name="log_adif_import_running">Reading the ADIF file…</string>
+    <string name="log_adif_import_done">ADIF import done: %1$d added (file had %2$d)</string>
+    <string name="log_adif_import_empty">No QSO records were found in the ADIF file.</string>
+    <string name="log_adif_import_fail">Could not open the file picker.</string>
+
 </resources>

@@ -2292,6 +2292,11 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.alc_switch_on = result.equals("1");
                 }
 
+                // 한국어판(0.93-kr16): 교신 성공 음성·알림. 저장된 값이 없으면 켜진 것으로 본다.
+                if (name.equalsIgnoreCase("qsoAnnounce")) {
+                    GeneralVariables.enableQsoAnnounce = !result.equals("0");
+                }
+
             }
 
             cursor.close();

@@ -52,6 +52,7 @@ import com.bg7yoz.ft8cn.log.ShareLogs;
 import com.bg7yoz.ft8cn.databinding.FragmentLogBinding;
 import com.bg7yoz.ft8cn.grid_tracker.GridTrackerMainActivity;
 import com.bg7yoz.ft8cn.html.LogHttpServer;
+import com.bg7yoz.ft8cn.log.AdifImporter;
 import com.bg7yoz.ft8cn.log.LogCallsignAdapter;
 import com.bg7yoz.ft8cn.log.LogQSLAdapter;
 import com.bg7yoz.ft8cn.log.OnQueryQSLCallsign;
@@ -67,6 +68,8 @@ import java.util.Locale;
 
 public class LogFragment extends Fragment {
     private static final String TAG = "LogFragment";
+    //한국어판(0.93-kr16): ADIF 불러오기 파일 창을 여는 요청 번호
+    private static final int REQUEST_IMPORT_ADIF = 7108;
     private FragmentLogBinding binding;
     private MainViewModel mainViewModel;
 
@@ -230,12 +233,104 @@ public class LogFragment extends Fragment {
             }
         });
 
+        //한국어판(0.93-kr16): 목록 아래 [ADIF 불러오기] 줄을 연결한다
+        initAdifImportBar();
+
         //判断生成共享log文件的工作线程还在，如果在，就显示对话框
         if (Boolean.TRUE.equals(mainViewModel.mutableShareRunning.getValue())) {
             showShareDialog();
         }
 
         return binding.getRoot();
+    }
+
+    /**
+     * 한국어판(0.93-kr16): 목록 아래 [ADIF 불러오기] 줄 — 누르면 파일을 골라 QSO 기록에 넣는다.
+     */
+    private void initAdifImportBar() {
+        if (binding == null) {
+            return;
+        }
+        if (binding.adifImportLayout != null) {
+            binding.adifImportLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    pickAdifFile();
+                }
+            });
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr16): ADIF 파일을 고르는 창을 연다.
+     */
+    private void pickAdifFile() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            intent.putExtra(Intent.EXTRA_MIME_TYPES
+                    , new String[]{"text/plain", "text/x-adif", "application/octet-stream"});
+            startActivityForResult(intent, REQUEST_IMPORT_ADIF);
+        } catch (Exception e) {
+            Log.e(TAG, "pickAdifFile: 파일 창을 열지 못했습니다: " + e.getMessage());
+            try {
+                Intent fallback = new Intent(Intent.ACTION_GET_CONTENT);
+                fallback.setType("*/*");
+                startActivityForResult(fallback, REQUEST_IMPORT_ADIF);
+            } catch (Exception e2) {
+                ToastMessage.show(getString(R.string.log_adif_import_fail), true);
+            }
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr16): 고른 ADIF 파일을 읽어 QSO 기록에 넣는다.
+     * 파일이 크면 시간이 걸리므로 따로 스레드에서 읽는다.
+     *
+     * @param uri 고른 파일
+     */
+    private void importAdifFile(final Uri uri) {
+        if (uri == null || binding == null || !isAdded()) {
+            return;
+        }
+        ToastMessage.show(getString(R.string.log_adif_import_running), true);
+        final Context appContext = requireContext().getApplicationContext();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final int[] result = AdifImporter.importFrom(appContext, uri
+                        , mainViewModel.databaseOpr);
+                if (!isAdded() || getActivity() == null) {
+                    return;
+                }
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (binding == null) {
+                            return;
+                        }
+                        if (result[0] == 0) {
+                            ToastMessage.show(getString(R.string.log_adif_import_empty), true);
+                            return;
+                        }
+                        ToastMessage.show(getString(R.string.log_adif_import_done
+                                , result[1], result[0]), true);
+                        //목록을 다시 읽어 새로 넣은 기록을 바로 보여 준다
+                        refreshLogList();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_IMPORT_ADIF
+                && resultCode == android.app.Activity.RESULT_OK && data != null) {
+            importAdifFile(data.getData());
+        }
     }
 
 

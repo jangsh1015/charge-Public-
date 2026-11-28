@@ -607,4 +607,20 @@
     <string name="grid_psk_refresh">새로고침</string>
     <string name="grid_psk_browser_short">브라우저</string>
 
+    <!-- ============================================================
+         한국어판(0.93-kr16) · 교신 성공 음성·알림 / ADIF 불러오기
+         ============================================================ -->
+    <string name="qso_announce_label">교신 성공 알림</string>
+    <string name="qso_announce_switch_on" translatable="false">음성 On</string>
+    <string name="qso_announce_switch_off" translatable="false">음성 Off</string>
+    <string name="qso_announce_notify_title">교신 성공</string>
+    <string name="qso_announce_channel">교신 성공 알림</string>
+    <string name="qso_announce_channel_desc">교신이 끝나 기록으로 저장되면 음성과 알림으로 알려 줍니다.</string>
+    <string name="log_adif_import">ADIF 불러오기</string>
+    <string name="log_adif_import_hint">QRZ·LotW 교신 기록(.adi)을 이 목록으로</string>
+    <string name="log_adif_import_running">ADIF 파일을 읽는 중입니다…</string>
+    <string name="log_adif_import_done">ADIF 불러오기 완료: %1$d건 넣음 (파일 %2$d건)</string>
+    <string name="log_adif_import_empty">ADIF 파일에서 교신 기록을 찾지 못했습니다.</string>
+    <string name="log_adif_import_fail">파일 창을 열지 못했습니다.</string>
+
 </resources>

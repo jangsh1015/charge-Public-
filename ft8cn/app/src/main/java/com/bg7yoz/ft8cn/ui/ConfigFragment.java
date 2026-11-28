@@ -34,6 +34,7 @@ import com.bg7yoz.ft8cn.database.OperationBand;
 import com.bg7yoz.ft8cn.database.RigNameList;
 import com.bg7yoz.ft8cn.databinding.FragmentConfigBinding;
 import com.bg7yoz.ft8cn.ft8signal.FT8Package;
+import com.bg7yoz.ft8cn.log.QsoAnnouncer;
 import com.bg7yoz.ft8cn.log.ThirdPartyService;
 import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
 import com.bg7yoz.ft8cn.rigs.InstructionSet;
@@ -576,6 +577,24 @@ public class ConfigFragment extends Fragment {
             }
         });
 
+        //한국어판(0.93-kr16): 교신 성공 음성·알림 켜기/끄기
+        binding.qsoAnnounceSwitch.setOnCheckedChangeListener(null);
+        binding.qsoAnnounceSwitch.setChecked(GeneralVariables.enableQsoAnnounce);
+        setQsoAnnounceSwitchText();
+        binding.qsoAnnounceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                GeneralVariables.enableQsoAnnounce = binding.qsoAnnounceSwitch.isChecked();
+                if (binding.qsoAnnounceSwitch.isChecked()) {
+                    mainViewModel.databaseOpr.writeConfig("qsoAnnounce", "1", null);
+                } else {
+                    mainViewModel.databaseOpr.writeConfig("qsoAnnounce", "0", null);
+                    QsoAnnouncer.stopSpeaking();//끄면 읽던 안내도 바로 멈춘다
+                }
+                setQsoAnnounceSwitchText();
+            }
+        });
+
 
 
         //设置自动呼叫关注的呼号
@@ -951,6 +970,17 @@ public class ConfigFragment extends Fragment {
             binding.alcAlarmSwitch.setText(R.string.alc_switch_on);
         }else {
             binding.alcAlarmSwitch.setText(R.string.alc_switch_off);
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr16): 교신 성공 음성·알림 스위치 글자
+     */
+    private void setQsoAnnounceSwitchText() {
+        if (binding.qsoAnnounceSwitch.isChecked()) {
+            binding.qsoAnnounceSwitch.setText(R.string.qso_announce_switch_on);
+        } else {
+            binding.qsoAnnounceSwitch.setText(R.string.qso_announce_switch_off);
         }
     }
 

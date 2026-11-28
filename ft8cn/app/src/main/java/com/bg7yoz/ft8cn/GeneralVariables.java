@@ -38,6 +38,8 @@ public class GeneralVariables {
     public static boolean saveSWL_QSO = false;//保存解码消息消息中的QSO开关
     public static boolean enableCloudlog = false;//是否启用Cloudlog自动同步
     public static boolean enableQRZ = false;//是否启用qrz自动同步
+    //한국어판(0.93-kr16): 교신이 끝나면 음성(TTS)과 알림으로 알려 준다. 기본 켜짐.
+    public static boolean enableQsoAnnounce = true;
 
     public static boolean deepDecodeMode = false;//是否开启深度解码
 

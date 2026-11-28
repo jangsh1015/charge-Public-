@@ -62,6 +62,7 @@ import com.bg7yoz.ft8cn.html.LogHttpServer;
 import com.bg7yoz.ft8cn.icom.WifiRig;
 import com.bg7yoz.ft8cn.log.QSLCallsignRecord;
 import com.bg7yoz.ft8cn.log.QSLRecord;
+import com.bg7yoz.ft8cn.log.QsoAnnouncer;
 import com.bg7yoz.ft8cn.log.SWLQsoList;
 import com.bg7yoz.ft8cn.log.ThirdPartyService;
 import com.bg7yoz.ft8cn.rigs.BaseRig;
@@ -540,6 +541,17 @@ public class MainViewModel extends ViewModel {
             @Override
             public void doAfterTransmit(QSLRecord qslRecord) {
                 databaseOpr.addQSL_Callsign(qslRecord);//两个操作，把呼号和QSL记录下来
+
+                //한국어판(0.93-kr16): 교신이 끝나 기록으로 저장되면 음성·알림으로 알린다
+                //  (설정의 [교신 성공 알림]이 켜져 있을 때만. 송신 중이면 조용해질 때까지 기다렸다 읽는다)
+                if (qslRecord.getToCallsign() != null) {
+                    QsoAnnouncer.announce(qslRecord.getToCallsign(), new QsoAnnouncer.TransmitState() {
+                        @Override
+                        public boolean isTransmitting() {
+                            return ft8TransmitSignal != null && ft8TransmitSignal.isTransmitting();
+                        }
+                    });
+                }
 
                 // 记录到第三方服务，耗时可能较长
                 new Thread(new Runnable() {

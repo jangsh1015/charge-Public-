@@ -24,6 +24,24 @@ Credits
 
 Korean edition changes
 
+  0.93-kr16
+   1. A completed QSO is now announced out loud.
+      - Example: "HL5NTR, QSO completed with Japan". When the country is unknown,
+        "QSO completed with HL5NTR". (The Korean build speaks Korean on a Korean phone.)
+      - The notification shade quietly keeps "QSO completed: HL5NTR (Japan)"; the spoken
+        announcement is the only sound.
+      - The switch [QSO completion alert] at the bottom of Settings turns it off. It is on by default.
+      - With the radio connected over USB audio, the sentence is rendered to a file and played on the
+        phone's own speaker, so the announcement is not sent over the air. If the radio is transmitting,
+        the app waits until it is quiet before speaking.
+      - From Android 13 the app asks once for notification permission.
+   2. A new [Import ADIF] row sits under the QSO log list.
+      - Pick a log file (.adi) from QRZ, LotW, N1MM or JTDX and it is added to the app's QSO log.
+      - Records that already exist (same call sign, time and mode) are skipped.
+      - The list is refreshed right after the import, and the worked-call sign table is reloaded so
+        stations you have already worked are struck through in the decode list.
+      - Files that carry only BAND (no FREQ) are accepted with the usual FT8 frequency for that band.
+
   0.93-kr15
    1. On a phone, a slim radio status bar now stays just above the bottom tabs
       (decode / calling / spectrum / grid·PSK / settings) on every tab, so SWR can be watched and

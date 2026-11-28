@@ -22,6 +22,15 @@
         android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 한국어판(0.93-kr16): 교신 성공 알림창을 띄울 때 쓴다(안드로이드 13부터 사용자 허가 필요) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 한국어판(0.93-kr16): 안드로이드 11부터는 음성 안내(TTS) 엔진을 찾으려면 이 선언이 있어야 한다 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"

@@ -69,6 +69,7 @@ import com.bg7yoz.ft8cn.floatview.FloatViewButton;
 import com.bg7yoz.ft8cn.grid_tracker.GridTrackerMainActivity;
 import com.bg7yoz.ft8cn.log.ImportSharedLogs;
 import com.bg7yoz.ft8cn.log.OnShareLogEvents;
+import com.bg7yoz.ft8cn.log.QsoAnnouncer;
 import com.bg7yoz.ft8cn.maidenhead.MaidenheadGrid;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 import com.bg7yoz.ft8cn.ui.CallingListFragment;
@@ -207,6 +208,12 @@ public class MainActivity extends AppCompatActivity {
                     , Manifest.permission.MODIFY_AUDIO_SETTINGS
                     , Manifest.permission.WAKE_LOCK
                     , Manifest.permission.ACCESS_FINE_LOCATION};
+        }
+
+        //한국어판(0.93-kr16): 교신 성공 알림창을 위해 안드로이드 13부터는 알림 허가도 받아 둔다
+        if (Build.VERSION.SDK_INT >= 33) {
+            permissions = appendPermission(permissions
+                    , "android.permission.POST_NOTIFICATIONS");
         }
 
         checkPermission();
@@ -1681,6 +1688,25 @@ public class MainActivity extends AppCompatActivity {
 
 
     /**
+     * 한국어판(0.93-kr16): 권한 목록에 하나를 더 붙인다(이미 있으면 그대로 둔다).
+     *
+     * @param source     지금 목록
+     * @param permission 더할 권한
+     * @return 늘어난 목록
+     */
+    private String[] appendPermission(String[] source, String permission) {
+        for (String item : source) {
+            if (item.equals(permission)) {
+                return source;
+            }
+        }
+        String[] result = new String[source.length + 1];
+        System.arraycopy(source, 0, result, 0, source.length);
+        result[source.length] = permission;
+        return result;
+    }
+
+    /**
      * 检查权限
      */
     private void checkPermission() {
@@ -1900,6 +1926,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         unregisterBluetoothReceiver();
+        //한국어판(0.93-kr16): 앱을 닫을 때는 음성 안내(TTS) 자원을 돌려준다
+        if (isFinishing()) {
+            QsoAnnouncer.shutdown();
+        }
         //保证屏幕方向切换后，不会因为对话框导致闪退
         if (Boolean.TRUE.equals(mainViewModel.mutableImportShareRunning.getValue())) {
             if (dialog != null) {
