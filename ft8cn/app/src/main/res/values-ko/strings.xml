@@ -617,10 +617,14 @@
     <string name="qso_announce_channel">교신 성공 알림</string>
     <string name="qso_announce_channel_desc">교신이 끝나 기록으로 저장되면 음성과 알림으로 알려 줍니다.</string>
     <string name="log_adif_import">ADIF 불러오기</string>
-    <string name="log_adif_import_hint">QRZ·LotW 교신 기록(.adi)을 이 목록으로</string>
+    <string name="log_adif_import_hint">QRZ·LotW .adi 넣기</string>
     <string name="log_adif_import_running">ADIF 파일을 읽는 중입니다…</string>
     <string name="log_adif_import_done">ADIF 불러오기 완료: %1$d건 넣음 (파일 %2$d건)</string>
     <string name="log_adif_import_empty">ADIF 파일에서 교신 기록을 찾지 못했습니다.</string>
     <string name="log_adif_import_fail">파일 창을 열지 못했습니다.</string>
+    <string name="log_export_new">새 교신만 공유</string>
+    <string name="log_export_new_empty">새로 추가된 교신 기록이 없습니다</string>
+    <string name="log_export_new_done">새 교신 %1$d건을 내보냈습니다. 다음부터는 그 뒤에 저장된 교신만 나갑니다.</string>
+    <string name="log_export_new_share_title">새 교신만 내보내기</string>
 
 </resources>

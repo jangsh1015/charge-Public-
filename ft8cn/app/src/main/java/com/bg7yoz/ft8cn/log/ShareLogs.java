@@ -22,8 +22,16 @@ import java.io.IOException;
 public class ShareLogs {
     private static final String TAG = "ShareLogs";
     private boolean isCancel=false;
+    //한국어판(0.93-kr17): 이번에 내보낸 기록 중 가장 큰 QSO id (새 교신만 내보내기의 기준점)
+    private long lastExportedId = 0;
 
-    private String makeSQL(int queryFilter) {
+    /**
+     * 한국어판(0.93-kr17): afterId 를 주면 그 id 보다 뒤에 저장된 교신만 고른다.
+     *
+     * @param queryFilter 0: 전체, 1: QSL 받은 것, 2: 못 받은 것
+     * @param afterId     이 id 보다 큰 QSO 만 (0 이면 전부)
+     */
+    private String makeSQL(int queryFilter, long afterId) {
         String filterStr;
         switch (queryFilter) {
             case 1:
@@ -35,16 +43,18 @@ public class ShareLogs {
             default:
                 filterStr = "";
         }
+        String afterStr = afterId > 0 ? String.format("and(q.id > %d)\n", afterId) : "";
         return " FROM QSLTable AS q \n" +
                 "WHERE ((CALL LIKE ?)OR(station_callsign LIKE ?))\n" +
-                filterStr;
+                filterStr +
+                afterStr;
 
     }
 
 
     @SuppressLint("Range")
-    private int getCount(SQLiteDatabase db, String queryKey, int queryFilter) {
-        String sql = makeSQL(queryFilter);
+    private int getCount(SQLiteDatabase db, String queryKey, int queryFilter, long afterId) {
+        String sql = makeSQL(queryFilter, afterId);
         String key = "%" + queryKey + "%";
         Cursor cursor = db.rawQuery("SELECT COUNT(*) AS C " + sql, new String[]{key, key});
         cursor.moveToFirst();
@@ -54,10 +64,31 @@ public class ShareLogs {
         return count;
     }
 
-    private Cursor getData(SQLiteDatabase db, String queryKey, int queryFilter) {
-        String sql = makeSQL(queryFilter);
+    private Cursor getData(SQLiteDatabase db, String queryKey, int queryFilter, long afterId) {
+        String sql = makeSQL(queryFilter, afterId);
         String key = "%" + queryKey + "%";
         return db.rawQuery("SELECT * " + sql, new String[]{key, key});
+    }
+
+    /**
+     * 한국어판(0.93-kr17): 주어진 id 보다 뒤에 저장된 교신 수 (새 교신만 내보낼 때 미리 확인용)
+     */
+    public int countLogsAfter(SQLiteDatabase db, long afterId) {
+        return getCount(db, "", 0, afterId);
+    }
+
+    /**
+     * 한국어판(0.93-kr17): QSO 표에 든 가장 큰 id. 표를 비우거나 새로 만들었는지 가늠하는 데 쓴다.
+     */
+    @SuppressLint("Range")
+    public long getMaxLogId(SQLiteDatabase db) {
+        Cursor cursor = db.rawQuery("SELECT MAX(id) AS M FROM QSLTable", null);
+        long maxId = 0;
+        if (cursor.moveToFirst()) {
+            maxId = cursor.getLong(cursor.getColumnIndex("M"));
+        }
+        cursor.close();
+        return maxId;
     }
 
     /**
@@ -68,20 +99,22 @@ public class ShareLogs {
      * @param queryFilter    过滤条件
      * @param adiFile        临时文件
      * @param isSWL          是否是swl模式
+     * @param afterId        这个 id 之后新增的才写 (0 = 全部) — 한국어판(0.93-kr17)
      * @param onGetShareLogs 回调
      */
     @SuppressLint({"DefaultLocale", "Range"})
     private void downQSLTableToFile(SQLiteDatabase db, String queryKey, int queryFilter, File adiFile
-            , boolean isSWL
+            , boolean isSWL, long afterId
             , OnShareLogEvents onGetShareLogs) {
-        final int count = getCount(db, queryKey, queryFilter);
+        final int count = getCount(db, queryKey, queryFilter, afterId);
+        lastExportedId = 0;
 
         if (onGetShareLogs != null) {
             onGetShareLogs.onShareStart(count, String.format(
                     GeneralVariables.getStringFromResource(R.string.total_logs)
                     , count));
         }
-        Cursor cursor = getData(db, queryKey, queryFilter);
+        Cursor cursor = getData(db, queryKey, queryFilter, afterId);
         FileOutputStream fileOutputStream = null;
         int position = 0;
         try {
@@ -90,6 +123,13 @@ public class ShareLogs {
             cursor.moveToPosition(-1);
             while (cursor.moveToNext()) {
                 position++;
+                //한국어판(0.93-kr17): 여기까지 내보냈다는 표시(가장 큰 QSO id)를 남긴다
+                if (cursor.getColumnIndex("id") != -1) {
+                    long id = cursor.getLong(cursor.getColumnIndex("id"));
+                    if (id > lastExportedId) {
+                        lastExportedId = id;
+                    }
+                }
                 if (onGetShareLogs != null) {
                    if (!onGetShareLogs.onShareProgress(count, position
                             , String.format(GeneralVariables.getStringFromResource(R.string.get_log_no)
@@ -244,7 +284,41 @@ public class ShareLogs {
 
         isCancel=false;
 
-        downQSLTableToFile(db, queryKey, queryFilter, adiFile, false, new OnShareLogEvents() {
+        downQSLTableToFile(db, queryKey, queryFilter, adiFile, false, 0
+                , wrapEvents(context, file, title, false, onGetShareLogs));
+
+
+    }
+
+    /**
+     * 한국어판(0.93-kr17): 마지막으로 내보낸 뒤 새로 저장된 교신만 ADIF 로 만들어 공유한다.
+     * 검색 조건(호출부호·QSL 여부)과 상관없이 새 교신을 모두 넣는다.
+     *
+     * @param afterId 이 id 보다 뒤에 저장된 교신만 내보낸다(마지막 내보내기 기준점)
+     * @return 실제로 내보낸 가장 큰 QSO id. 내보낼 것이 없거나 사용자가 그만두었으면 0.
+     */
+    public long doShareNewLogs(Context context, File file, String title
+            , SQLiteDatabase db, long afterId, File adiFile
+            , OnShareLogEvents onGetShareLogs) {
+
+        isCancel=false;
+
+        downQSLTableToFile(db, "", 0, adiFile, false, afterId
+                , wrapEvents(context, file, title, true, onGetShareLogs));
+
+        if (isCancel || lastExportedId <= afterId) {
+            return 0;//공유하지 않았거나(중간 취소) 새 기록이 없으면 기준점을 올리지 않는다
+        }
+        return lastExportedId;
+    }
+
+    /**
+     * 한국어판(0.93-kr17): 파일 쓰기 진행 상황을 화면에 전하고, 끝나면 공유 창을 여는 공통 처리.
+     */
+    private OnShareLogEvents wrapEvents(final Context context, final File file
+            , final String title, final boolean onlyIfNotEmpty
+            , final OnShareLogEvents onGetShareLogs) {
+        return new OnShareLogEvents() {
             @Override
             public void onPreparing(String info) {
                 if (onGetShareLogs!=null){
@@ -274,7 +348,7 @@ public class ShareLogs {
                 if (onGetShareLogs != null) {
                     onGetShareLogs.afterGet( count, info);
                 }
-                if (!isCancel) {
+                if (!isCancel && (!onlyIfNotEmpty || lastExportedId > 0)) {
                     Intent sharingIntent = new Intent(Intent.ACTION_SEND);
                     Uri fileUri = FileProvider.getUriForFile(context.getApplicationContext()
                             , "com.bg7yoz.ft8cn.kr.fileprovider", file);
@@ -291,9 +365,7 @@ public class ShareLogs {
                     onGetShareLogs.onShareFailed(info);
                 }
             }
-        });
-
-
+        };
     }
 
 

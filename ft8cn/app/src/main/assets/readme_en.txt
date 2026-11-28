@@ -24,6 +24,23 @@ Credits
 
 Korean edition changes
 
+  0.93-kr17
+   1. The frequency cursor on the spectrum and waterfall can be tuned finely in slow motion.
+      - It follows only 0.35x of the finger's horizontal travel, so the cursor no longer jumps
+        and lands on the exact Hz. (A tiny movement still moves it 1 px at a time.)
+      - The cursor jumps straight to the touch point only when you first touch the screen.
+      - When you lift your finger the Hz under the cursor is recalculated right there and saved,
+        so the TX frequency is exactly the number shown on screen.
+      - Applies to the phone spectrum screen and to the left spectrum pane of the tablet 3-pane layout.
+   2. A [Share new only] button under the QSO log sends only the QSOs saved since the last export.
+      - It opens the same share sheet as before (Gmail, KakaoTalk, Drive ...) and remembers how far it got.
+      - The next press builds a file with only the QSOs saved after that point (all new QSOs,
+        regardless of the search box).
+      - The first press sends everything recorded so far; after that only new QSOs go out.
+      - With nothing new it only says "No new QSO records since the last export" and builds no file.
+      - Records added with [Import ADIF] from another program count as new records too.
+      - The [share] button at the top (all / filtered) works exactly as before and ignores this memory.
+
   0.93-kr16
    1. A completed QSO is now announced out loud.
       - Example: "HL5NTR, QSO completed with Japan". When the country is unknown,

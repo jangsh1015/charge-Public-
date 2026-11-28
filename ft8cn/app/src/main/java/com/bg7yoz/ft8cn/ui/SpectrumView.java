@@ -37,6 +37,9 @@ public class SpectrumView extends ConstraintLayout {
 
 
     private int frequencyLineTimeOut = 0;//画频率线的时间量
+    //한국어판(0.93-kr17): 물결 그림 위 주파수 커서를 미세 조정하기 위한 값
+    private static final float TOUCH_DAMPING = 0.35f;
+    private int smoothedTouchX = -1;
 
     static {
         System.loadLibrary("ft8cn");
@@ -115,28 +118,44 @@ public class SpectrumView extends ConstraintLayout {
 
                 frequencyLineTimeOut = 60;//显示频率线的时长：60*0.16
 
-                waterfallView.setTouch_x(Math.round(motionEvent.getX()));
-                columnarView.setTouch_x(Math.round(motionEvent.getX()));
-
+                //한국어판(0.93-kr17): 손가락이 움직인 거리의 0.35배만 따라가게 해서
+                //  주파수 커서가 휙휙 튀지 않고 정확한 Hz 로 맞춰지게 한다.
+                //  처음 닿는 순간(ACTION_DOWN)만 손끝 자리로 곧장 옮긴다.
+                int rawX = Math.round(motionEvent.getX());
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN || smoothedTouchX < 0) {
+                    smoothedTouchX = rawX;
+                } else {
+                    int step = Math.round((rawX - smoothedTouchX) * TOUCH_DAMPING);
+                    if (step == 0 && rawX != smoothedTouchX) {//아주 조금 움직였을 때는 1px 씩
+                        step = rawX > smoothedTouchX ? 1 : -1;
+                    }
+                    smoothedTouchX += step;
+                }
+                waterfallView.setTouch_x(smoothedTouchX);
+                columnarView.setTouch_x(smoothedTouchX);
+                //한국어판(0.93-kr17): 지금 커서가 가리키는 Hz 를 바로 계산해 둔다.
+                //  화면을 그리는 onDraw 만 믿으면 손을 뗀 순간 한 칸 전 값이 남을 수 있고,
+                //  처음 닿은 타이에는 아직 값이 없어 주파수가 저장되지도 않았다.
+                final int freqHz = waterfallView.updateFreqHz();
 
                 if (!mainViewModel.ft8TransmitSignal.isSynFrequency()
-                        && (waterfallView.getFreq_hz() > 0)
+                        && (freqHz > 0)
                         && (motionEvent.getAction() == ACTION_UP)
                 ) {//如果时异频发射
                     mainViewModel.databaseOpr.writeConfig("freq",
-                            String.valueOf(waterfallView.getFreq_hz()),
+                            String.valueOf(freqHz),
                             null);
                     mainViewModel.ft8TransmitSignal.setBaseFrequency(
-                            (float) waterfallView.getFreq_hz());
+                            (float) freqHz);
 
-                    rulerFrequencyView.setFreq(waterfallView.getFreq_hz());
+                    rulerFrequencyView.setFreq(freqHz);
 
                     fragment.requireActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             ToastMessage.show(String.format(
                                     GeneralVariables.getStringFromResource(R.string.sound_frequency_is_set_to)
-                                    , waterfallView.getFreq_hz()),true);
+                                    , freqHz),true);
                         }
                     });
                 }

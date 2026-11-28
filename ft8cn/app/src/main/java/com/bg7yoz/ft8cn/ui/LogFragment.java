@@ -13,6 +13,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -70,6 +72,9 @@ public class LogFragment extends Fragment {
     private static final String TAG = "LogFragment";
     //한국어판(0.93-kr16): ADIF 불러오기 파일 창을 여는 요청 번호
     private static final int REQUEST_IMPORT_ADIF = 7108;
+    //한국어판(0.93-kr17): [새 교신만] 이 마지막으로 내보낸 QSO id 를 담아 두는 곳
+    private static final String PREF_EXPORT = "ft8cn_kr_export";
+    private static final String PREF_LAST_EXPORT_ID = "last_adif_export_id";
     private FragmentLogBinding binding;
     private MainViewModel mainViewModel;
 
@@ -235,7 +240,6 @@ public class LogFragment extends Fragment {
 
         //한국어판(0.93-kr16): 목록 아래 [ADIF 불러오기] 줄을 연결한다
         initAdifImportBar();
-
         //判断生成共享log文件的工作线程还在，如果在，就显示对话框
         if (Boolean.TRUE.equals(mainViewModel.mutableShareRunning.getValue())) {
             showShareDialog();
@@ -246,6 +250,8 @@ public class LogFragment extends Fragment {
 
     /**
      * 한국어판(0.93-kr16): 목록 아래 [ADIF 불러오기] 줄 — 누르면 파일을 골라 QSO 기록에 넣는다.
+     * 한국어판(0.93-kr17): 같은 줄에 [새 교신만] 단추를 더했다 — 마지막으로 내보낸 뒤에
+     * 저장된 교신만 ADIF 로 만들어 공유한다.
      */
     private void initAdifImportBar() {
         if (binding == null) {
@@ -256,6 +262,151 @@ public class LogFragment extends Fragment {
                 @Override
                 public void onClick(View view) {
                     pickAdifFile();
+                }
+            });
+        }
+        if (binding.adifExportNewButton != null) {
+            binding.adifExportNewButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    buildShareNewLogs();
+                }
+            });
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr17): [새 교신만] 이 마지막으로 내보낸 QSO id 를 읽는다.
+     */
+    private long getLastExportId() {
+        SharedPreferences prefs = requireContext().getApplicationContext()
+                .getSharedPreferences(PREF_EXPORT, Context.MODE_PRIVATE);
+        return prefs.getLong(PREF_LAST_EXPORT_ID, 0);
+    }
+
+    /**
+     * 한국어판(0.93-kr17): 이번에 내보낸 데까지를 기준점으로 적어 둔다.
+     */
+    private void setLastExportId(long id) {
+        SharedPreferences prefs = requireContext().getApplicationContext()
+                .getSharedPreferences(PREF_EXPORT, Context.MODE_PRIVATE);
+        prefs.edit().putLong(PREF_LAST_EXPORT_ID, id).apply();
+    }
+
+    /**
+     * 한국어판(0.93-kr17): 마지막으로 내보낸 뒤 새로 저장된 교신만 ADIF 로 만들어 공유한다.
+     * 새 교신이 없으면 공유 창을 열지 않고 안내만 한다.
+     * 다 내보낸 뒤에는 그 기준점을 마지막 QSO id 로 올려 두어, 다음부터는 그 뒤의 것만 나간다.
+     */
+    private void buildShareNewLogs() {
+        if (binding == null || !isAdded()) {
+            return;
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final ShareLogs shareLogs = new ShareLogs();
+                SQLiteDatabase db = mainViewModel.databaseOpr.getDb();
+                long afterId = getLastExportId();
+                //로그 표를 비우거나 새로 만든 경우(가장 큰 id 가 기존 기준점보다 작음)에는 처음부터 내보낸다
+                if (afterId > shareLogs.getMaxLogId(db)) {
+                    afterId = 0;
+                }
+                final long baseId = afterId;
+                final int newCount = shareLogs.countLogsAfter(db, baseId);
+                if (!isAdded() || getActivity() == null) {
+                    return;
+                }
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (binding == null || !isAdded()) {
+                            return;
+                        }
+                        if (newCount <= 0) {
+                            ToastMessage.show(getString(R.string.log_export_new_empty), true);
+                            return;
+                        }
+                        //보통의 [공유] 와 같은 진행 창을 띄우고, 파일 만들기를 따로 스레드에서 한다
+                        showShareDialog();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                shareNewLogs(shareLogs, baseId);
+                            }
+                        }).start();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    /**
+     * 한국어판(0.93-kr17): 새 교신만 파일로 쓰고 공유 창을 연다. 다 내보낸 뒤 기준점을 올린다.
+     */
+    private void shareNewLogs(final ShareLogs shareLogs, final long baseId) {
+        File adiFile = GeneralVariables.writeToTempFile(requireContext()
+                , "FT8CN"
+                , ".txt"
+                , "");
+
+        //진행 콜백으로 실제로 파일에 쓴 건수를 센다(중간에 지운 기록이 있으면 id 차이와 다르다)
+        final int[] written = new int[]{0};
+
+        final long exportedId = shareLogs.doShareNewLogs(requireContext(), adiFile
+                , GeneralVariables.getStringFromResource(R.string.log_export_new_share_title)
+                , mainViewModel.databaseOpr.getDb()
+                , baseId
+                , adiFile
+                , new OnShareLogEvents() {
+                    @Override
+                    public void onPreparing(String info) {
+                        mainViewModel.mutableShareInfo.postValue(info);
+                    }
+
+                    @Override
+                    public void onShareStart(int count, String info) {
+                        mainViewModel.mutableSharePosition.postValue(0);
+                        mainViewModel.mutableShareInfo.postValue(info);
+                        mainViewModel.mutableShareRunning.postValue(true);
+                        mainViewModel.mutableShareCount.postValue(count);
+                    }
+
+                    @Override
+                    public boolean onShareProgress(int count, int position, String info) {
+                        written[0] = position;
+                        mainViewModel.mutableSharePosition.postValue(position);
+                        mainViewModel.mutableShareInfo.postValue(info);
+                        mainViewModel.mutableShareCount.postValue(count);
+                        return Boolean.TRUE.equals(mainViewModel.mutableShareRunning.getValue());
+                    }
+
+                    @Override
+                    public void afterGet(int count, String info) {
+                        mainViewModel.mutableShareInfo.postValue(info);
+                        mainViewModel.mutableShareRunning.postValue(false);
+                    }
+
+                    @Override
+                    public void onShareFailed(String info) {
+                        mainViewModel.mutableShareInfo.postValue(info);
+                    }
+                });
+
+        if (exportedId <= baseId) {
+            return;//중간에 그만두었거나 새 기록이 없으면 기준점을 그대로 둔다
+        }
+        setLastExportId(exportedId);
+
+        if (isAdded() && getActivity() != null) {
+            final int done = written[0];
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (!isAdded()) {
+                        return;
+                    }
+                    ToastMessage.show(getString(R.string.log_export_new_done, done), true);
                 }
             });
         }

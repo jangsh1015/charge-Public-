@@ -174,15 +174,8 @@ public class WaterfallView extends View {
         canvas.drawBitmap(lastBitMap, 0, 0, null);
 
         //计算频率
+        updateFreqHz();
         if (touch_x > 0) {//画触摸线
-            freq_hz = Math.round(3000f * (float) touch_x / (float) getWidth());
-            if (freq_hz > 2900) {
-                freq_hz = 2900;
-            }
-            if (freq_hz < 100) {
-                freq_hz = 100;
-            }
-
             if (touch_x > getWidth() / 2) {
                 fontPaint.setTextAlign(Paint.Align.RIGHT);
                 canvas.drawText(String.format("%dHz", freq_hz)
@@ -289,6 +282,28 @@ public class WaterfallView extends View {
 
     public void setTouch_x(int touch_x) {
         this.touch_x = touch_x;
+    }
+
+    /**
+     * 한국어판(0.93-kr17): 지금 커서 위치(touch_x)의 주파수를 계산해 freq_hz 에 담는다.
+     * 예전에는 onDraw 에서만 계산했는데, 화면을 그린 뒤에 손을 떼면
+     * 마지막으로 그린 한 칸 전 위치의 값이 남을 수 있었다. 손을 뗄 때 한 번 더 불러
+     * 커서가 가리키는 Hz 를 그대로 쓰게 한다.
+     *
+     * @return 지금 커서의 주파수(Hz). 커서가 없으면 그 전 값을 그대로 둔다.
+     */
+    public int updateFreqHz() {
+        if (touch_x <= 0) {
+            return freq_hz;
+        }
+        freq_hz = Math.round(3000f * (float) touch_x / (float) getWidth());
+        if (freq_hz > 2900) {
+            freq_hz = 2900;
+        }
+        if (freq_hz < 100) {
+            freq_hz = 100;
+        }
+        return freq_hz;
     }
 
     public void setDrawMessage(boolean drawMessage) {

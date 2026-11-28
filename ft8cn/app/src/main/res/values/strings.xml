@@ -615,10 +615,14 @@
     <string name="qso_announce_channel">QSO completion alert</string>
     <string name="qso_announce_channel_desc">Speaks and shows a notice when a QSO is completed.</string>
     <string name="log_adif_import">Import ADIF</string>
-    <string name="log_adif_import_hint">Add QRZ / LotW log (.adi) to this list</string>
+    <string name="log_adif_import_hint">Add a QRZ/LotW .adi</string>
     <string name="log_adif_import_running">Reading the ADIF file…</string>
     <string name="log_adif_import_done">ADIF import done: %1$d added (file had %2$d)</string>
     <string name="log_adif_import_empty">No QSO records were found in the ADIF file.</string>
     <string name="log_adif_import_fail">Could not open the file picker.</string>
+    <string name="log_export_new">Share new only</string>
+    <string name="log_export_new_empty">No new QSO records since the last export</string>
+    <string name="log_export_new_done">Exported %1$d new QSO records. From now on only QSOs saved after these go out.</string>
+    <string name="log_export_new_share_title">Export new QSOs only</string>
 
 </resources>
