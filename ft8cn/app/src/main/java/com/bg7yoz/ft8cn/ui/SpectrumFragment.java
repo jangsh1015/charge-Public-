@@ -10,13 +10,10 @@ import static android.view.MotionEvent.ACTION_UP;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
-import android.widget.PopupMenu;
 
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
@@ -26,7 +23,6 @@ import com.bg7yoz.ft8cn.MainViewModel;
 import com.bg7yoz.ft8cn.R;
 import com.bg7yoz.ft8cn.databinding.FragmentSpectrumBinding;
 import com.bg7yoz.ft8cn.rigs.BaseRig;
-import com.bg7yoz.ft8cn.rigs.BaseRigOperation;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 
 import java.util.Locale;
@@ -43,14 +39,8 @@ public class SpectrumFragment extends Fragment {
 
     private int frequencyLineTimeOut = 0;//画频率线的时间量
 
-    //한국어판(0.93-kr13): SWR 표시 색과 오토튠 감시 시간
-    private static final int COLOR_SWR_GOOD = 0xFF00E676;//1.5 이하 : 초록
-    private static final int COLOR_SWR_WARN = 0xFFFFC400;//1.5 ~ 2.0 : 호박
-    private static final int COLOR_SWR_BAD = 0xFFFF5252;//2.0 초과 : 빨강
-    private static final long TUNE_WATCH_MS = 8000;//튜너가 도는 동안 SWR을 밝게 보여 주는 시간
-    private long tuneWatchUntil = 0;//오토튠을 시작한 시각 + 감시 시간
-    //한국어판(0.93-kr14): PWR 단추의 출력 선택지(%)와,연결 뒤 출력을 읽어 오는 시각
-    private static final int[] RF_POWER_PRESETS = {10, 25, 50, 75, 100};
+    //한국어판(0.93-kr15): SWR 색·오토튠 감시 시간·TUNE·PWR 조작은 RigControlHelper 로 옮겨
+    //  휴대폰 하단 상태 줄과 같은 코드를 쓴다.
     private static final long RF_POWER_READ_DELAY_MS = 2500;
 
 
@@ -255,11 +245,11 @@ public class SpectrumFragment extends Fragment {
             }
         });
 
-        //한국어판(0.93-kr14): PWR 단추 → 출력 선택 창
+        //한국어판(0.93-kr14): PWR 단추 → 출력 선택 창 (0.93-kr15: 하단 상태 줄과 같은 도우미를 쓴다)
         binding.pwrTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showRfPowerMenu(view);
+                RigControlHelper.showRfPowerMenu(requireActivity(), view, mainViewModel.baseRig);
             }
         });
 
@@ -300,37 +290,22 @@ public class SpectrumFragment extends Fragment {
             binding.swrTextView.setVisibility(View.GONE);
         } else {
             binding.swrTextView.setVisibility(View.VISIBLE);
-            binding.swrTextView.setText("SWR " + BaseRigOperation.getSwrStr(swr));
-            if (swr <= 1.5f) {
-                binding.swrTextView.setTextColor(COLOR_SWR_GOOD);
-            } else if (swr <= 2.0f) {
-                binding.swrTextView.setTextColor(COLOR_SWR_WARN);
-            } else {
-                binding.swrTextView.setTextColor(COLOR_SWR_BAD);
-            }
+            binding.swrTextView.setText(RigControlHelper.formatSwr(swr));
+            binding.swrTextView.setTextColor(RigControlHelper.swrColor(swr));
         }
 
         //둘째 줄: Po 95% · ALC 35%
-        StringBuilder meters = new StringBuilder();
-        if (po >= 0) {
-            meters.append(String.format(Locale.US, "Po %d%%", po));
-        }
-        if (alc >= 0) {
-            if (meters.length() > 0) {
-                meters.append(" · ");
-            }
-            meters.append(String.format(Locale.US, "ALC %d%%", alc));
-        }
+        String meters = RigControlHelper.formatMeters(po, alc);
         if (meters.length() > 0) {
             binding.meterTextView.setVisibility(View.VISIBLE);
-            binding.meterTextView.setText(meters.toString());
+            binding.meterTextView.setText(meters);
         } else {
             binding.meterTextView.setVisibility(View.GONE);
         }
 
         //송신 중이거나 오토튠이 도는 중에만 또렷하게, 그 밖에는 직전 송신 값을 흐리게
         boolean live = mainViewModel.ft8TransmitSignal.isTransmitting()
-                || System.currentTimeMillis() < tuneWatchUntil;
+                || RigControlHelper.isTuneWatching();
         binding.meterBox.setAlpha(live ? 1.0f : 0.55f);
     }
 
@@ -348,82 +323,21 @@ public class SpectrumFragment extends Fragment {
     }
 
     /**
-     * 한국어판(0.93-kr14): PWR 단추를 누르면 출력 선택 창(10·25·50·75·100%)을 연다.
-     * 지금 무전기에 걸린 출력에 표시를 해 둔다.
-     */
-    private void showRfPowerMenu(View anchor) {
-        BaseRig rig = mainViewModel.baseRig;
-        if (rig == null || !rig.isConnected()) {
-            ToastMessage.show(getString(R.string.tune_connect_first), true);
-            return;
-        }
-        rig.readRfPower();//창을 열 때마다 지금 출력을 다시 확인한다
-
-        Integer value = GeneralVariables.mutableRfPower.getValue();
-        int current = value == null ? -1 : value;
-
-        PopupMenu popupMenu = new PopupMenu(requireContext(), anchor);
-        Menu menu = popupMenu.getMenu();
-        menu.setGroupCheckable(0, true, true);
-        for (int i = 0; i < RF_POWER_PRESETS.length; i++) {
-            int percent = RF_POWER_PRESETS[i];
-            MenuItem item = menu.add(0, percent, i, percent + "%");
-            item.setCheckable(true);
-            item.setChecked(current >= 0 && Math.abs(current - percent) <= 2);
-        }
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                applyRfPower(item.getItemId());//메뉴 항목 id 가 곧 출력 %
-                return true;
-            }
-        });
-        popupMenu.show();
-    }
-
-    /**
-     * 한국어판(0.93-kr14): 고른 출력을 무전기에 보낸다.
-     */
-    private void applyRfPower(int percent) {
-        BaseRig rig = mainViewModel.baseRig;
-        if (rig == null || !rig.isConnected()) {
-            ToastMessage.show(getString(R.string.tune_connect_first), true);
-            return;
-        }
-        if (!rig.setRfPowerPercent(percent)) {
-            ToastMessage.show(getString(R.string.rf_power_not_supported), true);
-            return;
-        }
-        ToastMessage.show(getString(R.string.rf_power_set, percent), true);
-        updatePwrLabel();
-    }
-
-    /**
      * 한국어판(0.93-kr13): 무전기에 안테나 튜너 오토튠(TUNE) 명령을 보낸다.
+     * 한국어판(0.93-kr15): 명령을 보내는 일은 하단 상태 줄과 같은 RigControlHelper 가 맡는다.
      */
     private void doAutoTune() {
-        BaseRig rig = mainViewModel.baseRig;
-        if (rig == null || !rig.isConnected()) {
-            ToastMessage.show(getString(R.string.tune_connect_first), true);
-            return;
+        if (!RigControlHelper.doAutoTune(requireActivity(), mainViewModel.baseRig
+                , mainViewModel.ft8TransmitSignal.isTransmitting())) {
+            return;//이미 토스트로 사정을 알렸다
         }
-        if (mainViewModel.ft8TransmitSignal.isTransmitting()) {
-            ToastMessage.show(getString(R.string.tune_while_transmitting), true);
-            return;
-        }
-        if (!rig.startAutoTune()) {
-            ToastMessage.show(getString(R.string.tune_not_supported), true);
-            return;
-        }
-        tuneWatchUntil = System.currentTimeMillis() + TUNE_WATCH_MS;
-        ToastMessage.show(getString(R.string.tune_started), true);
         updateMeterView();
         binding.getRoot().postDelayed(new Runnable() {
             @Override
             public void run() {
                 updateMeterView();
             }
-        }, TUNE_WATCH_MS + 500);
+        }, RigControlHelper.TUNE_WATCH_MS + 500);
     }
 
     private void setDeNoiseSwitchState() {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 한국어판(0.93-kr15): 하단 무전기 상태 줄의 TUNE·PWR 단추 바탕 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/rig_bar_button_pressed_color" />
+            <corners android:radius="6dp" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/rig_bar_button_stroke_color" />
+        </shape>
+    </item>
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/rig_bar_button_color" />
+            <corners android:radius="6dp" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/rig_bar_button_stroke_color" />
+        </shape>
+    </item>
+</selector>

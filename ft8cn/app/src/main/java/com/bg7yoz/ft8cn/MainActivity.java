@@ -75,6 +75,7 @@ import com.bg7yoz.ft8cn.ui.CallingListFragment;
 import com.bg7yoz.ft8cn.ui.FreqDialog;
 import com.bg7yoz.ft8cn.ui.LogFragment;
 import com.bg7yoz.ft8cn.ui.MyCallingFragment;
+import com.bg7yoz.ft8cn.ui.RigControlHelper;
 import com.bg7yoz.ft8cn.ui.SetVolumeDialog;
 import com.bg7yoz.ft8cn.ui.ShareLogsProgressDialog;
 import com.bg7yoz.ft8cn.ui.SpectrumFragment;
@@ -169,6 +170,16 @@ public class MainActivity extends AppCompatActivity {
     private static boolean splitPanelVisible = false;
     //한국어판(0.93-kr6): 지금 호출+로그 2분할이 화면에 떠 있는지
     private static boolean splitCallLogVisible = false;
+
+    //한국어판(0.93-kr15): 휴대폰에서 어느 탭에 있든 하단 탭 바로 위에 늘 보이는 무전기 상태·조작 줄
+    //  (SWR·Po·ALC 표시 + TUNE·PWR 단추. 태블릿 3분할과 스펙트럼 화면에서는 겹치지 않게 감춘다)
+    private LinearLayout rigBarLayout;
+    private TextView rigBarSwrTextView;
+    private TextView rigBarMeterTextView;
+    private TextView rigBarPwrTextView;
+    private int rigBarDestinationId = 0;//지금 보고 있는 화면(상태 줄을 보일지 정하는 데 쓴다)
+    private static final long RIG_BAR_POWER_READ_DELAY_MS = 2500;//연결 뒤 출력을 읽어 오는 시각
+    private static final int RIG_BAR_NO_MEASURE_COLOR = 0xFF8C97A8;//측정값이 없을 때 SWR 글자색
 
 
     String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO
@@ -327,6 +338,8 @@ public class MainActivity extends AppCompatActivity {
 
         //한국어판(0.93-kr4): 태블릿 가로 3분할 패널을 준비하고, 화면(목적지)에 따라 표시를 바꾼다.
         initTabletSplitLayout();
+        //한국어판(0.93-kr15): 휴대폰 하단의 무전기 상태 줄(SWR·TUNE·PWR)을 준비한다
+        initRigBar();
         //한국어판(0.93-kr5): 지난번에 쓰던 화면(3분할/단독)을 먼저 읽어 둔다.
         //  아래 목적지 리스너가 첫 콜백에서 이 값을 다시 쓰기 때문이다.
         //한국어판(0.93-kr6): 3분할·디코드 단독에 호출+로그 2분할까지 더해 '마지막 화면'으로 기억한다.
@@ -772,6 +785,8 @@ public class MainActivity extends AppCompatActivity {
      *  - 디코드 탭·그 밖 : 그 화면만 전체로 (디코드 탭은 태블릿 가로에서 2열)
      */
     private void updateSplitVisibility(int destinationId) {
+        //한국어판(0.93-kr15): 하단 무전기 상태 줄도 지금 화면에 맞춰 보이거나 숨긴다
+        updateRigBarVisibility(destinationId);
         if (splitLayout == null && splitCallLogLayout == null) {
             splitPanelVisible = false;
             splitCallLogVisible = false;
@@ -898,6 +913,187 @@ public class MainActivity extends AppCompatActivity {
                 button.setImageResource(R.drawable.ic_baseline_fullscreen_24);
             }
         }
+    }
+
+    //----------------------------------- 한국어판(0.93-kr15): 휴대폰 하단 무전기 상태 줄
+
+    /**
+     * 휴대폰에서 어느 탭에 있든 하단 탭 바로 위에 보이는 무전기 상태·조작 줄을 준비한다.
+     * 왼쪽에 SWR(송신 중에는 Po·ALC 도), 오른쪽에 TUNE·PWR 단추를 둔다.
+     * 값은 GeneralVariables 의 LiveData 로 들어오고, 단추는 스펙트럼 화면과 같은 RigControlHelper 가 맡는다.
+     */
+    private void initRigBar() {
+        View bar = findViewById(R.id.rigBarLayout);
+        if (!(bar instanceof LinearLayout)) {
+            rigBarLayout = null;
+            return;
+        }
+        rigBarLayout = (LinearLayout) bar;
+        rigBarSwrTextView = findViewById(R.id.rigBarSwrTextView);
+        rigBarMeterTextView = findViewById(R.id.rigBarMeterTextView);
+        TextView tuneView = findViewById(R.id.rigBarTuneTextView);
+        rigBarPwrTextView = findViewById(R.id.rigBarPwrTextView);
+        if (rigBarSwrTextView == null || rigBarMeterTextView == null
+                || tuneView == null || rigBarPwrTextView == null) {
+            rigBarLayout = null;
+            return;
+        }
+
+        tuneView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onRigBarTuneClicked();
+            }
+        });
+        rigBarPwrTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                RigControlHelper.showRfPowerMenu(MainActivity.this, view, mainViewModel.baseRig);
+            }
+        });
+
+        mainViewModel.ft8TransmitSignal.mutableIsTransmitting.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                updateRigBar();
+            }
+        });
+        GeneralVariables.mutableSwr.observe(this, new Observer<Float>() {
+            @Override
+            public void onChanged(Float aFloat) {
+                updateRigBar();
+            }
+        });
+        GeneralVariables.mutablePo.observe(this, new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer integer) {
+                updateRigBar();
+            }
+        });
+        GeneralVariables.mutableAlc.observe(this, new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer integer) {
+                updateRigBar();
+            }
+        });
+        GeneralVariables.mutableRfPower.observe(this, new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer integer) {
+                updateRigBar();
+            }
+        });
+        //연결·해제가 되면 줄을 보이거나 감추고, 연결 직후 무전기에 걸린 출력을 한 번 읽어 온다
+        mainViewModel.mutableRigConnected.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                updateRigBarVisibility(rigBarDestinationId);
+                if (Boolean.TRUE.equals(aBoolean)) {
+                    readRigPowerLater();
+                }
+            }
+        });
+        updateRigBar();
+        //앱을 켜자마자 이미 연결된 상태일 수 있으므로 지금 화면 기준으로 한 번 맞춰 둔다
+        NavDestination destination = navController == null ? null : navController.getCurrentDestination();
+        updateRigBarVisibility(destination == null
+                ? R.id.menu_nav_calling_list : destination.getId());
+    }
+
+    /**
+     * 지금 화면에 무전기 상태 줄을 보일지 정한다.
+     *  - 무전기가 CAT/USB 로 연결되어 있을 때만 보인다.
+     *  - 태블릿 가로 3분할은 왼쪽에 스펙트럼이 늘 떠 있으므로 감춘다(같은 단추를 두 번 두지 않게).
+     *  - 스펙트럼 화면과 설정 화면에서는 감춘다(스펙트럼 화면에는 자체 미터·단추가 있다).
+     *
+     * @param destinationId 지금 목적지
+     */
+    private void updateRigBarVisibility(int destinationId) {
+        rigBarDestinationId = destinationId;
+        if (rigBarLayout == null) {
+            return;
+        }
+        boolean connected = mainViewModel != null && mainViewModel.isRigConnected();
+        boolean phoneStyle = !tabletSplitActive;
+        boolean meterTab = destinationId == R.id.menu_nav_calling_list
+                || destinationId == R.id.menu_nav_mycalling
+                || destinationId == R.id.menu_nav_history;
+        boolean show = connected && phoneStyle && meterTab;
+        rigBarLayout.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            updateRigBar();
+        }
+    }
+
+    /**
+     * 상태 줄의 SWR·Po·ALC·PWR 글자를 지금 값으로 맞춘다.
+     */
+    private void updateRigBar() {
+        if (rigBarLayout == null || rigBarSwrTextView == null || rigBarMeterTextView == null) {
+            return;
+        }
+        Float swrValue = GeneralVariables.mutableSwr.getValue();
+        float swr = swrValue == null ? 0f : swrValue;
+        Integer poValue = GeneralVariables.mutablePo.getValue();
+        Integer alcValue = GeneralVariables.mutableAlc.getValue();
+        Integer powerValue = GeneralVariables.mutableRfPower.getValue();
+        int po = poValue == null ? -1 : poValue;
+        int alc = alcValue == null ? -1 : alcValue;
+        int power = powerValue == null ? -1 : powerValue;
+
+        rigBarSwrTextView.setText(RigControlHelper.formatSwr(swr));
+        rigBarSwrTextView.setTextColor(swr > 0f
+                ? RigControlHelper.swrColor(swr) : RIG_BAR_NO_MEASURE_COLOR);
+        //송신 중이거나 오토튠이 도는 동안에만 Po·ALC 를 함께 보여 준다(수신 중에는 줄을 깔끔하게)
+        boolean live = mainViewModel.ft8TransmitSignal.isTransmitting()
+                || RigControlHelper.isTuneWatching();
+        rigBarMeterTextView.setText(live ? RigControlHelper.formatMeters(po, alc) : "");
+        if (rigBarPwrTextView != null) {
+            rigBarPwrTextView.setText(RigControlHelper.formatPwrLabel(power));
+        }
+
+        //송신 중이거나 오토튠이 도는 동안에만 또렷하게, 그 밖에는 직전 송신 값을 흐리게
+        rigBarSwrTextView.setAlpha(live ? 1.0f : 0.62f);
+        rigBarMeterTextView.setAlpha(live ? 1.0f : 0.62f);
+    }
+
+    /**
+     * 상태 줄의 TUNE 단추를 눌렀을 때. 스펙트럼 화면의 TUNE 단추와 같은 명령을 보낸다.
+     */
+    private void onRigBarTuneClicked() {
+        if (rigBarLayout == null) {
+            return;
+        }
+        if (!RigControlHelper.doAutoTune(this, mainViewModel.baseRig
+                , mainViewModel.ft8TransmitSignal.isTransmitting())) {
+            return;//이미 토스트로 사정을 알렸다
+        }
+        updateRigBar();
+        rigBarLayout.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                updateRigBar();
+            }
+        }, RigControlHelper.TUNE_WATCH_MS + 500);
+    }
+
+    /**
+     * 연결 직후 무전기에 걸려 있는 출력(PWR)을 한 번 읽어 단추에 보여 준다.
+     */
+    private void readRigPowerLater() {
+        if (rigBarLayout == null) {
+            return;
+        }
+        rigBarLayout.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (isFinishing() || mainViewModel == null) {
+                    return;
+                }
+                if (mainViewModel.isRigConnected()) {
+                    mainViewModel.baseRig.readRfPower();
+                }
+            }
+        }, RIG_BAR_POWER_READ_DELAY_MS);
     }
 
     /**

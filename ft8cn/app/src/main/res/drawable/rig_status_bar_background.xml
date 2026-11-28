@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 한국어판(0.93-kr15): 하단 무전기 상태 줄 바탕(위쪽 1dp 경계선 + 짙은 남색) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/rig_bar_divider_color" />
+        </shape>
+    </item>
+
+    <item android:top="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/rig_bar_background" />
+        </shape>
+    </item>
+</layer-list>

@@ -143,6 +143,8 @@ public class MainViewModel extends ViewModel {
 
     public MutableLiveData<Boolean> mutableIsFlexRadio = new MutableLiveData<>();//是不是flex电台
     public MutableLiveData<Boolean> mutableIsXieguRadio = new MutableLiveData<>();//是不是flex电台
+    //한국어판(0.93-kr15): 하단 무전기 상태 줄이 연결·해제를 바로 알아채도록 연결 상태를 알린다
+    public MutableLiveData<Boolean> mutableRigConnected = new MutableLiveData<>(false);
 
     private final ExecutorService getQTHThreadPool = Executors.newCachedThreadPool();
     private final ExecutorService sendWaveDataThreadPool = Executors.newCachedThreadPool();
@@ -178,6 +180,7 @@ public class MainViewModel extends ViewModel {
         @Override
         public void onDisconnected() {
             //与电台连接中断
+            mutableRigConnected.postValue(false);//한국어판(0.93-kr15): 하단 상태 줄 감추기
             GeneralVariables.mutableSwr.postValue(0f);//한국어판(0.93-kr13): SWR 표시 지우기
             GeneralVariables.mutablePo.postValue(-1);//한국어판(0.93-kr14): Po·ALC·출력 표시 지우기
             GeneralVariables.mutableAlc.postValue(-1);
@@ -188,6 +191,7 @@ public class MainViewModel extends ViewModel {
         @Override
         public void onConnected() {
             //与电台建立连接
+            mutableRigConnected.postValue(true);//한국어판(0.93-kr15): 하단 상태 줄 보이기
             GeneralVariables.mutableSwr.postValue(0f);//한국어판(0.93-kr13): 새 연결의 측정값부터 보여 준다
             GeneralVariables.mutablePo.postValue(-1);//한국어판(0.93-kr14): Po·ALC·출력은 새 연결에서 다시 읽는다
             GeneralVariables.mutableAlc.postValue(-1);

@@ -13,6 +13,88 @@
         android:layout_height="match_parent"
         tools:context=".MainActivity">
 
+        <!-- 한국어판(0.93-kr15): 휴대폰에서 어느 탭에 있든 하단 탭 바로 위에 늘 보이는 무전기 상태·조작 줄.
+             왼쪽에 SWR(송신 중에는 Po·ALC 도), 오른쪽에 TUNE·PWR 단추를 둔다.
+             스펙트럼 화면과 태블릿 3분할에서는 같은 단추가 겹치지 않도록 코드에서 감춘다. -->
+        <LinearLayout
+            android:id="@+id/rigBarLayout"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:background="@drawable/rig_status_bar_background"
+            android:baselineAligned="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingEnd="6dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/nav_view"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <TextView
+                android:id="@+id/rigBarSwrTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:text="SWR --"
+                android:textColor="@color/spectrum_text_color"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:ignore="SmallSp" />
+
+            <TextView
+                android:id="@+id/rigBarMeterTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
+                android:textColor="@color/rig_bar_meter_text_color"
+                android:textSize="11sp"
+                tools:ignore="SmallSp"
+                tools:text="Po 95% · ALC 35%" />
+
+            <TextView
+                android:id="@+id/rigBarTuneTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/rig_bar_button_background"
+                android:clickable="true"
+                android:contentDescription="@string/tune_button_desc"
+                android:focusable="true"
+                android:gravity="center"
+                android:minWidth="52dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="TUNE"
+                android:textColor="@color/rig_bar_button_text_color"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:ignore="SmallSp" />
+
+            <TextView
+                android:id="@+id/rigBarPwrTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/rig_bar_button_background"
+                android:clickable="true"
+                android:contentDescription="@string/rf_power_button_desc"
+                android:focusable="true"
+                android:gravity="center"
+                android:minWidth="60dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="PWR"
+                android:textColor="@color/rig_bar_button_text_color"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:ignore="SmallSp" />
+        </LinearLayout>
+
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/nav_view"
             android:layout_width="0dp"
@@ -31,7 +113,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             app:defaultNavHost="true"
-            app:layout_constraintBottom_toTopOf="@+id/nav_view"
+            app:layout_constraintBottom_toTopOf="@+id/rigBarLayout"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/utcProgressBar"
@@ -46,7 +128,7 @@
             android:baselineAligned="false"
             android:orientation="horizontal"
             android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@+id/nav_view"
+            app:layout_constraintBottom_toTopOf="@+id/rigBarLayout"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/utcProgressBar">
@@ -106,7 +188,7 @@
             android:baselineAligned="false"
             android:orientation="horizontal"
             android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@+id/nav_view"
+            app:layout_constraintBottom_toTopOf="@+id/rigBarLayout"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/utcProgressBar">

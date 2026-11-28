@@ -124,6 +124,15 @@
     <color name="spectrum_text_back_color">#8A000000</color>
     <color name="spectrum_text_color">#ff00ffff</color>
 
+    <!-- 한국어판(0.93-kr15): 하단 무전기 상태 줄(SWR·TUNE·PWR) -->
+    <color name="rig_bar_background">#FF1B2333</color>
+    <color name="rig_bar_divider_color">#33FFFFFF</color>
+    <color name="rig_bar_meter_text_color">#FFB3BED1</color>
+    <color name="rig_bar_button_color">#1FFFFFFF</color>
+    <color name="rig_bar_button_pressed_color">#4DFFFFFF</color>
+    <color name="rig_bar_button_stroke_color">#59FFFFFF</color>
+    <color name="rig_bar_button_text_color">#FFE8F0FF</color>
+
     <color name="calling_list2_start_color">#AEFFFFFF</color>
     <color name="calling_list2_end_color">#BCA8A7A7</color>
 

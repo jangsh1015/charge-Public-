@@ -24,6 +24,23 @@ Credits
 
 Korean edition changes
 
+  0.93-kr15
+   1. On a phone, a slim radio status bar now stays just above the bottom tabs
+      (decode / calling / spectrum / grid·PSK / settings) on every tab, so SWR can be watched and
+      TUNE / PWR used without switching to the spectrum screen.
+      - Left: `SWR 1.2`, colored exactly as on the spectrum screen
+        (1.5 or lower green / 1.5 to 2.0 amber / over 2.0 red; `SWR --` before any reading).
+      - While transmitting or while the tuner runs, `Po 95% · ALC 35%` appears next to it.
+      - Right: a `TUNE` button (same command as the spectrum screen) and a `PWR 100%` button
+        (10 / 25 / 50 / 75 / 100%).
+      - The last values stay dimmed after a transmission, and the bar goes away when the radio is
+        disconnected.
+   2. The same buttons are never shown twice.
+      - The bar is hidden on the spectrum screen, which has its own meter and buttons.
+      - The bar is hidden in the tablet landscape 3-pane layout, where the spectrum is always on screen.
+      - The bar is hidden on the settings screen.
+   3. The bar is 38 dp high, so it does not crowd the bottom tabs or the decode list.
+
   0.93-kr14
    1. Tapping TUNE now switches the radio's antenna tuner (TUNER) on before starting auto tune.
       - With the tuner off the auto tune command was simply ignored. The app now sends 1C 01 01 (tuner on)
