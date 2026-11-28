@@ -2297,6 +2297,11 @@ public class DatabaseOpr extends SQLiteOpenHelper {
                     GeneralVariables.enableQsoAnnounce = !result.equals("0");
                 }
 
+                // 한국어판(0.93-kr18): -22 dB 이하 약신호 WAV 자동 저장. 저장된 값이 없으면 켜진 것으로 본다.
+                if (name.equalsIgnoreCase("wavAutoSave")) {
+                    GeneralVariables.autoSaveWeakWav = !result.equals("0");
+                }
+
             }
 
             cursor.close();

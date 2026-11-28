@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 因需要录音和文件存储功能，所以需要申请录音和存储权限 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- 存储数据权限 -->
+    <!-- 한국어판(0.93-kr18): [WAV] 단추가 안드로이드 9 이하에서 공용 Download 폴더에 파일을 쓸 때만 쓴다.
+         안드로이드 10 부터는 MediaStore 로 저장하므로 이 허가가 필요 없다. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
     <!-- <uses-permission -->
     <!-- android:name="android.permission.WRITE_EXTERNAL_STORAGE" -->
     <!-- tools:ignore="ScopedStorage" /> -->

@@ -595,6 +595,23 @@ public class ConfigFragment extends Fragment {
             }
         });
 
+        //한국어판(0.93-kr18): -22 dB 이하 약신호 WAV 자동 저장 켜기/끄기
+        binding.wavAutoSaveSwitch.setOnCheckedChangeListener(null);
+        binding.wavAutoSaveSwitch.setChecked(GeneralVariables.autoSaveWeakWav);
+        setWavAutoSaveSwitchText();
+        binding.wavAutoSaveSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                GeneralVariables.autoSaveWeakWav = binding.wavAutoSaveSwitch.isChecked();
+                if (binding.wavAutoSaveSwitch.isChecked()) {
+                    mainViewModel.databaseOpr.writeConfig("wavAutoSave", "1", null);
+                } else {
+                    mainViewModel.databaseOpr.writeConfig("wavAutoSave", "0", null);
+                }
+                setWavAutoSaveSwitchText();
+            }
+        });
+
 
 
         //设置自动呼叫关注的呼号
@@ -981,6 +998,17 @@ public class ConfigFragment extends Fragment {
             binding.qsoAnnounceSwitch.setText(R.string.qso_announce_switch_on);
         } else {
             binding.qsoAnnounceSwitch.setText(R.string.qso_announce_switch_off);
+        }
+    }
+
+    /**
+     * 한국어판(0.93-kr18): 약신호 WAV 자동 저장 스위치 글자
+     */
+    private void setWavAutoSaveSwitchText() {
+        if (binding.wavAutoSaveSwitch.isChecked()) {
+            binding.wavAutoSaveSwitch.setText(R.string.wav_auto_switch_on);
+        } else {
+            binding.wavAutoSaveSwitch.setText(R.string.wav_auto_switch_off);
         }
     }
 

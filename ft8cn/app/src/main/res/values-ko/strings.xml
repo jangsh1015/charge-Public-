@@ -627,4 +627,21 @@
     <string name="log_export_new_done">새 교신 %1$d건을 내보냈습니다. 다음부터는 그 뒤에 저장된 교신만 나갑니다.</string>
     <string name="log_export_new_share_title">새 교신만 내보내기</string>
 
+    <!-- ============================================================
+         한국어판(0.93-kr18) · 직전 15초 FT8 슬롯 WAV 저장·공유
+         ============================================================ -->
+    <string name="wav_button" translatable="false">WAV</string>
+    <string name="wav_save_button_desc">직전 15초 슬롯을 WAV 파일로 저장</string>
+    <string name="wav_wait_slot">15초 수신이 아직 차지 않았습니다. 다음 15초 수신이 끝나면 저장할 수 있습니다.</string>
+    <string name="wav_saving">15초 WAV를 저장하는 중입니다…</string>
+    <string name="wav_saved">저장했습니다: %1$s</string>
+    <string name="wav_save_failed">WAV를 저장하지 못했습니다: %1$s</string>
+    <string name="wav_share_title">WAV 파일 보내기</string>
+    <string name="wav_permission_needed">WAV를 저장하려면 저장 허가가 필요합니다. 허용해 주세요.</string>
+    <string name="wav_permission_denied">저장 허가가 없으면 Download 폴더에 WAV를 저장할 수 없습니다.</string>
+    <string name="wav_auto_label">-22 dB 이하 약신호 WAV 자동 저장</string>
+    <string name="wav_auto_switch_on" translatable="false">자동 On</string>
+    <string name="wav_auto_switch_off" translatable="false">자동 Off</string>
+    <string name="wav_auto_hint">Download/FT8CN_WAV 폴더에 조용히 저장하고, 자동 저장 파일은 최근 20개만 남깁니다. 직접 저장한 FT8_ 파일은 지우지 않습니다.</string>
+
 </resources>

@@ -40,6 +40,8 @@ public class GeneralVariables {
     public static boolean enableQRZ = false;//是否启用qrz自动同步
     //한국어판(0.93-kr16): 교신이 끝나면 음성(TTS)과 알림으로 알려 준다. 기본 켜짐.
     public static boolean enableQsoAnnounce = true;
+    //한국어판(0.93-kr18): -22 dB 이하 약신호가 들어온 15초 슬롯을 조용히 WAV 로 자동 저장. 기본 켜짐.
+    public static boolean autoSaveWeakWav = true;
 
     public static boolean deepDecodeMode = false;//是否开启深度解码
 

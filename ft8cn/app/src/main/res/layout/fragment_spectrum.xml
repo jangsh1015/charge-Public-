@@ -163,6 +163,26 @@
                 android:textStyle="bold"
                 tools:ignore="SmallSp"
                 tools:text="PWR\n100%" />
+
+            <!-- 한국어판(0.93-kr18): 직전 15초 FT8 슬롯을 WAV 로 저장·공유하는 단추 -->
+            <TextView
+                android:id="@+id/wavTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:background="@drawable/spectrum_text_back_ground"
+                android:clickable="true"
+                android:contentDescription="@string/wav_save_button_desc"
+                android:focusable="true"
+                android:paddingStart="7dp"
+                android:paddingTop="1dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="1dp"
+                android:text="@string/wav_button"
+                android:textColor="@color/spectrum_switch_color"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:ignore="SmallSp" />
         </LinearLayout>
 
         <Switch

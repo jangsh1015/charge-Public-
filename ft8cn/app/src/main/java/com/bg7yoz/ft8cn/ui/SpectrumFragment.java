@@ -7,7 +7,10 @@ package com.bg7yoz.ft8cn.ui;
 
 import static android.view.MotionEvent.ACTION_UP;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -15,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 
@@ -24,6 +28,7 @@ import com.bg7yoz.ft8cn.R;
 import com.bg7yoz.ft8cn.databinding.FragmentSpectrumBinding;
 import com.bg7yoz.ft8cn.rigs.BaseRig;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
+import com.bg7yoz.ft8cn.wave.SlotWavSaver;
 
 import java.util.Locale;
 
@@ -45,6 +50,9 @@ public class SpectrumFragment extends Fragment {
     //한국어판(0.93-kr15): SWR 색·오토튠 감시 시간·TUNE·PWR 조작은 RigControlHelper 로 옮겨
     //  휴대폰 하단 상태 줄과 같은 코드를 쓴다.
     private static final long RF_POWER_READ_DELAY_MS = 2500;
+
+    //한국어판(0.93-kr18): 안드로이드 9 이하에서 WAV 를 Download 폴더에 쓸 때 쓰는 저장 허가
+    private static final int REQUEST_WAV_STORAGE = 0x9A18;
 
 
     static {
@@ -270,6 +278,14 @@ public class SpectrumFragment extends Fragment {
             }
         });
 
+        //한국어판(0.93-kr18): WAV 단추 → 직전 15초 슬롯을 WAV 로 저장하고 공유
+        binding.wavTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                saveLastSlotWav();
+            }
+        });
+
         updateMeterView();
         updatePwrLabel();
 
@@ -355,6 +371,40 @@ public class SpectrumFragment extends Fragment {
                 updateMeterView();
             }
         }, RigControlHelper.TUNE_WATCH_MS + 500);
+    }
+
+    /**
+     * 한국어판(0.93-kr18): [WAV] 단추. 직전에 끝난 15초 슬롯을 WAV 로 저장하고 공유 창을 띄운다.
+     * 앱을 켠 직후라 아직 15초가 차지 않았으면 저장하지 않고 안내만 한다.
+     */
+    private void saveLastSlotWav() {
+        if (!SlotWavSaver.getInstance().hasSlot()) {
+            ToastMessage.show(GeneralVariables.getStringFromResource(R.string.wav_wait_slot));
+            return;
+        }
+        //안드로이드 9 이하에서는 공용 Download 폴더에 쓰려면 저장 허가가 필요하다
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                && ContextCompat.checkSelfPermission(requireActivity()
+                , Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}
+                    , REQUEST_WAV_STORAGE);
+            ToastMessage.show(GeneralVariables.getStringFromResource(R.string.wav_permission_needed));
+            return;
+        }
+        SlotWavSaver.getInstance().saveAndShare(requireActivity());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_WAV_STORAGE) {
+            return;
+        }
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            SlotWavSaver.getInstance().saveAndShare(requireActivity());
+        } else {
+            ToastMessage.show(GeneralVariables.getStringFromResource(R.string.wav_permission_denied));
+        }
     }
 
     private void setDeNoiseSwitchState() {

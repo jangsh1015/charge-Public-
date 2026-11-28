@@ -18,6 +18,7 @@ import com.bg7yoz.ft8cn.ft8transmit.GenerateFT8;
 import com.bg7yoz.ft8cn.timer.OnUtcTimer;
 import com.bg7yoz.ft8cn.timer.UtcTimer;
 import com.bg7yoz.ft8cn.wave.OnGetVoiceDataDone;
+import com.bg7yoz.ft8cn.wave.SlotWavSaver;
 import com.bg7yoz.ft8cn.wave.WaveFileReader;
 import com.bg7yoz.ft8cn.wave.WaveFileWriter;
 
@@ -103,6 +104,8 @@ public class FT8SignalListener {
                         @Override
                         public void onGetDone(float[] data) {
                             Log.d(TAG, String.format("开始解码...###,数据长度：%d",data.length));
+                            //한국어판(0.93-kr18): 방금 끝난 15초 슬롯을 [WAV] 단추로 저장할 수 있게 보관한다.
+                            SlotWavSaver.getInstance().setSlot(data, utc, GeneralVariables.band);
                             decodeFt8(utc, data);
                         }
                     });
@@ -178,6 +181,19 @@ public class FT8SignalListener {
                 }
                 //移到finalize() 方法中调用了
                 DeleteDecoder(ft8Decoder);
+
+                //한국어판(0.93-kr18): 이 슬롯의 최저 SNR 과 디코드 국 수를 WAV 파일 이름에 쓰도록 넘긴다.
+                //  (딥 디코드로 더 풀린 메시지까지 합친 allMsg 기준)
+                int minSnr = 0;
+                for (int i = 0; i < allMsg.size(); i++) {
+                    Ft8Message msg = allMsg.get(i);
+                    if (i == 0 || msg.snr < minSnr) {
+                        minSnr = msg.snr;
+                    }
+                }
+                SlotWavSaver.getInstance().setDecodeResult(utc, minSnr, allMsg.size());
+                //한국어판(0.93-kr18): -22 dB 이하 약신호가 들어온 슬롯은 단추를 누르지 않아도 조용히 저장한다.
+                SlotWavSaver.getInstance().autoSaveWeakSignal(GeneralVariables.getMainContext(), utc);
 
                 Log.d(TAG, String.format("解码耗时:%d毫秒", System.currentTimeMillis() - time));
 

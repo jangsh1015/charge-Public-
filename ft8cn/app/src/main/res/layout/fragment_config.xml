@@ -2210,6 +2210,64 @@
                             tools:ignore="TouchTargetSizeCheck,UseSwitchCompatOrMaterialXml" />
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <!-- 한국어판(0.93-kr18): -22 dB 이하 약신호가 들어온 15초 슬롯을 조용히 WAV 로 저장한다 -->
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/wavAutoSaveLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/editor_layout_style"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/qsoAnnounceLayout">
+
+                        <TextView
+                            android:id="@+id/wavAutoSaveText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/wav_auto_label"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            app:layout_constraintEnd_toStartOf="@+id/wavAutoSaveSwitch"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <Switch
+                            android:id="@+id/wavAutoSaveSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="4dp"
+                            android:checked="true"
+                            android:text="@string/wav_auto_switch_on"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="14sp"
+                            android:thumbTint="?attr/colorPrimary"
+                            android:thumbTintMode="multiply"
+                            android:trackTint="@color/button_start_color"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            tools:ignore="TouchTargetSizeCheck,UseSwitchCompatOrMaterialXml" />
+
+                        <TextView
+                            android:id="@+id/wavAutoSaveHint"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="6dp"
+                            android:text="@string/wav_auto_hint"
+                            android:textColor="@color/text_view_color"
+                            android:textSize="11sp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/wavAutoSaveText" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </LinearLayout>
         </ScrollView>

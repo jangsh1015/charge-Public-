@@ -625,4 +625,21 @@
     <string name="log_export_new_done">Exported %1$d new QSO records. From now on only QSOs saved after these go out.</string>
     <string name="log_export_new_share_title">Export new QSOs only</string>
 
+    <!-- ============================================================
+         한국어판(0.93-kr18) · 직전 15초 FT8 슬롯 WAV 저장·공유
+         ============================================================ -->
+    <string name="wav_button" translatable="false">WAV</string>
+    <string name="wav_save_button_desc">Save the last 15-second slot as a WAV file</string>
+    <string name="wav_wait_slot">The 15-second receive is still starting. You can save it once the next slot finishes.</string>
+    <string name="wav_saving">Saving the 15-second WAV…</string>
+    <string name="wav_saved">Saved: %1$s</string>
+    <string name="wav_save_failed">Could not save the WAV: %1$s</string>
+    <string name="wav_share_title">Send WAV file</string>
+    <string name="wav_permission_needed">Storage permission is needed to save the WAV file. Please allow it.</string>
+    <string name="wav_permission_denied">Without storage permission the WAV cannot be saved to Download.</string>
+    <string name="wav_auto_label">Auto-save WAV for weak signals at -22 dB or below</string>
+    <string name="wav_auto_switch_on" translatable="false">Auto On</string>
+    <string name="wav_auto_switch_off" translatable="false">Auto Off</string>
+    <string name="wav_auto_hint">Saved quietly to the Download/FT8CN_WAV folder. Only the latest 20 automatic files are kept.</string>
+
 </resources>
